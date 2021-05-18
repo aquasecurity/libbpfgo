@@ -200,7 +200,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/aquasecurity/tracee/libbpfgo/helpers"
+	"github.com/aquasecurity/libbpfgo/helpers"
 )
 
 const (
@@ -280,7 +280,7 @@ func bumpMemlockRlimit() error {
 	return nil
 }
 
-func errptrError(ptr unsafe.Pointer, format string, args... interface{}) error {
+func errptrError(ptr unsafe.Pointer, format string, args ...interface{}) error {
 	negErrno := C.PTR_ERR(ptr)
 	errno := syscall.Errno(-int64(negErrno))
 	if errno == 0 {
@@ -288,7 +288,7 @@ func errptrError(ptr unsafe.Pointer, format string, args... interface{}) error {
 	}
 
 	args = append(args, errno.Error())
-	return fmt.Errorf(format + ": %v", args...)
+	return fmt.Errorf(format+": %v", args...)
 }
 
 func NewModuleFromFile(bpfObjFile string) (*Module, error) {
