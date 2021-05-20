@@ -1,6 +1,6 @@
 libbpfgo is a Go library for working with Linux's [eBPF](https://ebpf.io/). It was created for [Tracee](https://github.com/aquasecurity/tracee), our open source Runtime Security and eBPF tracing tools written in Go. If you are interested in eBPF and it's applications, check out Tracee on Github: [https://github.com/aquasecurity/tracee](https://github.com/aquasecurity/tracee).
 
-libbpfgo is built around libbpf - the standard library for interacting with eBPF from userspace, which is a C library maintained in Linux upsteram. We have created libbpfgo as a thin Go wrapper around libbpf.
+libbpfgo is built around libbpf - the standard library for interacting with eBPF from userspace, which is a C library maintained in Linux upstream. We have created libbpfgo as a thin Go wrapper around libbpf.
 
 ## Installing
 
