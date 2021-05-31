@@ -44,7 +44,7 @@ func main() {
 		}
 	}
 
-	iterator := numbers.Iterator(4) // 4 is size of uint32 in bytes
+	iterator := numbers.Iterator()
 	for iterator.Next() {
 		keyBytes := iterator.Key()
 		key := determineHostByteOrder().Uint32(keyBytes)

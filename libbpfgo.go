@@ -217,6 +217,7 @@ type Module struct {
 
 type BPFMap struct {
 	name   string
+	bpfMap *C.struct_bpf_map
 	fd     C.int
 	module *Module
 }
@@ -365,6 +366,7 @@ func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 	}
 
 	return &BPFMap{
+		bpfMap: bpfMap,
 		name:   mapName,
 		fd:     C.bpf_map__fd(bpfMap),
 		module: m,
@@ -457,17 +459,21 @@ func GetUnsafePointer(data interface{}) (unsafe.Pointer, error) {
 	return dataPtr, nil
 }
 
-func (b *BPFMap) GetValue(key interface{}, valueSize int) ([]byte, error) {
+func (b *BPFMap) KeySize() int {
+	return int(C.bpf_map__key_size(b.bpfMap))
+}
+
+func (b *BPFMap) ValueSize() int {
+	return int(C.bpf_map__value_size(b.bpfMap))
+}
+
+func (b *BPFMap) GetValue(key interface{}) ([]byte, error) {
 	keyPtr, err := GetUnsafePointer(key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to lookup value in map %s: unknown key type %T", b.name, key)
 	}
 
-	// Create pointer to value byte array
-	if valueSize == 0 {
-		return nil, fmt.Errorf("valueSize must be > 0")
-	}
-	value := make([]byte, valueSize)
+	value := make([]byte, b.ValueSize())
 	valuePtr := unsafe.Pointer(&value[0])
 
 	errC := C.bpf_map_lookup_elem(b.fd, keyPtr, valuePtr)
@@ -508,19 +514,17 @@ func (b *BPFMap) Update(key, value interface{}) error {
 }
 
 type BPFMapIterator struct {
-	b       *BPFMap
-	err     error
-	keySize int
-	prev    []byte
-	next    []byte
+	b    *BPFMap
+	err  error
+	prev []byte
+	next []byte
 }
 
-func (b *BPFMap) Iterator(keySize int) *BPFMapIterator {
+func (b *BPFMap) Iterator() *BPFMapIterator {
 	return &BPFMapIterator{
-		b:       b,
-		keySize: keySize,
-		prev:    nil,
-		next:    nil,
+		b:    b,
+		prev: nil,
+		next: nil,
 	}
 }
 
@@ -534,7 +538,7 @@ func (it *BPFMapIterator) Next() bool {
 		prevPtr = unsafe.Pointer(&it.next[0])
 	}
 
-	next := make([]byte, it.keySize)
+	next := make([]byte, it.b.KeySize())
 	nextPtr := unsafe.Pointer(&next[0])
 
 	errC, err := C.bpf_map_get_next_key(it.b.fd, prevPtr, nextPtr)
