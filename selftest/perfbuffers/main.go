@@ -7,6 +7,7 @@ import (
 
 	"encoding/binary"
 	"fmt"
+	"syscall"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 )
@@ -67,6 +68,11 @@ func main() {
 
 	numberOfEventsReceived := 0
 
+	go func() {
+		for {
+			syscall.Mmap(999, 999, 999, 1, 1)
+		}
+	}()
 recvLoop:
 	for {
 		b := <-eventsChannel

@@ -7,7 +7,7 @@ BPF_SRC := $(shell find . -type f -name '*.bpf.c')
 PWD := $(shell pwd)
 
 LIBBPF_HEADERS := /usr/include/bpf
-LIBBPF_OBJ := -lbpf
+LIBBPF_OBJ := $(abspath ../dist/libbpf.a)
 
 .PHONY: all
 all: vmlinux.h $(TARGET) $(TARGET_BPF)

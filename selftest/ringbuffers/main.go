@@ -4,6 +4,7 @@ import "C"
 
 import (
 	"os"
+	"syscall"
 
 	"encoding/binary"
 	"fmt"
@@ -65,7 +66,11 @@ func main() {
 	rb.Start()
 
 	numberOfEventsReceived := 0
-
+	go func() {
+		for {
+			syscall.Mmap(999, 999, 999, 1, 1)
+		}
+	}()
 recvLoop:
 	for {
 		b := <-eventsChannel
