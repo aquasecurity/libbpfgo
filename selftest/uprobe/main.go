@@ -51,7 +51,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	offset, err := helpers.SymbolToOffset(binaryPath, ".text", symbolName)
+	offset, err := helpers.SymbolToOffset(binaryPath, symbolName)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
