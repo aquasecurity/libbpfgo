@@ -195,6 +195,7 @@ import "C"
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
@@ -239,6 +240,8 @@ const (
 	KretprobeLegacy
 	LSM
 	PerfEvent
+	Uprobe
+	Uretprobe
 )
 
 type BPFLink struct {
@@ -747,6 +750,57 @@ func doAttachKprobe(prog *BPFProg, kp string, isKretprobe bool) (*BPFLink, error
 		eventName: kp,
 	}
 	prog.module.links = append(prog.module.links, bpfLink)
+	return bpfLink, nil
+}
+
+// AttachUprobe attaches the BPFProgram to entry of the symbol in the library or binary at 'path'
+// which can be relative or absolute. A pid can be provided to attach to, or -1 can be specified
+// to attach to all processes
+func (p *BPFProg) AttachUprobe(pid int, path string, offset uint32) (*BPFLink, error) {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return doAttachUprobe(p, false, pid, absPath, offset)
+}
+
+// AttachURetprobe attaches the BPFProgram to exit of the symbol in the library or binary at 'path'
+// which can be relative or absolute. A pid can be provided to attach to, or -1 can be specified
+// to attach to all processes
+func (p *BPFProg) AttachURetprobe(pid int, path string, offset uint32) (*BPFLink, error) {
+
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return doAttachUprobe(p, true, pid, absPath, offset)
+}
+
+func doAttachUprobe(prog *BPFProg, isUretprobe bool, pid int, path string, offset uint32) (*BPFLink, error) {
+	retCBool := C.bool(isUretprobe)
+	pidCint := C.int(pid)
+	pathCString := C.CString(path)
+	offsetCsizet := C.size_t(offset)
+
+	link := C.bpf_program__attach_uprobe(prog.prog, retCBool, pidCint, pathCString, offsetCsizet)
+	C.free(unsafe.Pointer(pathCString))
+	if C.IS_ERR_OR_NULL(unsafe.Pointer(link)) {
+		return nil, errptrError(unsafe.Pointer(link), "failed to attach u(ret)probe to program %s:%d with pid %s, ", path, offset, pid)
+	}
+
+	upType := Uprobe
+	if isUretprobe {
+		upType = Uretprobe
+	}
+
+	bpfLink := &BPFLink{
+		link:      link,
+		prog:      prog,
+		linkType:  upType,
+		eventName: fmt.Sprintf("%s:%d:%s", path, pid, offset),
+	}
 	return bpfLink, nil
 }
 
