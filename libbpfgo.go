@@ -196,6 +196,7 @@ import "C"
 import (
 	"fmt"
 	"path/filepath"
+	"net"
 	"strings"
 	"sync"
 	"syscall"
@@ -1037,4 +1038,144 @@ func (pb *PerfBuffer) poll() error {
 			}
 		}
 	}
+}
+
+type TcAttachPoint uint32
+
+const (
+	BPFTcIngress       TcAttachPoint = C.BPF_TC_INGRESS
+	BPFTcEgress        TcAttachPoint = C.BPF_TC_EGRESS
+	BPFTcIngressEgress TcAttachPoint = C.BPF_TC_INGRESS | C.BPF_TC_EGRESS
+	BPFTcCustom        TcAttachPoint = C.BPF_TC_CUSTOM
+)
+
+type TcFlags uint32
+
+const (
+	BpfTcFReplace TcFlags = C.BPF_TC_F_REPLACE
+)
+
+type TcHook struct {
+	hook *C.struct_bpf_tc_hook
+}
+
+type TcOpts struct {
+	ProgFd   int
+	Flags    TcFlags
+	ProgId   uint
+	Handle   uint
+	Priority uint
+}
+
+func tcOptsToC(tcOpts *TcOpts) *C.struct_bpf_tc_opts {
+	if tcOpts == nil {
+		return nil
+	}
+	opts := C.struct_bpf_tc_opts{}
+	opts.sz = C.sizeof_struct_bpf_tc_opts
+	opts.prog_fd = C.int(tcOpts.ProgFd)
+	opts.flags = C.uint(tcOpts.Flags)
+	opts.prog_id = C.uint(tcOpts.ProgId)
+	opts.handle = C.uint(tcOpts.Handle)
+	opts.priority = C.uint(tcOpts.Priority)
+
+	return &opts
+}
+
+func tcOptsFromC(tcOpts *TcOpts, opts *C.struct_bpf_tc_opts) {
+	if opts == nil {
+		return
+	}
+	tcOpts.ProgFd = int(opts.prog_fd)
+	tcOpts.Flags = TcFlags(opts.flags)
+	tcOpts.ProgId = uint(opts.prog_id)
+	tcOpts.Handle = uint(opts.handle)
+	tcOpts.Priority = uint(opts.priority)
+}
+
+func (m *Module) TcHookInit() *TcHook {
+	hook := C.struct_bpf_tc_hook{}
+	hook.sz = C.sizeof_struct_bpf_tc_hook
+
+	return &TcHook{
+		hook: &hook,
+	}
+}
+
+func (hook *TcHook) SetInterfaceByIndex(ifaceIdx int) {
+	hook.hook.ifindex = C.int(ifaceIdx)
+}
+
+func (hook *TcHook) SetInterfaceByName(ifaceName string) error {
+	iface, err := net.InterfaceByName(ifaceName)
+	if err != nil {
+		return err
+	}
+	hook.hook.ifindex = C.int(iface.Index)
+
+	return nil
+}
+
+func (hook *TcHook) GetInterfaceIndex() int {
+	return int(hook.hook.ifindex)
+}
+
+func (hook *TcHook) SetAttachPoint(attachPoint TcAttachPoint) {
+	hook.hook.attach_point = uint32(attachPoint)
+}
+
+func (hook *TcHook) SetParent(a int, b int) {
+	parent := (((a) << 16) & 0xFFFF0000) | ((b) & 0x0000FFFF)
+	hook.hook.parent = C.uint(parent)
+}
+
+func (hook *TcHook) Create() error {
+	ret := C.bpf_tc_hook_create(hook.hook)
+	if ret < 0 {
+		return syscall.Errno(-ret)
+	}
+
+	return nil
+}
+
+func (hook *TcHook) Destroy() error {
+	ret := C.bpf_tc_hook_destroy(hook.hook)
+	if ret < 0 {
+		return syscall.Errno(-ret)
+	}
+
+	return nil
+}
+
+func (hook *TcHook) Attach(tcOpts *TcOpts) error {
+	opts := tcOptsToC(tcOpts)
+	ret := C.bpf_tc_attach(hook.hook, opts)
+	if ret < 0 {
+		return syscall.Errno(-ret)
+	}
+	tcOptsFromC(tcOpts, opts)
+
+	return nil
+}
+
+func (hook *TcHook) Detach(tcOpts *TcOpts) error {
+	opts := tcOptsToC(tcOpts)
+	ret := C.bpf_tc_detach(hook.hook, opts)
+	if ret < 0 {
+		return syscall.Errno(-ret)
+	}
+	tcOptsFromC(tcOpts, opts)
+
+	return nil
+}
+
+func (hook *TcHook) Query(tcOpts *TcOpts) error {
+	opts := tcOptsToC(tcOpts)
+	ret := C.bpf_tc_query(hook.hook, opts)
+	if ret < 0 {
+		return syscall.Errno(-ret)
+	}
+	tcOptsFromC(tcOpts, opts)
+
+	return nil
 }
