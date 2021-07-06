@@ -195,8 +195,8 @@ import "C"
 
 import (
 	"fmt"
-	"path/filepath"
 	"net"
+	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
@@ -442,21 +442,22 @@ func (b *BPFMap) GetMaxEntries() uint32 {
 
 func GetUnsafePointer(data interface{}) (unsafe.Pointer, error) {
 	var dataPtr unsafe.Pointer
-	if k, isType := data.(int8); isType {
+	switch k := data.(type) {
+	case int8:
 		dataPtr = unsafe.Pointer(&k)
-	} else if k, isType := data.(uint8); isType {
+	case uint8:
 		dataPtr = unsafe.Pointer(&k)
-	} else if k, isType := data.(int32); isType {
+	case int32:
 		dataPtr = unsafe.Pointer(&k)
-	} else if k, isType := data.(uint32); isType {
+	case uint32:
 		dataPtr = unsafe.Pointer(&k)
-	} else if k, isType := data.(int64); isType {
+	case int64:
 		dataPtr = unsafe.Pointer(&k)
-	} else if k, isType := data.(uint64); isType {
+	case uint64:
 		dataPtr = unsafe.Pointer(&k)
-	} else if k, isType := data.([]byte); isType {
+	case []byte:
 		dataPtr = unsafe.Pointer(&k[0])
-	} else {
+	default:
 		return nil, fmt.Errorf("unknown data type %T", data)
 	}
 
@@ -507,7 +508,7 @@ func (b *BPFMap) Update(key, value interface{}) error {
 	}
 	valuePtr, err := GetUnsafePointer(value)
 	if err != nil {
-		return fmt.Errorf("failed to update map %s: unknown value type %T", b.name, key)
+		return fmt.Errorf("failed to update map %s: unknown value type %T", b.name, value)
 	}
 
 	errC := C.bpf_map_update_elem(b.fd, keyPtr, valuePtr, C.BPF_ANY)
