@@ -7,12 +7,12 @@ import (
 
 func Test_LoadAndAttach(t *testing.T) {
 	// load non exisiting file, should fail
-	module, err := NewModuleFromFile("test/foo.bpf.o")
+	module, err := NewModuleFromFile("foo.bpf.o")
 	if err == nil {
 		t.Errorf("NewModuleFromFile returned nil error on non-existing file")
 	}
 
-	module, err = NewModuleFromFile("test/test.bpf.o")
+	module, err = NewModuleFromFile("selftest/build/libbpfgo_test.bpf.o")
 	if err != nil {
 		t.Fatalf("NewModuleFromFile failed: %v", err)
 	}

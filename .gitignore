@@ -1,1 +1,7 @@
-selftest/dist
+output*
+selftest/*/main
+selftest/*/*.o
+selftest/*/*-static
+selftest/*/*-dynamic
+selftest/uprobe/ctest
+selftest/uprobe/gotest
