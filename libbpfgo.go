@@ -472,29 +472,35 @@ func (b *BPFMap) ValueSize() int {
 	return int(C.bpf_map__value_size(b.bpfMap))
 }
 
-func (b *BPFMap) GetValue(key interface{}) ([]byte, error) {
-	keyPtr, err := GetUnsafePointer(key)
-	if err != nil {
-		return nil, fmt.Errorf("failed to lookup value in map %s: unknown key type %T", b.name, key)
-	}
-
+// GetValue takes a pointer to the key which is stored in the map.
+// It returns the associated value as a slice of bytes.
+// All basic types, and structs are supported as keys.
+//
+// NOTE: Slices and arrays are also supported but special care
+// should be taken as to take a reference to the first element
+// in the slice or array instead of the slice/array itself, as to
+// avoid undefined behavior.
+func (b *BPFMap) GetValue(key unsafe.Pointer) ([]byte, error) {
 	value := make([]byte, b.ValueSize())
 	valuePtr := unsafe.Pointer(&value[0])
 
-	errC := C.bpf_map_lookup_elem(b.fd, keyPtr, valuePtr)
+	errC := C.bpf_map_lookup_elem(b.fd, key, valuePtr)
 	if errC != 0 {
 		return nil, fmt.Errorf("failed to lookup value %v in map %s", key, b.name)
 	}
 	return value, nil
 }
 
-func (b *BPFMap) DeleteKey(key interface{}) error {
-	keyPtr, err := GetUnsafePointer(key)
-	if err != nil {
-		return fmt.Errorf("failed to update map %s: unknown key type %T", b.name, key)
-	}
-
-	errC := C.bpf_map_delete_elem(b.fd, keyPtr)
+// DeleteKey takes a pointer to the key which is stored in the map.
+// It removes the key and associated value from the BPFMap.
+// All basic types, and structs are supported as keys.
+//
+// NOTE: Slices and arrays are also supported but special care
+// should be taken as to take a reference to the first element
+// in the slice or array instead of the slice/array itself, as to
+// avoid undefined behavior.
+func (b *BPFMap) DeleteKey(key unsafe.Pointer) error {
+	errC := C.bpf_map_delete_elem(b.fd, key)
 	if errC != 0 {
 		return fmt.Errorf("failed to get lookup key %d from map %s", key, b.name)
 	}
