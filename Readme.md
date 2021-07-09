@@ -15,6 +15,49 @@ libbpfgo uses CGO to interop with libbpf and will expect to be linked with libbp
 1. Install libbpf as a shared object in the system. Libbpf may already be packaged for your distribution and, if not, you can build and install from source. More info [here](https://github.com/libbpf/libbpf).
 1. Embed libbpf into your Go project as a vendored dependency. This means that the libbpf code is statically linked into the resulting binary, and there are no runtime dependencies.  [Tracee](https://github.com/aquasecurity/tracee) takes this approach.
 
+In the next sesssion you will find different ways to build libbpfgo.
+
+## Building
+
+Currently you will find the following GNU Makefile rules:
+
+| Makefile Rule            | Description                       |
+|--------------------------|-----------------------------------|
+| all                      | builds libbpfgo (dynamic)         |
+| clean                    | cleans entire tree                |
+| selftest                 | builds all selftests (static)     |
+| selftest-run             | runs all selftests (static)       |
+
+* libbpf dynamically linked (libbpf from OS)
+
+| Makefile Rule            | Description                       |
+|--------------------------|-----------------------------------|
+| libbpfgo-dynamic         | builds dynamic libbpfgo (libbpf)  |
+| libbpfgo-dynamic-test    | 'go test' with dynamic libbpfgo   |
+| selftest-dynamic         | build tests with dynamic libbpfgo |
+| selftest-dynamic-run     | run tests using dynamic libbpfgo  |
+
+* statically compiled (libbpf submodule)
+
+| Makefile Rule            | Description                       |
+|--------------------------|-----------------------------------|
+| libbpfgo-static          | builds static libbpfgo (libbpf)   |
+| libbpfgo-static-test     | 'go test' with static libbpfgo    |
+| selftest-static          | build tests with static libbpfgo  |
+| selftest-static-run      | run tests using static libbpfgo   |
+
+* examples
+
+```
+$ make libbpfgo-static => libbpfgo statically linked with libbpf
+$ make -C selftest/perfbuffers => single selftest build (static libbpf)
+$ make -C selftest/perfbuffers run-dynamic => single selftest run (dynamic libbpf)
+$ make selftest-static-run => will build & run all static selftests
+```
+
+> Note 01: dynamic builds need your OS to have a *recent enough* libbpf package (and its headers) installed. Sometimes, recent features might require the use of backported OS packages in order for your OS to contain latest *libbpf* features (sometimes required by libbpfgo).
+> Note 02: static builds need `git submodule init` first. Make sure to sync the *libbpf* git submodule before trying to statically compile or test the *libbpfgo* repository.
+
 ## Concepts
 
 libbpfgo tries to make it natural for Go developers to use, by abstracting away C technicalities. For example, it will translate low level return codes into Go `error`, it will organize functionality around Go `struct`, and it will use `channel` as to let you consume events.
