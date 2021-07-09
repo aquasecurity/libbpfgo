@@ -76,11 +76,11 @@ libbpfgo-static-test: libbpfgo-test-bpf-static
 
 vmlinuxh: $(OUTPUT)
 	@if [ ! -f $(BTFFILE) ]; then \
-		echo "kernel does not seem to support BTF"; \
+		echo "ERROR: kernel does not seem to support BTF"; \
 		exit 1; \
 	fi
 	@if [ ! -f $(VMLINUX_H) ]; then \
-		echo "generating $(VMLINUX_H) from $(BTFFILE)"; \
+		echo "INFO: generating $(VMLINUX_H) from $(BTFFILE)"; \
 		$(BPFTOOL) btf dump file $(BTFFILE) format c > $(VMLINUX_H); \
 	fi
 
@@ -101,6 +101,7 @@ SELFTESTS = $(shell find $(SELFTEST) -mindepth 1 -maxdepth 1 -type d ! -name 'co
 define FOREACH
 	SELFTESTERR=0; \
 	for DIR in $(SELFTESTS); do \
+	      echo "INFO: entering $$DIR..."; \
 		$(MAKE) -j8 -C $$DIR $(1) || SELFTESTERR=1; \
 	done; \
 	if [ $$SELFTESTERR -eq 1 ]; then \
