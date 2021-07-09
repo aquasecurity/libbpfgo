@@ -6,6 +6,9 @@ SELFTEST = ./selftest
 CC = gcc
 CLANG = clang
 
+ARCH := $(shell uname -m)
+ARCH := $(subst x86_64,amd64,$(ARCH))
+
 BTFFILE = /sys/kernel/btf/vmlinux
 BPFTOOL = $(shell which bpftool || /bin/false)
 VMLINUX_H = $(abspath $(OUTPUT)/vmlinux.h)
@@ -24,6 +27,7 @@ LDFLAGS =
 
 CGO_CFLAGS_STATIC = "-I$(abspath $(OUTPUT))"
 CGO_LDFLAGS_STATIC = "-lelf -lz $(LIBBPF_OBJ)"
+CGO_EXTLDFLAGS_STATIC = '-w -extldflags "-static"'
 
 CGO_CFGLAGS_DYN = "-I. -I/usr/include/"
 CGO_LDFLAGS_DYN = "-lelf -lz -lbpf"
@@ -48,29 +52,35 @@ libbpfgo-test-bpf-clean:
 
 libbpfgo-dynamic: $(OUTPUT)/libbpf
 	CC=$(CLANG) \
-	   CGO_CFLAGS=$(CGO_CFLAGS_DYN) \
-	   CGO_LDFLAGS=$(CGO_LDFLAGS_DYN) \
-	   go build .
+		CGO_CFLAGS=$(CGO_CFLAGS_DYN) \
+		CGO_LDFLAGS=$(CGO_LDFLAGS_DYN) \
+		go build .
 
 libbpfgo-dynamic-test: libbpfgo-test-bpf-dynamic
 	CC=$(CLANG) \
-	   CGO_CFLAGS=$(CGO_CFLAGS_DYN) \
-	   CGO_LDFLAGS=$(CGO_LDFLAGS_DYN) \
-	   sudo -E go test .
+		CGO_CFLAGS=$(CGO_CFLAGS_DYN) \
+		CGO_LDFLAGS=$(CGO_LDFLAGS_DYN) \
+		sudo -E go test .
 
 # libbpf: static
 
 libbpfgo-static: $(LIBBPF_OBJ) vmlinuxh
 	CC=$(CLANG) \
-	   CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
-	   CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
-	   go build .
+		CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
+		CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
+		GOOS=linux GOARCH=$(ARCH) \
+		go build \
+		-tags netgo -ldflags $(CGO_EXTLDFLAGS_STATIC) \
+		.
 
 libbpfgo-static-test: libbpfgo-test-bpf-static
 	CC=$(CLANG) \
-	    CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
-	    CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
-	    sudo -E go test .
+		CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
+		CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
+		GOOS=linux GOARCH=$(ARCH) \
+		sudo -E -- go test \
+		-tags netgo -ldflags $(CGO_EXTLDFLAGS_STATIC) \
+		.
 
 # vmlinux header file
 

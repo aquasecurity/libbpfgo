@@ -8,11 +8,15 @@ LIBBPF_OBJ = $(abspath $(OUTPUT)/libbpf.a)
 CC = gcc
 CLANG = clang
 
+ARCH := $(shell uname -m)
+ARCH := $(subst x86_64,amd64,$(ARCH))
+
 CFLAGS = -g -O2 -Wall -fpie
 LDFLAGS =
 
 CGO_CFLAGS_STATIC = "-I$(abspath $(OUTPUT))"
 CGO_LDFLAGS_STATIC = "-lelf -lz $(LIBBPF_OBJ)"
+CGO_EXTLDFLAGS_STATIC = '-w -extldflags "-static"'
 
 CGO_CFGLAGS_DYN = "-I. -I/usr/include/"
 CGO_LDFLAGS_DYN = "-lelf -lz -lbpf"
@@ -56,15 +60,18 @@ $(TEST).bpf.o: $(TEST).bpf.c
 
 $(TEST)-static: libbpfgo-static | $(TEST).bpf.o
 	CC=$(CLANG) \
-	   CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
-	   CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
-	   go build -o $(TEST)-static ./$(TEST).go
+		CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
+		CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
+		GOOS=linux GOARCH=$(ARCH) \
+		go build \
+		-tags netgo -ldflags $(CGO_EXTLDFLAGS_STATIC) \
+		-o $(TEST)-static ./$(TEST).go
 
 $(TEST)-dynamic: libbpfgo-dynamic | $(TEST).bpf.o
 	CC=$(CLANG) \
-	   CGO_CFLAGS=$(CGO_CFLAGS_DYN) \
-	   CGO_LDFLAGS=$(CGO_LDFLAGS_DYN) \
-	   go build -o ./$(TEST)-dynamic ./$(TEST).go
+		CGO_CFLAGS=$(CGO_CFLAGS_DYN) \
+		CGO_LDFLAGS=$(CGO_LDFLAGS_DYN) \
+		go build -o ./$(TEST)-dynamic ./$(TEST).go
 
 ## run
 
