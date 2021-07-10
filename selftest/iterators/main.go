@@ -17,6 +17,8 @@ const (
 	checked     uint32 = 2
 )
 
+var one = 1
+
 func main() {
 
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
@@ -37,7 +39,9 @@ func main() {
 	var i uint32
 	for i = 0; i < iteratorMax; i++ {
 		testMap[i] = added
-		err = numbers.Update(i, added)
+		index := unsafe.Pointer(&i)
+		value := unsafe.Pointer(&one)
+		err = numbers.Update(index, value)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(-1)
