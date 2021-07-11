@@ -11,7 +11,7 @@ ARCH := $(subst x86_64,amd64,$(ARCH))
 
 BTFFILE = /sys/kernel/btf/vmlinux
 BPFTOOL = $(shell which bpftool || /bin/false)
-VMLINUX_H = $(abspath $(OUTPUT)/vmlinux.h)
+VMLINUXH = $(OUTPUT)/vmlinux.h
 
 # libbpf
 
@@ -64,7 +64,7 @@ libbpfgo-dynamic-test: libbpfgo-test-bpf-dynamic
 
 # libbpf: static
 
-libbpfgo-static: $(LIBBPF_OBJ) vmlinuxh
+libbpfgo-static: $(VMLINUXH) | $(LIBBPF_OBJ)
 	CC=$(CLANG) \
 		CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
 		CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
@@ -84,14 +84,17 @@ libbpfgo-static-test: libbpfgo-test-bpf-static
 
 # vmlinux header file
 
-vmlinuxh: $(OUTPUT)
+.PHONY: vmlinuxh
+vmlinuxh: $(VMLINUXH)
+
+$(VMLINUXH): $(OUTPUT)
 	@if [ ! -f $(BTFFILE) ]; then \
 		echo "ERROR: kernel does not seem to support BTF"; \
 		exit 1; \
 	fi
-	@if [ ! -f $(VMLINUX_H) ]; then \
-		echo "INFO: generating $(VMLINUX_H) from $(BTFFILE)"; \
-		$(BPFTOOL) btf dump file $(BTFFILE) format c > $(VMLINUX_H); \
+	@if [ ! -f $(VMLINUXH) ]; then \
+		echo "INFO: generating $(VMLINUXH) from $(BTFFILE)"; \
+		$(BPFTOOL) btf dump file $(BTFFILE) format c > $(VMLINUXH); \
 	fi
 
 # static libbpf generation for the git submodule
