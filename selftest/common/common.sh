@@ -107,6 +107,7 @@ execbg() {
 }
 
 waitbg() {
+  echo "waiting for background tasks"
   sleep $_bigtimeout
 }
 

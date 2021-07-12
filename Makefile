@@ -40,7 +40,7 @@ test: libbpfgo-dynamic-test
 
 # libbpfgo test object
 
-libbpfgo-test-bpf-static: libbpfgo-static		# needed for serialization
+libbpfgo-test-bpf-static: libbpfgo-static	# needed for serialization
 	$(MAKE) -C $(SELFTEST)/build
 
 libbpfgo-test-bpf-dynamic: libbpfgo-dynamic	# needed for serialization
@@ -99,6 +99,9 @@ $(VMLINUXH): $(OUTPUT)
 	fi
 
 # static libbpf generation for the git submodule
+
+.PHONY: libbpf-static
+libbpf-static: $(LIBBPF_OBJ)
 
 $(LIBBPF_OBJ): $(LIBBPF_SRC) $(wildcard $(LIBBPF_SRC)/*.[ch]) | $(OUTPUT)/libbpf
 	CC="$(CC)" CFLAGS="$(CFLAGS)" LD_FLAGS="$(LDFLAGS)" \

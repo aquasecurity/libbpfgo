@@ -1,0 +1,3 @@
+#!/bin/bash
+
+nc -l -p 12345 > /dev/null
