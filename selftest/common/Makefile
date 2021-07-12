@@ -8,11 +8,15 @@ LIBBPF_OBJ = $(abspath $(OUTPUT)/libbpf.a)
 CC = gcc
 CLANG = clang
 
+ARCH := $(shell uname -m)
+ARCH := $(subst x86_64,amd64,$(ARCH))
+
 CFLAGS = -g -O2 -Wall -fpie
 LDFLAGS =
 
 CGO_CFLAGS_STATIC = "-I$(abspath $(OUTPUT))"
 CGO_LDFLAGS_STATIC = "-lelf -lz $(LIBBPF_OBJ)"
+CGO_EXTLDFLAGS_STATIC = '-w -extldflags "-static"'
 
 CGO_CFGLAGS_DYN = "-I. -I/usr/include/"
 CGO_LDFLAGS_DYN = "-lelf -lz -lbpf"
@@ -40,41 +44,34 @@ libbpfgo-dynamic:
 vmlinuxh:
 	$(MAKE) -C $(BASEDIR) vmlinuxh
 
-## test (bpf)
+outputdir:
+	$(MAKE) -C $(BASEDIR) outputdir
 
-.PHONY: $(TEST)-bpf
+## test bpf dependency
 
-$(TEST)-bpf: vmlinuxh
-	$(CLANG) $(CFLAGS) -target bpf -I$(OUTPUT) -c $(TEST).bpf.c -o $(TEST).bpf.o
-
-## test deps
-
-DEPS = ctest gotest
-
-.PHONY: ctest
-ctest:
-	@if [ ! -x ctest ]; then \
-		$(CLANG) -o ctest test.c; \
-	fi
-
-.PHONY: gotest
-gotest:
-	@if [ ! -x ctest ]; then \
-		go build -o gotest test.go; \
-	 fi
+$(TEST).bpf.o: $(TEST).bpf.c
+	$(MAKE) -C $(BASEDIR) vmlinuxh
+	$(CLANG) $(CFLAGS) -target bpf -I$(OUTPUT) -c $< -o $@
 
 ## test
 
 .PHONY: $(TEST)-static
 .PHONY: $(TEST)-dynamic
 
-$(TEST)-static: $(TEST)-bpf libbpfgo-static $(DEPS)
-	CC=$(CLANG) CGO_CFLAGS=$(CGO_CFLAGS_STATIC) CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
-	   go build -o $(TEST)-static ./$(TEST).go
+$(TEST)-static: libbpfgo-static | $(TEST).bpf.o
+	CC=$(CLANG) \
+		CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
+		CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
+		GOOS=linux GOARCH=$(ARCH) \
+		go build \
+		-tags netgo -ldflags $(CGO_EXTLDFLAGS_STATIC) \
+		-o $(TEST)-static ./$(TEST).go
 
-$(TEST)-dynamic: $(TEST)-bpf libbpfgo-dynamic $(DEPS)
-	CC=$(CLANG) CGO_CFLAGS=$(CGO_CFLAGS_DYN) CGO_LDFLAGS=$(CGO_LDFLAGS_DYN) \
-	   go build -o ./$(TEST)-dynamic ./$(TEST).go
+$(TEST)-dynamic: libbpfgo-dynamic | $(TEST).bpf.o
+	CC=$(CLANG) \
+		CGO_CFLAGS=$(CGO_CFLAGS_DYN) \
+		CGO_LDFLAGS=$(CGO_LDFLAGS_DYN) \
+		go build -o ./$(TEST)-dynamic ./$(TEST).go
 
 ## run
 
@@ -91,4 +88,4 @@ run-dynamic: $(TEST)-dynamic
 	sudo ./run.sh $(TEST)-dynamic
 
 clean:
-	rm -f *.o $(TEST)-static $(TEST)-dynamic $(DEPS)
+	rm -f *.o *-static *-dynamic

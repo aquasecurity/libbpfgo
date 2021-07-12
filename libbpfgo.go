@@ -801,7 +801,7 @@ func doAttachUprobe(prog *BPFProg, isUretprobe bool, pid int, path string, offse
 	link := C.bpf_program__attach_uprobe(prog.prog, retCBool, pidCint, pathCString, offsetCsizet)
 	C.free(unsafe.Pointer(pathCString))
 	if C.IS_ERR_OR_NULL(unsafe.Pointer(link)) {
-		return nil, errptrError(unsafe.Pointer(link), "failed to attach u(ret)probe to program %s:%d with pid %s, ", path, offset, pid)
+		return nil, errptrError(unsafe.Pointer(link), "failed to attach u(ret)probe to program %s:%d with pid %d, ", path, offset, pid)
 	}
 
 	upType := Uprobe
@@ -813,7 +813,7 @@ func doAttachUprobe(prog *BPFProg, isUretprobe bool, pid int, path string, offse
 		link:      link,
 		prog:      prog,
 		linkType:  upType,
-		eventName: fmt.Sprintf("%s:%d:%s", path, pid, offset),
+		eventName: fmt.Sprintf("%s:%d:%d", path, pid, offset),
 	}
 	return bpfLink, nil
 }

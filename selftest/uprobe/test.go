@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"time"
 )
 
 //go:noinline
@@ -14,6 +15,7 @@ func testFunction() int {
 
 func main() {
 	for {
+		time.Sleep(100 * time.Millisecond);
 		testFunction()
 	}
 }
