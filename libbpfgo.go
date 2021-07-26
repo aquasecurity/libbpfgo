@@ -440,6 +440,33 @@ func (b *BPFMap) GetMaxEntries() uint32 {
 	return uint32(maxEntries)
 }
 
+func (b *BPFMap) GetFd() int {
+	return int(b.fd)
+}
+
+func (b *BPFMap) GetName() string {
+	return b.name
+}
+
+func (b *BPFMap) GetPinPath() string {
+	cs := C.CString(b.name)
+	bpfMap := C.bpf_object__find_map_by_name(b.module.obj, cs)
+	pinPathGo := C.GoString(C.bpf_map__get_pin_path(bpfMap))
+	C.free(unsafe.Pointer(cs))
+	return pinPathGo
+}
+
+func (b *BPFMap) IsPinned() bool {
+	cs := C.CString(b.name)
+	bpfMap := C.bpf_object__find_map_by_name(b.module.obj, cs)
+	isPinned := C.bpf_map__is_pinned(bpfMap)
+	C.free(unsafe.Pointer(cs))
+	if isPinned == C.bool(true) {
+		return true
+	}
+	return false
+}
+
 func GetUnsafePointer(data interface{}) (unsafe.Pointer, error) {
 	var dataPtr unsafe.Pointer
 	switch k := data.(type) {
@@ -601,6 +628,10 @@ func (m *Module) GetProgram(progName string) (*BPFProg, error) {
 
 func (p *BPFProg) GetFd() C.int {
 	return C.bpf_program__fd(p.prog)
+}
+
+func (p *BPFProg) GetName() string {
+	return p.name
 }
 
 // BPFProgType is an enum as defined in https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/bpf.h
