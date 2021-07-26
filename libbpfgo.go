@@ -448,6 +448,10 @@ func (b *BPFMap) GetName() string {
 	return b.name
 }
 
+func (b *BPFMap) GetModule() *Module {
+	return b.module
+}
+
 func (b *BPFMap) GetPinPath() string {
 	cs := C.CString(b.name)
 	bpfMap := C.bpf_object__find_map_by_name(b.module.obj, cs)
@@ -628,6 +632,10 @@ func (m *Module) GetProgram(progName string) (*BPFProg, error) {
 
 func (p *BPFProg) GetFd() C.int {
 	return C.bpf_program__fd(p.prog)
+}
+
+func (p *BPFProg) GetModule() *Module {
+	return p.module
 }
 
 func (p *BPFProg) GetName() string {
