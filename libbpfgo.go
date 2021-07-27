@@ -380,6 +380,7 @@ func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 func (b *BPFMap) Pin(pinPath string) error {
 	path := C.CString(pinPath)
 	errC := C.bpf_map__pin(b.bpfMap, path)
+	C.free(unsafe.Pointer(path))
 	if errC != 0 {
 		return fmt.Errorf("failed to pin map %s to path %s", b.name, pinPath)
 	}
@@ -389,6 +390,7 @@ func (b *BPFMap) Pin(pinPath string) error {
 func (b *BPFMap) Unpin(pinPath string) error {
 	path := C.CString(pinPath)
 	errC := C.bpf_map__unpin(b.bpfMap, path)
+	C.free(unsafe.Pointer(path))
 	if errC != 0 {
 		return fmt.Errorf("failed to unpin map %s from path %s", b.name, pinPath)
 	}
@@ -398,6 +400,7 @@ func (b *BPFMap) Unpin(pinPath string) error {
 func (b *BPFMap) SetPinPath(pinPath string) error {
 	path := C.CString(pinPath)
 	errC := C.bpf_map__set_pin_path(b.bpfMap, path)
+	C.free(unsafe.Pointer(path))
 	if errC != 0 {
 		return fmt.Errorf("failed to set pin for map %s to path %s", b.name, pinPath)
 	}
