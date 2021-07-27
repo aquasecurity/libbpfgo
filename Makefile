@@ -11,6 +11,7 @@ ARCH := $(subst x86_64,amd64,$(ARCH))
 
 BTFFILE = /sys/kernel/btf/vmlinux
 BPFTOOL = $(shell which bpftool || /bin/false)
+GIT = $(shell which git || /bin/false)
 VMLINUXH = $(OUTPUT)/vmlinux.h
 
 # libbpf
@@ -99,13 +100,19 @@ $(VMLINUXH): $(OUTPUT)
 
 # static libbpf generation for the git submodule
 
-$(LIBBPF_OBJ): $(wildcard $(LIBBPF_SRC)/*.[ch]) | $(OUTPUT)/libbpf
+$(LIBBPF_OBJ): $(LIBBPF_SRC) $(wildcard $(LIBBPF_SRC)/*.[ch]) | $(OUTPUT)/libbpf
 	CC="$(CC)" CFLAGS="$(CFLAGS)" LD_FLAGS="$(LDFLAGS)" \
 	   $(MAKE) -C $(LIBBPF_SRC) \
 		BUILD_STATIC_ONLY=1 \
 		OBJDIR=$(LIBBPF_OBJDIR) \
 		DESTDIR=$(LIBBPF_DESTDIR) \
 		INCLUDEDIR= LIBDIR= UAPIDIR= install
+
+$(LIBBPF_SRC):
+ifeq ($(wildcard $@), )
+	echo "INFO: updating submodule 'libbpf'"
+	$(GIT) submodule update --init --recursive
+endif
 
 # selftests
 
