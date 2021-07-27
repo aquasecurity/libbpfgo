@@ -378,11 +378,8 @@ func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 }
 
 func (b *BPFMap) Pin(pinPath string) error {
-	cs := C.CString(b.name)
 	path := C.CString(pinPath)
-	bpfMap := C.bpf_object__find_map_by_name(b.module.obj, cs)
-	errC := C.bpf_map__pin(bpfMap, path)
-	C.free(unsafe.Pointer(cs))
+	errC := C.bpf_map__pin(b.bpfMap, path)
 	if errC != 0 {
 		return fmt.Errorf("failed to pin map %s to path %s", b.name, pinPath)
 	}
@@ -390,11 +387,8 @@ func (b *BPFMap) Pin(pinPath string) error {
 }
 
 func (b *BPFMap) Unpin(pinPath string) error {
-	cs := C.CString(b.name)
 	path := C.CString(pinPath)
-	bpfMap := C.bpf_object__find_map_by_name(b.module.obj, cs)
-	errC := C.bpf_map__unpin(bpfMap, path)
-	C.free(unsafe.Pointer(cs))
+	errC := C.bpf_map__unpin(b.bpfMap, path)
 	if errC != 0 {
 		return fmt.Errorf("failed to unpin map %s from path %s", b.name, pinPath)
 	}
@@ -402,11 +396,8 @@ func (b *BPFMap) Unpin(pinPath string) error {
 }
 
 func (b *BPFMap) SetPinPath(pinPath string) error {
-	cs := C.CString(b.name)
 	path := C.CString(pinPath)
-	bpfMap := C.bpf_object__find_map_by_name(b.module.obj, cs)
-	errC := C.bpf_map__set_pin_path(bpfMap, path)
-	C.free(unsafe.Pointer(cs))
+	errC := C.bpf_map__set_pin_path(b.bpfMap, path)
 	if errC != 0 {
 		return fmt.Errorf("failed to set pin for map %s to path %s", b.name, pinPath)
 	}
@@ -419,10 +410,7 @@ func (b *BPFMap) SetPinPath(pinPath string) error {
 // Note: for ring buffer and perf buffer, maxEntries is the
 // capacity in bytes.
 func (b *BPFMap) Resize(maxEntries uint32) error {
-	cs := C.CString(b.name)
-	bpfMap := C.bpf_object__find_map_by_name(b.module.obj, cs)
-	errC := C.bpf_map__resize(bpfMap, C.uint(maxEntries))
-	C.free(unsafe.Pointer(cs))
+	errC := C.bpf_map__resize(b.bpfMap, C.uint(maxEntries))
 	if errC != 0 {
 		return fmt.Errorf("failed to resize map %s to %v", b.name, maxEntries)
 	}
@@ -433,10 +421,7 @@ func (b *BPFMap) Resize(maxEntries uint32) error {
 // Note: for ring buffer and perf buffer, maxEntries is the
 // capacity in bytes.
 func (b *BPFMap) GetMaxEntries() uint32 {
-	cs := C.CString(b.name)
-	bpfMap := C.bpf_object__find_map_by_name(b.module.obj, cs)
-	maxEntries := C.bpf_map__max_entries(bpfMap)
-	C.free(unsafe.Pointer(cs))
+	maxEntries := C.bpf_map__max_entries(b.bpfMap)
 	return uint32(maxEntries)
 }
 
@@ -453,18 +438,12 @@ func (b *BPFMap) GetModule() *Module {
 }
 
 func (b *BPFMap) GetPinPath() string {
-	cs := C.CString(b.name)
-	bpfMap := C.bpf_object__find_map_by_name(b.module.obj, cs)
-	pinPathGo := C.GoString(C.bpf_map__get_pin_path(bpfMap))
-	C.free(unsafe.Pointer(cs))
+	pinPathGo := C.GoString(C.bpf_map__get_pin_path(b.bpfMap))
 	return pinPathGo
 }
 
 func (b *BPFMap) IsPinned() bool {
-	cs := C.CString(b.name)
-	bpfMap := C.bpf_object__find_map_by_name(b.module.obj, cs)
-	isPinned := C.bpf_map__is_pinned(bpfMap)
-	C.free(unsafe.Pointer(cs))
+	isPinned := C.bpf_map__is_pinned(b.bpfMap)
 	if isPinned == C.bool(true) {
 		return true
 	}
