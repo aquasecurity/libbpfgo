@@ -1,6 +1,6 @@
 output*
-selftest/*/main
 selftest/*/*.o
+selftest/*/*.skel.h
 selftest/*/*-static
 selftest/*/*-dynamic
 selftest/uprobe/ctest
