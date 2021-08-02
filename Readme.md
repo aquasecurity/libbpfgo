@@ -90,9 +90,20 @@ rb.Start()
 e := <-eventsChannel
 ```
 
-Please check our github milestones for an idea of the project roadmap. The general goal is to fully implement/expose libbpf's API in Go as seamlessly as possible.
+## Releases
+
+libbpfgo does not yet have a regular schedule for cutting releases. There has not yet been a major release but API backwards compatibility will be maintained for all releases with the same major release number. Minor releases are cut to incorporate new support for libbpf APIs. Patch releases are cut to incorporate bug fixes.
+
+### Release Versioning Schemes
+
+- __Major releases__ are cut when backwards compatibility is broken or major milestones are completed, such as reaching parity with libbpf's API.
+- __Minor releases__ are cut to incorporate new support for libbpf APIs.
+- __Patch releases__ are cut to incorporate important individual or groupings of bug fixes.
+- __libbpf support numbering__ indicates the _minimum_ required libbpf version that must be linked in order to ensure libbpfgo compatibility. For example, `v0.2.1-libbpf_0.4.0` means that version 0.2.1 of libbpfgo requires v0.4.0 or newer of libbpf.
 
 ## Learn more
+
+Please check our github milestones for an idea of the project roadmap. The general goal is to fully implement/expose libbpf's API in Go as seamlessly as possible.
 
 - [How to Build eBPF Programs with libbpfgo](https://blog.aquasec.com/libbpf-ebpf-programs).
 - [selftests](./selftest) are small program using libbpfgo and might be good usage examples.
