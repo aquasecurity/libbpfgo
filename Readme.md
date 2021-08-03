@@ -4,6 +4,14 @@
 
 ----
 
+* [Installing](#installing)
+* [Building](#building)
+* [Concepts](#concepts)
+* [Example](#example)
+* [Releases](#releases)
+* [Learn more](#learn-more)
+
+
 libbpfgo is a Go library for Linux's [eBPF](https://ebpf.io/) project. It was created for [Tracee](https://github.com/aquasecurity/tracee), our open source Runtime Security, and eBPF tracing tool, written in Go. If you are interested in eBPF and its applications, check out Tracee at Github: [https://github.com/aquasecurity/tracee](https://github.com/aquasecurity/tracee).
 
 libbpfgo is built around [libbpf](https://github.com/libbpf/libbpf) - the standard library for interacting with eBPF programs from userspace - which is a C library maintained in Linux upstream. We have created libbpfgo as a thin Go wrapper around the libbpf project.
@@ -14,8 +22,6 @@ libbpfgo uses CGO to interop with libbpf and will expect to be linked with libbp
 
 1. Install libbpf as a shared object in the system. Libbpf may already be packaged for your distribution and, if not, you can build and install from source. More info [here](https://github.com/libbpf/libbpf).
 1. Embed libbpf into your Go project as a vendored dependency. This means that the libbpf code is statically linked into the resulting binary, and there are no runtime dependencies.  [Tracee](https://github.com/aquasecurity/tracee) takes this approach.
-
-In the next sesssion you will find different ways to build libbpfgo.
 
 ## Building
 
@@ -92,9 +98,7 @@ e := <-eventsChannel
 
 ## Releases
 
-libbpfgo does not yet have a regular schedule for cutting releases. There has not yet been a major release but API backwards compatibility will be maintained for all releases with the same major release number. Minor releases are cut to incorporate new support for libbpf APIs. Patch releases are cut to incorporate bug fixes.
-
-### Release Versioning Schemes
+libbpfgo does not yet have a regular schedule for cutting releases. There has not yet been a major release but API backwards compatibility will be maintained for all releases with the same major release number. Milestones are created when preparing for release.
 
 - __Major releases__ are cut when backwards compatibility is broken or major milestones are completed, such as reaching parity with libbpf's API.
 - __Minor releases__ are cut to incorporate new support for libbpf APIs.
