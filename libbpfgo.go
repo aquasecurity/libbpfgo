@@ -70,7 +70,7 @@ struct perf_buffer * init_perf_buf(int map_fd, int page_cnt, uintptr_t ctx) {
     pb_opts.lost_cb = perfLostCallback;
     pb_opts.ctx = (void*)ctx;
     pb = perf_buffer__new(map_fd, page_cnt, &pb_opts);
-    if (pb < 0) {
+    if (libbpf_get_error(pb)) {
         fprintf(stderr, "Failed to initialize perf buffer!\n");
         return NULL;
     }
