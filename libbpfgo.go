@@ -296,15 +296,32 @@ func errptrError(ptr unsafe.Pointer, format string, args ...interface{}) error {
 	return fmt.Errorf(format+": %v", args...)
 }
 
-func NewModuleFromFile(bpfObjFile string) (*Module, error) {
+func NewModuleFromFile(bpfObjPath string) (*Module, error) {
+	return NewModuleFromFileBtf("", bpfObjPath)
+}
+
+func NewModuleFromFileBtf(btfObjPath string, bpfObjPath string) (*Module, error) {
 	C.set_print_fn()
-	bumpMemlockRlimit()
-	cs := C.CString(bpfObjFile)
-	obj := C.bpf_object__open(cs)
-	C.free(unsafe.Pointer(cs))
-	if C.IS_ERR_OR_NULL(unsafe.Pointer(obj)) {
-		return nil, errptrError(unsafe.Pointer(obj), "failed to open BPF object %s", bpfObjFile)
+	if err := bumpMemlockRlimit(); err != nil {
+		return nil, err
 	}
+	if btfObjPath == "" {
+		btfObjPath = "/sys/kernel/btf/vmlinux"
+	}
+	btfFile := C.CString(btfObjPath)
+	bpfFile := C.CString(bpfObjPath)
+
+	opts := C.struct_bpf_object_open_opts{}
+	opts.sz = C.sizeof_struct_bpf_object_open_opts
+	opts.btf_custom_path = btfFile
+
+	obj := C.bpf_object__open_file(bpfFile, &opts)
+	if C.IS_ERR_OR_NULL(unsafe.Pointer(obj)) {
+		return nil, errptrError(unsafe.Pointer(obj), "failed to open BPF object %s", bpfObjPath)
+	}
+
+	C.free(unsafe.Pointer(bpfFile))
+	C.free(unsafe.Pointer(btfFile))
 
 	return &Module{
 		obj: obj,
@@ -312,17 +329,35 @@ func NewModuleFromFile(bpfObjFile string) (*Module, error) {
 }
 
 func NewModuleFromBuffer(bpfObjBuff []byte, bpfObjName string) (*Module, error) {
+	return NewModuleFromBufferBtf("", bpfObjBuff, bpfObjName)
+}
+
+func NewModuleFromBufferBtf(btfObjPath string, bpfObjBuff []byte, bpfObjName string) (*Module, error) {
 	C.set_print_fn()
-	bumpMemlockRlimit()
-	name := C.CString(bpfObjName)
-	buffSize := C.size_t(len(bpfObjBuff))
-	buffPtr := unsafe.Pointer(C.CBytes(bpfObjBuff))
-	obj := C.bpf_object__open_buffer(buffPtr, buffSize, name)
-	C.free(unsafe.Pointer(name))
-	C.free(unsafe.Pointer(buffPtr))
+	if err := bumpMemlockRlimit(); err != nil {
+		return nil, err
+	}
+	if btfObjPath == "" {
+		btfObjPath = "/sys/kernel/btf/vmlinux"
+	}
+	btfFile := C.CString(btfObjPath)
+	bpfName := C.CString(bpfObjName)
+	bpfBuff := unsafe.Pointer(C.CBytes(bpfObjBuff))
+	bpfBuffSize := C.size_t(len(bpfObjBuff))
+
+	opts := C.struct_bpf_object_open_opts{}
+	opts.object_name = bpfName
+	opts.sz = C.sizeof_struct_bpf_object_open_opts
+	opts.btf_custom_path = btfFile
+
+	obj := C.bpf_object__open_mem(bpfBuff, bpfBuffSize, &opts)
 	if C.IS_ERR_OR_NULL(unsafe.Pointer(obj)) {
 		return nil, errptrError(unsafe.Pointer(obj), "failed to open BPF object %s: %v", bpfObjName, bpfObjBuff[:20])
 	}
+
+	C.free(bpfBuff)
+	C.free(unsafe.Pointer(bpfName))
+	C.free(unsafe.Pointer(btfFile))
 
 	return &Module{
 		obj: obj,
