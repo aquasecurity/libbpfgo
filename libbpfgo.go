@@ -647,8 +647,8 @@ func (m *Module) GetProgram(progName string) (*BPFProg, error) {
 	}, nil
 }
 
-func (p *BPFProg) GetFd() C.int {
-	return C.bpf_program__fd(p.prog)
+func (p *BPFProg) GetFd() int {
+	return int(C.bpf_program__fd(p.prog))
 }
 
 func (p *BPFProg) GetModule() *Module {
