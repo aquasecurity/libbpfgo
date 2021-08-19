@@ -57,7 +57,7 @@ const (
 	CONFIG_BPF_PRELOAD_UMD
 )
 
-var KernelConfigKeyStringToID map[string]uint32 = map[string]uint32{
+var KernelConfigKeyStringToID = map[string]uint32{
 	"CONFIG_BPF":                      CONFIG_BPF,
 	"CONFIG_BPF_SYSCALL":              CONFIG_BPF_SYSCALL,
 	"CONFIG_HAVE_EBPF_JIT":            CONFIG_HAVE_EBPF_JIT,
@@ -98,7 +98,7 @@ var KernelConfigKeyStringToID map[string]uint32 = map[string]uint32{
 	"CONFIG_BPF_PRELOAD_UMD":          CONFIG_BPF_PRELOAD_UMD,
 }
 
-var KernelConfigKeyIDToString map[uint32]string = map[uint32]string{
+var KernelConfigKeyIDToString = map[uint32]string{
 	CONFIG_BPF:                      "CONFIG_BPF",
 	CONFIG_BPF_SYSCALL:              "CONFIG_BPF_SYSCALL",
 	CONFIG_HAVE_EBPF_JIT:            "CONFIG_HAVE_EBPF_JIT",
@@ -147,11 +147,11 @@ type KernelConfig map[uint32]string
 // or
 // /boot/config.gz
 func (k KernelConfig) InitKernelConfig() error {
-
 	x := unix.Utsname{}
 	err := unix.Uname(&x)
+
 	if err != nil {
-		return fmt.Errorf("could not determine uname release: %v", err)
+		return fmt.Errorf("could not determine uname release: %w", err)
 	}
 
 	bootConfigPath := fmt.Sprintf("/boot/config-%s", bytes.Trim(x.Release[:], "\x00"))
@@ -163,7 +163,7 @@ func (k KernelConfig) InitKernelConfig() error {
 
 	err2 := k.getProcGZConfigByPath("/proc/config.gz")
 	if err != nil {
-		return fmt.Errorf("%v %v", err, err2)
+		return fmt.Errorf("%v %w", err, err2)
 	}
 
 	return nil
@@ -174,16 +174,18 @@ func (k KernelConfig) InitKernelConfig() error {
 func (k KernelConfig) GetKernelConfigValue(key uint32) (string, error) {
 	v, exists := k[key]
 	if !exists {
-		return "", errors.New("kernel config value does not exist, it's possible this option is not present in your kernel version or the KernelConfig has not been initialized")
+		return "", errors.New("kernel config value does not exist." +
+			"it is possible this option is not present in your kernel version," +
+			"or the KernelConfig has not been initialized")
 	}
+
 	return v, nil
 }
 
 func (k KernelConfig) getBootConfigByPath(bootConfigPath string) error {
-
 	configFile, err := os.Open(bootConfigPath)
 	if err != nil {
-		return fmt.Errorf("could not open %s: %v", bootConfigPath, err)
+		return fmt.Errorf("could not open %s: %w", bootConfigPath, err)
 	}
 
 	k.readConfigFromScanner(configFile)
@@ -192,10 +194,9 @@ func (k KernelConfig) getBootConfigByPath(bootConfigPath string) error {
 }
 
 func (k KernelConfig) getProcGZConfigByPath(procConfigPath string) error {
-
 	configFile, err := os.Open(procConfigPath)
 	if err != nil {
-		return fmt.Errorf("could not open %s: %v", procConfigPath, err)
+		return fmt.Errorf("could not open %s: %w", procConfigPath, err)
 	}
 
 	return k.getProcGZConfig(configFile)
@@ -208,6 +209,7 @@ func (k KernelConfig) getProcGZConfig(reader io.Reader) error {
 	}
 
 	k.readConfigFromScanner(zreader)
+
 	return nil
 }
 
@@ -219,10 +221,12 @@ func (k KernelConfig) readConfigFromScanner(reader io.Reader) {
 		if len(kv) != 2 {
 			continue
 		}
+
 		configKeyID := KernelConfigKeyStringToID[kv[0]]
 		if configKeyID == 0 {
 			continue
 		}
+
 		k[configKeyID] = kv[1]
 	}
 }

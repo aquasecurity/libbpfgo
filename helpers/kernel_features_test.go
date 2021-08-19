@@ -15,7 +15,7 @@ func TestGetProcGZConfigByPath(t *testing.T) {
 		expectedError  error
 	}{
 		{
-			name:           "non-existant",
+			name:           "non-existent",
 			goldenFilePath: "foobarblahblahblah",
 			expectedMap:    KernelConfig{},
 			expectedError:  errors.New("could not open foobarblahblahblah: open foobarblahblahblah: no such file or directory"),
@@ -42,7 +42,6 @@ func TestGetProcGZConfigByPath(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-
 			var kconfig KernelConfig = make(map[uint32]string)
 			err := kconfig.getProcGZConfigByPath(tt.goldenFilePath)
 			assert.Equal(t, tt.expectedError, err)

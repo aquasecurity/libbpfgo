@@ -15,7 +15,7 @@ func testFunction() int {
 
 func main() {
 	for {
-		time.Sleep(100 * time.Millisecond);
+		time.Sleep(100 * time.Millisecond)
 		testFunction()
 	}
 }

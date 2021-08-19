@@ -297,10 +297,10 @@ func errptrError(ptr unsafe.Pointer, format string, args ...interface{}) error {
 }
 
 func NewModuleFromFile(bpfObjPath string) (*Module, error) {
-	return NewModuleFromFileBtf("", bpfObjPath)
+	return NewModuleFromFileBTF("", bpfObjPath)
 }
 
-func NewModuleFromFileBtf(btfObjPath string, bpfObjPath string) (*Module, error) {
+func NewModuleFromFileBTF(btfObjPath string, bpfObjPath string) (*Module, error) {
 	C.set_print_fn()
 	if err := bumpMemlockRlimit(); err != nil {
 		return nil, err
