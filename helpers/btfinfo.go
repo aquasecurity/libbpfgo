@@ -13,6 +13,7 @@ func fileExists(path string) bool {
 	if _, err := os.Stat(path); err == nil {
 		return true
 	}
+
 	return false
 }
 
@@ -21,29 +22,34 @@ func fileGrepUnique(path string, needle string) string {
 	file, _ := os.Open(path)
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
+
 	for i := 1; scanner.Scan(); i++ {
 		if strings.Contains(scanner.Text(), needle) {
 			return scanner.Text()
 		}
 	}
+
 	return ""
 }
 
 func BTFEnabled() bool {
 	_, err := os.Stat("/sys/kernel/btf/vmlinux")
+
 	return err == nil
 }
 
 // NewBTFInfo creates a BTFInfo object and runs DiscoverDistro()
 // on its creation. It returns nil if no discovery data was
-// avalable. To get specific error from DiscoverDistro method,
+// available. To get specific error from DiscoverDistro method,
 // user should create a BTFInfo struct and call DiscoverDistro
 // by itself.
 func NewBTFInfo() *BTFInfo {
 	btfi := new(BTFInfo)
+
 	if err := btfi.DiscoverDistro(); err != nil {
 		return nil
 	}
+
 	return btfi
 }
 
@@ -52,13 +58,13 @@ func NewBTFInfo() *BTFInfo {
 // but also, in future, manage acquisition & cache of external
 // BTF files to be used by the BPF CO-RE objects.
 type BTFInfo struct {
-	distroId      string
+	distroID      string
 	distroVersion string
 	distroKernel  string
 }
 
-func (btfi *BTFInfo) GetDistroId() string {
-	return btfi.distroId
+func (btfi *BTFInfo) GetDistroID() string {
+	return btfi.distroID
 }
 
 func (btfi *BTFInfo) GetDistroVer() string {
@@ -73,14 +79,14 @@ func (btfi *BTFInfo) GetDistroKernel() string {
 // /etc/os-releases (https://man7.org/linux/man-pages/man5/os-release.5.html) or
 // by interpreting the version out of uname(2) system call.
 func (btfi *BTFInfo) DiscoverDistro() error {
-
 	x := unix.Utsname{}
 	if err := unix.Uname(&x); err != nil {
-		return fmt.Errorf("could not determine uname release: %v", err)
+		return fmt.Errorf("could not determine uname release: %w", err)
 	}
-	ker := string(x.Release[:])
 
+	ker := string(x.Release[:])
 	osrelease := "/etc/os-release"
+
 	if fileExists(osrelease) {
 		id := fileGrepUnique(osrelease, "ID=")
 		id = id[strings.Index(id, "=")+1:]
@@ -88,9 +94,10 @@ func (btfi *BTFInfo) DiscoverDistro() error {
 		ver := fileGrepUnique(osrelease, "VERSION_ID=")
 		ver = ver[strings.Index(ver, "=")+1:]
 		ver = strings.ReplaceAll(ver, "\"", "")
-		btfi.distroId = id
+		btfi.distroID = id
 		btfi.distroVersion = ver
 		btfi.distroKernel = ker
+
 		return nil
 	}
 
@@ -98,17 +105,19 @@ func (btfi *BTFInfo) DiscoverDistro() error {
 	// fedora:      4.18.16-300.fc29
 	// centos:      3.10.0-1160.31.1.el7.centos.x86_64
 	if strings.Contains(ker, "fc") {
-		btfi.distroId = "fedora"
+		btfi.distroID = "fedora"
 		btfi.distroVersion = ker[strings.Index(ker, "fc")+2:]
 		btfi.distroKernel = ker[:strings.Index(ker, ".fc")]
+
 		return nil
 	} else if strings.Contains(ker, "centos") {
-		btfi.distroId = "centos"
+		btfi.distroID = "centos"
 		t := ker
 		t = t[strings.Index(t, "el")+2:]
 		t = t[:strings.Index(t, ".")]
 		btfi.distroVersion = t
 		btfi.distroKernel = ker[:strings.Index(ker, ".el")]
+
 		return nil
 	} // else if may continue...
 

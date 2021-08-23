@@ -193,9 +193,9 @@ func main() {
 	}()
 
 	select {
-	case <- allgood:
+	case <-allgood:
 		okexit()
-	case <- timeout:
+	case <-timeout:
 		errtimeout()
 	}
 }
