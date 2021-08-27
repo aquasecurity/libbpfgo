@@ -2,9 +2,7 @@ package helpers
 
 import (
 	"bufio"
-	"bytes"
 	"compress/gzip"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,11 +11,45 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// These constants are a limited number of the total kernel config options,
-// but are provided because they are most relevant for BPF
-// development.
+// KernelConfigOption is an abstraction of the key in key=value syntax of the kernel config file
+type KernelConfigOption uint32
+
+// KernelConfigOptionValue is an abstraction of the value in key=value syntax of kernel config file
+type KernelConfigOptionValue uint8
+
 const (
-	CONFIG_BPF uint32 = iota + 1
+	UNDEFINED KernelConfigOptionValue = iota
+	BUILTIN
+	MODULE
+	STRING
+	ANY
+)
+
+func (k KernelConfigOption) String() string {
+	return KernelConfigKeyIDToString[k]
+}
+
+func (k KernelConfigOptionValue) String() string {
+	switch k {
+	case UNDEFINED:
+		return "UNDEFINED"
+	case BUILTIN:
+		return "BUILTIN"
+	case MODULE:
+		return "MODULE"
+	case STRING:
+		return "STRING"
+	case ANY:
+		return "ANY"
+	}
+
+	return ""
+}
+
+// These constants are a limited number of the total kernel config options,
+// but are provided because they are most relevant for BPF development.
+const (
+	CONFIG_BPF KernelConfigOption = iota + 1
 	CONFIG_BPF_SYSCALL
 	CONFIG_HAVE_EBPF_JIT
 	CONFIG_BPF_JIT
@@ -57,7 +89,7 @@ const (
 	CONFIG_BPF_PRELOAD_UMD
 )
 
-var KernelConfigKeyStringToID = map[string]uint32{
+var KernelConfigKeyStringToID = map[string]KernelConfigOption{
 	"CONFIG_BPF":                      CONFIG_BPF,
 	"CONFIG_BPF_SYSCALL":              CONFIG_BPF_SYSCALL,
 	"CONFIG_HAVE_EBPF_JIT":            CONFIG_HAVE_EBPF_JIT,
@@ -98,7 +130,7 @@ var KernelConfigKeyStringToID = map[string]uint32{
 	"CONFIG_BPF_PRELOAD_UMD":          CONFIG_BPF_PRELOAD_UMD,
 }
 
-var KernelConfigKeyIDToString = map[uint32]string{
+var KernelConfigKeyIDToString = map[KernelConfigOption]string{
 	CONFIG_BPF:                      "CONFIG_BPF",
 	CONFIG_BPF_SYSCALL:              "CONFIG_BPF_SYSCALL",
 	CONFIG_HAVE_EBPF_JIT:            "CONFIG_HAVE_EBPF_JIT",
@@ -139,53 +171,62 @@ var KernelConfigKeyIDToString = map[uint32]string{
 	CONFIG_BPF_PRELOAD_UMD:          "CONFIG_BPF_PRELOAD_UMD",
 }
 
-type KernelConfig map[uint32]string
+// KernelConfig is a set of kernel configuration options (currently for running OS only)
+type KernelConfig struct {
+	configs map[KernelConfigOption]interface{} // predominantly KernelConfigOptionValue, sometimes string
+	needed  map[KernelConfigOption]interface{}
+}
 
-// InitKernelConfig populates the passed KernelConfig
-// by attempting to read the kernel config into it from:
-// /proc/config-$(uname -r)
-// or
-// /boot/config.gz
-func (k KernelConfig) InitKernelConfig() error {
-	x := unix.Utsname{}
-	err := unix.Uname(&x)
-
-	if err != nil {
-		return fmt.Errorf("could not determine uname release: %w", err)
+// InitKernelConfig inits external KernelConfig object
+func InitKernelConfig() *KernelConfig {
+	config := KernelConfig{
+		configs: make(map[KernelConfigOption]interface{}),
+		needed:  make(map[KernelConfigOption]interface{}),
 	}
-
-	bootConfigPath := fmt.Sprintf("/boot/config-%s", bytes.Trim(x.Release[:], "\x00"))
-
-	err = k.getBootConfigByPath(bootConfigPath)
-	if err == nil {
+	if err := config.initKernelConfig(); err != nil {
 		return nil
 	}
 
-	err2 := k.getProcGZConfigByPath("/proc/config.gz")
-	if err != nil {
-		return fmt.Errorf("%v %w", err, err2)
+	return &config
+}
+
+// initKernelConfig inits internal KernelConfig data by calling appropriate readConfigFromXXX function
+func (k *KernelConfig) initKernelConfig() error {
+	k.configs = make(map[KernelConfigOption]interface{})
+
+	x := unix.Utsname{}
+	if err := unix.Uname(&x); err != nil {
+		return fmt.Errorf("could not determine uname release: %w", err)
+	}
+
+	if err := k.readConfigFromBootConfigRelease(string(x.Release[:])); err != nil {
+		if err2 := k.readConfigFromProcConfigGZ(); err != nil {
+			return err2
+		}
+
+		return err
 	}
 
 	return nil
 }
 
-// GetKernelConfigValue retrieves a value from the kernel config
-// If the config value does not exist an error will be returned
-func (k KernelConfig) GetKernelConfigValue(key uint32) (string, error) {
-	v, exists := k[key]
-	if !exists {
-		return "", errors.New("kernel config value does not exist." +
-			"it is possible this option is not present in your kernel version," +
-			"or the KernelConfig has not been initialized")
+// readConfigFromProcConfigGZ prepares io.Reader for readConfigFromGZScanner (/proc/config.gz)
+func (k *KernelConfig) readConfigFromProcConfigGZ() error {
+	configFile, err := os.Open("/proc/config.gz")
+	if err != nil {
+		return fmt.Errorf("could not open /proc/config.gz: %w", err)
 	}
 
-	return v, nil
+	return k.readConfigFromGZScanner(configFile)
 }
 
-func (k KernelConfig) getBootConfigByPath(bootConfigPath string) error {
-	configFile, err := os.Open(bootConfigPath)
+// readConfigFromScanner prepares io.Reader for readConfigFromScanner (/boot/config-$(uname -r))
+func (k *KernelConfig) readConfigFromBootConfigRelease(release string) error {
+	path := fmt.Sprintf("/boot/config-%s", strings.TrimRight(release, "\x00"))
+
+	configFile, err := os.Open(path)
 	if err != nil {
-		return fmt.Errorf("could not open %s: %w", bootConfigPath, err)
+		return fmt.Errorf("could not open %s: %w", path, err)
 	}
 
 	k.readConfigFromScanner(configFile)
@@ -193,29 +234,9 @@ func (k KernelConfig) getBootConfigByPath(bootConfigPath string) error {
 	return nil
 }
 
-func (k KernelConfig) getProcGZConfigByPath(procConfigPath string) error {
-	configFile, err := os.Open(procConfigPath)
-	if err != nil {
-		return fmt.Errorf("could not open %s: %w", procConfigPath, err)
-	}
-
-	return k.getProcGZConfig(configFile)
-}
-
-func (k KernelConfig) getProcGZConfig(reader io.Reader) error {
-	zreader, err := gzip.NewReader(reader)
-	if err != nil {
-		return err
-	}
-
-	k.readConfigFromScanner(zreader)
-
-	return nil
-}
-
-func (k KernelConfig) readConfigFromScanner(reader io.Reader) {
+// readConfigFromScanner reads all existing KernelConfigOption's and KernelConfigOptionValue's from given io.Reader
+func (k *KernelConfig) readConfigFromScanner(reader io.Reader) {
 	scanner := bufio.NewScanner(reader)
-
 	for scanner.Scan() {
 		kv := strings.Split(scanner.Text(), "=")
 		if len(kv) != 2 {
@@ -226,7 +247,106 @@ func (k KernelConfig) readConfigFromScanner(reader io.Reader) {
 		if configKeyID == 0 {
 			continue
 		}
-
-		k[configKeyID] = kv[1]
+		if strings.Compare(kv[1], "m") == 0 {
+			k.configs[configKeyID] = MODULE
+		} else if strings.Compare(kv[1], "y") == 0 {
+			k.configs[configKeyID] = BUILTIN
+		} else {
+			k.configs[configKeyID] = kv[1]
+		}
 	}
+}
+
+// readConfigFromGZScanner reads all existing KernelConfigOption's and KernelConfigOptionValue's from a gzip io.Reader
+func (k *KernelConfig) readConfigFromGZScanner(reader io.Reader) error {
+	zreader, err := gzip.NewReader(reader)
+	if err != nil {
+		return err
+	}
+
+	k.readConfigFromScanner(zreader)
+
+	return nil
+}
+
+// GetValue will return a KernelConfigOptionValue for a given KernelConfigOption when this is a BUILTIN or a MODULE
+func (k *KernelConfig) GetValue(option KernelConfigOption) (KernelConfigOptionValue, error) {
+	value, ok := k.configs[option].(KernelConfigOptionValue)
+	if ok {
+		return value, nil
+	}
+
+	return UNDEFINED, fmt.Errorf("given option's value (%s) is a string", option)
+}
+
+// GetValueString will return a KernelConfigOptionValue for a given KernelConfigOption when this is actually a string
+func (k *KernelConfig) GetValueString(option KernelConfigOption) (string, error) {
+	value, ok := k.configs[option].(string)
+	if ok {
+		return value, nil
+	}
+
+	return "", fmt.Errorf("given option's value (%s) is not a string", option)
+}
+
+// Exists will return true if a given KernelConfigOption was found in provided KernelConfig
+// and it will return false if the KernelConfigOption is not set (# XXXXX is not set)
+//
+// Examples:
+// kernelConfig.Exists(helpers.CONFIG_BPF)
+// kernelConfig.Exists(helpers.CONFIG_BPF_PRELOAD)
+// kernelConfig.Exists(helpers.CONFIG_HZ)
+//
+func (k *KernelConfig) Exists(option KernelConfigOption) bool {
+	if _, ok := k.configs[option]; ok {
+		return true
+	}
+
+	return false
+}
+
+// ExistsValue will return true if a given KernelConfigOption was found in provided KernelConfig
+// AND its value is the same as the one provided by KernelConfigOptionValue
+func (k *KernelConfig) ExistsValue(option KernelConfigOption, value interface{}) bool {
+	if _, ok := k.configs[option]; ok {
+		switch k.configs[option].(type) {
+		case KernelConfigOptionValue:
+			if value == ANY {
+				return true
+			} else if k.configs[option].(KernelConfigOptionValue) == value {
+				return true
+			}
+		case string:
+			if strings.Compare(k.configs[option].(string), value.(string)) == 0 {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// CheckMissing returns an array of KernelConfigOption's that were added to KernelConfig as needed but couldn't be
+// found. It returns an empty array if nothing is missing.
+func (k *KernelConfig) CheckMissing() []KernelConfigOption {
+	missing := make([]KernelConfigOption, 0)
+
+	for key, value := range k.needed {
+		if !k.ExistsValue(key, value) {
+			missing = append(missing, key)
+		}
+	}
+
+	return missing
+}
+
+// AddNeeded adds a KernelConfigOption and its value, if needed, as required for further checks with CheckMissing
+//
+// Examples:
+// kernelConfig.AddNeeded(helpers.CONFIG_BPF, helpers.ANY)
+// kernelConfig.AddNeeded(helpers.CONFIG_BPF_PRELOAD, helpers.ANY)
+// kernelConfig.AddNeeded(helpers.CONFIG_HZ, "250")
+//
+func (k *KernelConfig) AddNeeded(option KernelConfigOption, value interface{}) {
+	k.needed[option] = value
 }
