@@ -305,7 +305,7 @@ func (k *KernelConfig) Exists(option KernelConfigOption) bool {
 	return false
 }
 
-// Exists will return true if a given KernelConfigOption was found in provided KernelConfig
+// ExistsValue will return true if a given KernelConfigOption was found in provided KernelConfig
 // AND its value is the same as the one provided by KernelConfigOptionValue
 func (k *KernelConfig) ExistsValue(option KernelConfigOption, value interface{}) bool {
 	if _, ok := k.configs[option]; ok {
