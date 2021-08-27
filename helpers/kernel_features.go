@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"fmt"
 	"io"
@@ -178,64 +179,77 @@ type KernelConfig struct {
 }
 
 // InitKernelConfig inits external KernelConfig object
-func InitKernelConfig() *KernelConfig {
-	config := KernelConfig{
-		configs: make(map[KernelConfigOption]interface{}),
-		needed:  make(map[KernelConfigOption]interface{}),
-	}
-	if err := config.initKernelConfig(); err != nil {
-		return nil
+func InitKernelConfig() (*KernelConfig, error) {
+	x := unix.Utsname{}
+	if err := unix.Uname(&x); err != nil {
+		return nil, fmt.Errorf("could not get utsname")
 	}
 
-	return &config
+	releaseVersion := bytes.TrimRight(x.Release[:], "\x00")
+	releaseFilePath := fmt.Sprintf("/boot/config-%s", releaseVersion)
+
+	config := KernelConfig{}
+
+	if err1 := config.initKernelConfig(releaseFilePath); err1 != nil {
+		if err2 := config.initKernelConfig("/proc/config.gz"); err2 != nil {
+			return nil, err2
+		}
+
+		return nil, err1
+	}
+
+	return &config, nil
 }
 
 // initKernelConfig inits internal KernelConfig data by calling appropriate readConfigFromXXX function
-func (k *KernelConfig) initKernelConfig() error {
-	k.configs = make(map[KernelConfigOption]interface{})
+func (k *KernelConfig) initKernelConfig(configFilePath string) error {
+	var err error
+	var file *os.File
 
-	x := unix.Utsname{}
-	if err := unix.Uname(&x); err != nil {
-		return fmt.Errorf("could not determine uname release: %w", err)
+	if file, err = os.Open(configFilePath); err != nil {
+		return fmt.Errorf("could not open %v: %w", configFilePath, err)
 	}
+	defer file.Close()
 
-	if err := k.readConfigFromBootConfigRelease(string(x.Release[:])); err != nil {
-		if err2 := k.readConfigFromProcConfigGZ(); err != nil {
-			return err2
-		}
-
+	head := make([]byte, 2)
+	if _, err = file.Read(head); err != nil {
 		return err
 	}
+
+	// check if its a gziped file
+	if head[0] == 0x1f && head[1] == 0x8b {
+		return k.readConfigFromProcConfigGZ(configFilePath)
+	}
+
+	// assume it is a text file
+	return k.readConfigFromBootConfigRelease(configFilePath)
+}
+
+// readConfigFromBootConfigRelease prepares io.Reader (/boot/config-$(uname -r)) for readConfigFromScanner
+func (k *KernelConfig) readConfigFromBootConfigRelease(filePath string) error {
+	file, _ := os.Open(filePath) // already checked
+	k.readConfigFromScanner(file)
+	file.Close()
 
 	return nil
 }
 
-// readConfigFromProcConfigGZ prepares io.Reader for readConfigFromGZScanner (/proc/config.gz)
-func (k *KernelConfig) readConfigFromProcConfigGZ() error {
-	configFile, err := os.Open("/proc/config.gz")
-	if err != nil {
-		return fmt.Errorf("could not open /proc/config.gz: %w", err)
-	}
-
-	return k.readConfigFromGZScanner(configFile)
-}
-
-// readConfigFromScanner prepares io.Reader for readConfigFromScanner (/boot/config-$(uname -r))
-func (k *KernelConfig) readConfigFromBootConfigRelease(release string) error {
-	path := fmt.Sprintf("/boot/config-%s", strings.TrimRight(release, "\x00"))
-
-	configFile, err := os.Open(path)
-	if err != nil {
-		return fmt.Errorf("could not open %s: %w", path, err)
-	}
-
-	k.readConfigFromScanner(configFile)
+// readConfigFromProcConfigGZ prepares gziped io.Reader (/proc/config.gz) for readConfigFromScanner
+func (k *KernelConfig) readConfigFromProcConfigGZ(filePath string) error {
+	file, _ := os.Open(filePath) // already checked
+	zreader, _ := gzip.NewReader(file)
+	k.readConfigFromScanner(zreader)
+	zreader.Close()
+	file.Close()
 
 	return nil
 }
 
 // readConfigFromScanner reads all existing KernelConfigOption's and KernelConfigOptionValue's from given io.Reader
 func (k *KernelConfig) readConfigFromScanner(reader io.Reader) {
+	k.configs = make(map[KernelConfigOption]interface{})
+	k.needed = make(map[KernelConfigOption]interface{})
+
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		kv := strings.Split(scanner.Text(), "=")
@@ -257,18 +271,6 @@ func (k *KernelConfig) readConfigFromScanner(reader io.Reader) {
 	}
 }
 
-// readConfigFromGZScanner reads all existing KernelConfigOption's and KernelConfigOptionValue's from a gzip io.Reader
-func (k *KernelConfig) readConfigFromGZScanner(reader io.Reader) error {
-	zreader, err := gzip.NewReader(reader)
-	if err != nil {
-		return err
-	}
-
-	k.readConfigFromScanner(zreader)
-
-	return nil
-}
-
 // GetValue will return a KernelConfigOptionValue for a given KernelConfigOption when this is a BUILTIN or a MODULE
 func (k *KernelConfig) GetValue(option KernelConfigOption) (KernelConfigOptionValue, error) {
 	value, ok := k.configs[option].(KernelConfigOptionValue)
@@ -276,7 +278,7 @@ func (k *KernelConfig) GetValue(option KernelConfigOption) (KernelConfigOptionVa
 		return value, nil
 	}
 
-	return UNDEFINED, fmt.Errorf("given option's value (%s) is a string", option)
+	return UNDEFINED, fmt.Errorf("given option's value (%s) is undefined", option)
 }
 
 // GetValueString will return a KernelConfigOptionValue for a given KernelConfigOption when this is actually a string
@@ -308,8 +310,8 @@ func (k *KernelConfig) Exists(option KernelConfigOption) bool {
 // ExistsValue will return true if a given KernelConfigOption was found in provided KernelConfig
 // AND its value is the same as the one provided by KernelConfigOptionValue
 func (k *KernelConfig) ExistsValue(option KernelConfigOption, value interface{}) bool {
-	if _, ok := k.configs[option]; ok {
-		switch k.configs[option].(type) {
+	if cfg, ok := k.configs[option]; ok {
+		switch cfg.(type) {
 		case KernelConfigOptionValue:
 			if value == ANY {
 				return true
@@ -348,5 +350,7 @@ func (k *KernelConfig) CheckMissing() []KernelConfigOption {
 // kernelConfig.AddNeeded(helpers.CONFIG_HZ, "250")
 //
 func (k *KernelConfig) AddNeeded(option KernelConfigOption, value interface{}) {
-	k.needed[option] = value
+	if _, ok := KernelConfigKeyIDToString[option]; ok {
+		k.needed[option] = value
+	}
 }
