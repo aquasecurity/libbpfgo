@@ -45,6 +45,9 @@ func BTFEnabled() bool {
 // by itself.
 func NewBTFInfo() *BTFInfo {
 	btfi := new(BTFInfo)
+	if btfi == nil {
+		return nil
+	}
 
 	if err := btfi.DiscoverDistro(); err != nil {
 		return nil
