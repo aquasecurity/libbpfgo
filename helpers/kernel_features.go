@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/sys/unix"
@@ -180,6 +181,18 @@ type KernelConfig struct {
 
 // InitKernelConfig inits external KernelConfig object
 func InitKernelConfig() (*KernelConfig, error) {
+	config := KernelConfig{}
+
+	// fastpath: check config.gz in procfs first
+	if _, err1 := os.Stat("/proc/config.gz"); err1 == nil {
+		if err2 := config.initKernelConfig("/proc/config.gz"); err2 != nil {
+			return nil, err2
+		}
+
+		return &config, nil
+	} // ignore if /proc/config.gz does not exist
+
+	// slowerpath: /boot/$(uname -r)
 	x := unix.Utsname{}
 	if err := unix.Uname(&x); err != nil {
 		return nil, fmt.Errorf("could not get utsname")
@@ -188,14 +201,8 @@ func InitKernelConfig() (*KernelConfig, error) {
 	releaseVersion := bytes.TrimRight(x.Release[:], "\x00")
 	releaseFilePath := fmt.Sprintf("/boot/config-%s", releaseVersion)
 
-	config := KernelConfig{}
-
-	if err1 := config.initKernelConfig(releaseFilePath); err1 != nil {
-		if err2 := config.initKernelConfig("/proc/config.gz"); err2 != nil {
-			return nil, err2
-		}
-
-		return nil, err1
+	if err := config.initKernelConfig(releaseFilePath); err != nil {
+		return nil, err
 	}
 
 	return &config, nil
@@ -203,26 +210,15 @@ func InitKernelConfig() (*KernelConfig, error) {
 
 // initKernelConfig inits internal KernelConfig data by calling appropriate readConfigFromXXX function
 func (k *KernelConfig) initKernelConfig(configFilePath string) error {
-	var err error
-	var file *os.File
-
-	if file, err = os.Open(configFilePath); err != nil {
-		return fmt.Errorf("could not open %v: %w", configFilePath, err)
-	}
-	defer file.Close()
-
-	head := make([]byte, 2)
-	if _, err = file.Read(head); err != nil {
-		return err
+	if _, err := os.Stat(configFilePath); err != nil {
+		return fmt.Errorf("could not read %v: %w", configFilePath, err)
 	}
 
-	// check if its a gziped file
-	if head[0] == 0x1f && head[1] == 0x8b {
+	if strings.Compare(filepath.Ext(configFilePath), ".gz") == 0 {
 		return k.readConfigFromProcConfigGZ(configFilePath)
 	}
 
-	// assume it is a text file
-	return k.readConfigFromBootConfigRelease(configFilePath)
+	return k.readConfigFromBootConfigRelease(configFilePath) // assume it is a txt file by default
 }
 
 // readConfigFromBootConfigRelease prepares io.Reader (/boot/config-$(uname -r)) for readConfigFromScanner
