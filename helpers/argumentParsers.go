@@ -696,8 +696,8 @@ func ParseKernelReadFileId(id int32) (string, error) {
 			7: "security-policy",
 			8: "x509-certificate",
 		}
-	} else if (major == 5 && minor == 8 && subMinor == 18) || (major == 5 && minor < 7) || major < 5 {
-		// kernel version: <5.7 || ==5.8.18
+	} else if ((major == 5 && minor == 8 && subMinor == 18) || (major == 5 && minor < 7) || major < 5) && ((major == 4 && minor >= 18) || major == 5) {
+		// kernel version: ==5.8.18 || (<5.7 && >=4.18)
 		kernelReadFileIdStrs = map[int32]string{
 			0: "unknown",
 			1: "firmware",
