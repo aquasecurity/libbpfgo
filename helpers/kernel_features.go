@@ -175,17 +175,33 @@ var KernelConfigKeyIDToString = map[KernelConfigOption]string{
 
 // KernelConfig is a set of kernel configuration options (currently for running OS only)
 type KernelConfig struct {
-	configs map[KernelConfigOption]interface{} // predominantly KernelConfigOptionValue, sometimes string
-	needed  map[KernelConfigOption]interface{}
+	configs         map[KernelConfigOption]interface{} // predominantly KernelConfigOptionValue, sometimes string
+	needed          map[KernelConfigOption]interface{}
+	KConfigFilePath string
 }
 
 // InitKernelConfig inits external KernelConfig object
-func InitKernelConfig() (*KernelConfig, error) {
+func InitKernelConfig(OSKConfigFilePath string) (*KernelConfig, error) {
 	config := KernelConfig{}
 
+	// special case: user provided kconfig file (it MUST exist)
+	if len(OSKConfigFilePath) > 2 {
+		if _, err := os.Stat(OSKConfigFilePath); err != nil {
+			return nil, err
+		}
+		config.KConfigFilePath = OSKConfigFilePath // user might need to know used KConfig file in order to override kconfig for libbpf (example)
+		if err := config.initKernelConfig(OSKConfigFilePath); err != nil {
+			return nil, err
+		}
+
+		return &config, nil
+	}
+
 	// fastpath: check config.gz in procfs first
-	if _, err1 := os.Stat("/proc/config.gz"); err1 == nil {
-		if err2 := config.initKernelConfig("/proc/config.gz"); err2 != nil {
+	configGZ := "/proc/config.gz"
+	if _, err1 := os.Stat(configGZ); err1 == nil {
+		config.KConfigFilePath = configGZ // same thing here
+		if err2 := config.initKernelConfig(configGZ); err2 != nil {
 			return nil, err2
 		}
 
@@ -200,6 +216,7 @@ func InitKernelConfig() (*KernelConfig, error) {
 
 	releaseVersion := bytes.TrimRight(x.Release[:], "\x00")
 	releaseFilePath := fmt.Sprintf("/boot/config-%s", releaseVersion)
+	config.KConfigFilePath = releaseFilePath // and here
 
 	if err := config.initKernelConfig(releaseFilePath); err != nil {
 		return nil, err
