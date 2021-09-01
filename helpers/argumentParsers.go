@@ -635,9 +635,7 @@ func UnameRelease() string {
 		buf[i] = byte(b)
 	}
 	ver := string(buf[:])
-	if i := strings.Index(ver, "\x00"); i != -1 {
-		ver = ver[:i]
-	}
+	ver = strings.Trim(ver, "\x00")
 	return ver
 }
 
