@@ -2,9 +2,11 @@ package helpers
 
 import (
 	"encoding/binary"
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
+	"syscall"
 )
 
 // ParseInodeMode parses the `mode` bitmask argument of the `mknod` syscall
@@ -620,4 +622,96 @@ func ParseBPFCmd(cmd int32) string {
 	}
 
 	return res
+}
+
+// UnameRelease gets the version string of the current running kernel
+func UnameRelease() string {
+	var uname syscall.Utsname
+	if err := syscall.Uname(&uname); err != nil {
+		return ""
+	}
+	var buf [65]byte
+	for i, b := range uname.Release {
+		buf[i] = byte(b)
+	}
+	ver := string(buf[:])
+	if i := strings.Index(ver, "\x00"); i != -1 {
+		ver = ver[:i]
+	}
+	return ver
+}
+
+func ParseKernelReadFileId(id int32) (string, error) {
+
+	kernelVersion := UnameRelease()
+	if kernelVersion == "" {
+		return kernelVersion, fmt.Errorf("empty kernel version returned by uname")
+	}
+
+	verSplit := strings.Split(kernelVersion, ".")
+	if len(verSplit) < 2 {
+		return "", fmt.Errorf("invalid version returned by uname")
+	}
+	major, err := strconv.Atoi(verSplit[0])
+	if err != nil {
+		return "", fmt.Errorf("invalid major number: %s", verSplit[0])
+	}
+	minor, err := strconv.Atoi(verSplit[1])
+	if err != nil {
+		return "", fmt.Errorf("invalid minor number: %s", verSplit[1])
+	}
+
+	subMinor := 0
+	if len(verSplit) == 3 {
+		subVerSplit := strings.Split(verSplit[2], "-")
+		subMinor, err = strconv.Atoi(subVerSplit[0])
+		if err != nil {
+			return "", fmt.Errorf("invalid sub-minor number: %s", verSplit[2])
+		}
+	}
+
+	var kernelReadFileIdStrs map[int32]string
+
+	if major >= 5 && ((minor == 9 && subMinor >= 3) || (minor > 9)) {
+		// kernel version: >=5.9.3
+		kernelReadFileIdStrs = map[int32]string{
+			0: "unknown",
+			1: "firmware",
+			2: "kernel-module",
+			3: "kexec-image",
+			4: "kexec-initramfs",
+			5: "security-policy",
+			6: "x509-certificate",
+		}
+	} else if major == 5 && (minor == 9 && subMinor <= 2) || (minor == 8 && subMinor <= 17) || (minor == 7) {
+		// kernel version: >=5.7 && <=5.9.2 && !=5.8.18
+		kernelReadFileIdStrs = map[int32]string{
+			0: "unknown",
+			1: "firmware",
+			2: "firmware",
+			3: "firmware",
+			4: "kernel-module",
+			5: "kexec-image",
+			6: "kexec-initramfs",
+			7: "security-policy",
+			8: "x509-certificate",
+		}
+	} else if (major == 5 && minor == 8 && subMinor == 18) || (major == 5 && minor < 7) || major < 5 {
+		// kernel version: <5.7 || ==5.8.18
+		kernelReadFileIdStrs = map[int32]string{
+			0: "unknown",
+			1: "firmware",
+			2: "firmware",
+			3: "kernel-module",
+			4: "kexec-image",
+			5: "kexec-initramfs",
+			6: "security-policy",
+			7: "x509-certificate",
+		}
+	} else {
+		return "", fmt.Errorf("unhandled kernel version: %s", kernelVersion)
+	}
+
+	kernelReadFileIdStr, _ := kernelReadFileIdStrs[id]
+	return kernelReadFileIdStr, nil
 }
