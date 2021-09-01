@@ -639,6 +639,8 @@ func UnameRelease() string {
 	return ver
 }
 
+// ParseKernelReadFileId get an id of type enum kernel_read_file_id. this enum specifies what type of file is being
+// loaded into the kernel. see: https://elixir.bootlin.com/linux/v5.14/source/include/linux/kernel_read_file.h#L22
 func ParseKernelReadFileId(id int32) (string, error) {
 
 	kernelVersion := UnameRelease()
