@@ -2,15 +2,12 @@ package helpers
 
 import (
 	"bufio"
-	"bytes"
 	"compress/gzip"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"golang.org/x/sys/unix"
 )
 
 // KernelConfigOption is an abstraction of the key in key=value syntax of the kernel config file
@@ -209,12 +206,11 @@ func InitKernelConfig(OSKConfigFilePath string) (*KernelConfig, error) {
 	} // ignore if /proc/config.gz does not exist
 
 	// slowerpath: /boot/$(uname -r)
-	x := unix.Utsname{}
-	if err := unix.Uname(&x); err != nil {
-		return nil, fmt.Errorf("could not get utsname")
-	}
 
-	releaseVersion := bytes.TrimRight(x.Release[:], "\x00")
+	releaseVersion, err := UnameRelease()
+	if err != nil {
+		return nil, err
+	}
 	releaseFilePath := fmt.Sprintf("/boot/config-%s", releaseVersion)
 	config.KConfigFilePath = releaseFilePath // and here
 
