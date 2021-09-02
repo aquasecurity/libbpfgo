@@ -6,13 +6,12 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"syscall"
 )
 
 type OSReleaseID uint32
 
 func (o OSReleaseID) String() string {
-	return OSReleaseIDToString[o]
+	return osReleaseIDToString[o]
 }
 
 const (
@@ -25,8 +24,8 @@ const (
 	ALMA
 )
 
-// StringToOSReleaseID is a map of supported distributions
-var StringToOSReleaseID = map[string]OSReleaseID{
+// stringToOSReleaseID is a map of supported distributions
+var stringToOSReleaseID = map[string]OSReleaseID{
 	"ubuntu": UBUNTU,
 	"fedora": FEDORA,
 	"arch":   ARCH,
@@ -36,8 +35,8 @@ var StringToOSReleaseID = map[string]OSReleaseID{
 	"alma":   ALMA,
 }
 
-// OSReleaseIDToString is a map of supported distributions
-var OSReleaseIDToString = map[OSReleaseID]string{
+// osReleaseIDToString is a map of supported distributions
+var osReleaseIDToString = map[OSReleaseID]string{
 	UBUNTU: "ubuntu",
 	FEDORA: "fedora",
 	ARCH:   "arch",
@@ -48,7 +47,7 @@ var OSReleaseIDToString = map[OSReleaseID]string{
 }
 
 const (
-	OS_NAME OSReleaseField = iota + 0
+	OS_NAME osReleaseField = iota + 0
 	OS_ID
 	OS_ID_LIKE
 	OS_PRETTY_NAME
@@ -63,14 +62,14 @@ const (
 	OS_KERNEL_RELEASE // not part of default os-release, but we can use it here to facilitate things
 )
 
-type OSReleaseField uint32
+type osReleaseField uint32
 
-func (o OSReleaseField) String() string {
-	return OSReleaseFieldToString[o]
+func (o osReleaseField) String() string {
+	return osReleaseFieldToString[o]
 }
 
 // StringToOSReleaseField is a map of os-release file fields
-var StringToOSReleaseField = map[string]OSReleaseField{
+var stringToOSReleaseField = map[string]osReleaseField{
 	"NAME":             OS_NAME,
 	"ID":               OS_ID,
 	"ID_LIKE":          OS_ID_LIKE,
@@ -87,7 +86,7 @@ var StringToOSReleaseField = map[string]OSReleaseField{
 }
 
 // OSReleaseFieldToString is a map of os-release file fields
-var OSReleaseFieldToString = map[OSReleaseField]string{
+var osReleaseFieldToString = map[osReleaseField]string{
 	OS_NAME:             "NAME",
 	OS_ID:               "ID",
 	OS_ID_LIKE:          "ID_LIKE",
@@ -139,24 +138,6 @@ func CompareOSBaseKernelRelease(base, given string) int {
 	return 0 // equal
 }
 
-// UnameRelease gets the version string of the current running kernel
-func UnameRelease() (string, error) {
-	var uname syscall.Utsname
-	if err := syscall.Uname(&uname); err != nil {
-		return "", fmt.Errorf("could not get utsname")
-	}
-
-	var buf [65]byte
-	for i, b := range uname.Release {
-		buf[i] = byte(b)
-	}
-
-	ver := string(buf[:])
-	ver = strings.Trim(ver, "\x00")
-
-	return ver, nil
-}
-
 // OSBTFEnabled checks if kernel has embedded BTF vmlinux file
 func OSBTFEnabled() bool {
 	_, err := os.Stat("/sys/kernel/btf/vmlinux") // TODO: accept a KernelConfig param and check for CONFIG_DEBUG_INFO_BTF=y, or similar
@@ -170,7 +151,7 @@ func GetOSInfo() (*OSInfo, error) {
 	var err error
 
 	if info.OSReleaseInfo == nil {
-		info.OSReleaseInfo = make(map[OSReleaseField]string)
+		info.OSReleaseInfo = make(map[osReleaseField]string)
 	}
 
 	info.OSReleaseInfo[OS_KERNEL_RELEASE], err = UnameRelease()
@@ -199,7 +180,7 @@ func GetOSInfo() (*OSInfo, error) {
 // 2) if OSInfo.OSRelease == helpers.UBUNTU => {} will allow to run code in specific distros
 //
 type OSInfo struct {
-	OSReleaseInfo     map[OSReleaseField]string
+	OSReleaseInfo     map[osReleaseField]string
 	OSRelease         OSReleaseID
 	OSReleaseFilePath string
 }
@@ -236,13 +217,13 @@ func (btfi *OSInfo) discoverOSDistro() error {
 		if len(val) != 2 {
 			continue
 		}
-		keyID := StringToOSReleaseField[val[0]]
+		keyID := stringToOSReleaseField[val[0]]
 		if keyID == 0 { // could not find KEY= from os-release in consts
 			continue
 		}
 		btfi.OSReleaseInfo[keyID] = val[1]
 		if keyID == OS_ID {
-			btfi.OSRelease = StringToOSReleaseID[strings.ToLower(val[1])]
+			btfi.OSRelease = stringToOSReleaseID[strings.ToLower(val[1])]
 		}
 	}
 
