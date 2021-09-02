@@ -178,16 +178,20 @@ type KernelConfig struct {
 }
 
 // InitKernelConfig inits external KernelConfig object
-func InitKernelConfig(OSKConfigFilePath string) (*KernelConfig, error) {
+func InitKernelConfig() (*KernelConfig, error) {
 	config := KernelConfig{}
 
 	// special case: user provided kconfig file (it MUST exist)
-	if len(OSKConfigFilePath) > 2 {
-		if _, err := os.Stat(OSKConfigFilePath); err != nil {
+	osKConfigFilePath, err := checkEnvPath("LIBBPFGO_KCONFIG_FILE") // override /proc/config.gz or /boot/config-$(uname -r) if needed (containers)
+	if err != nil {
+		return nil, err
+	}
+	if len(osKConfigFilePath) > 2 {
+		if _, err := os.Stat(osKConfigFilePath); err != nil {
 			return nil, err
 		}
-		config.KConfigFilePath = OSKConfigFilePath // user might need to know used KConfig file in order to override kconfig for libbpf (example)
-		if err := config.initKernelConfig(OSKConfigFilePath); err != nil {
+		config.KConfigFilePath = osKConfigFilePath // user might need to know used KConfig file in order to override kconfig for libbpf (example)
+		if err := config.initKernelConfig(osKConfigFilePath); err != nil {
 			return nil, err
 		}
 
@@ -206,14 +210,12 @@ func InitKernelConfig(OSKConfigFilePath string) (*KernelConfig, error) {
 	} // ignore if /proc/config.gz does not exist
 
 	// slowerpath: /boot/$(uname -r)
-
 	releaseVersion, err := UnameRelease()
 	if err != nil {
 		return nil, err
 	}
 	releaseFilePath := fmt.Sprintf("/boot/config-%s", releaseVersion)
 	config.KConfigFilePath = releaseFilePath // and here
-
 	if err := config.initKernelConfig(releaseFilePath); err != nil {
 		return nil, err
 	}
