@@ -252,6 +252,14 @@ type BPFLink struct {
 	eventName string
 }
 
+func (l *BPFLink) Destroy() error {
+	ret := C.bpf_link__destroy(l.link)
+	if ret < 0 {
+		return syscall.Errno(-ret)
+	}
+	return nil
+}
+
 type PerfBuffer struct {
 	pb         *C.struct_perf_buffer
 	bpfMap     *BPFMap
