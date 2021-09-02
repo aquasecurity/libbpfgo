@@ -159,30 +159,34 @@ func UnameRelease() (string, error) {
 
 // OSBTFEnabled checks if kernel has embedded BTF vmlinux file
 func OSBTFEnabled() bool {
-	_, err := os.Stat("/sys/kernel/btf/vmlinux")
+	_, err := os.Stat("/sys/kernel/btf/vmlinux") // TODO: accept a KernelConfig param and check for CONFIG_DEBUG_INFO_BTF=y, or similar
 
 	return err == nil
 }
 
-// NewOSInfo creates a OSInfo object and runs DiscoverDistro() on its creation
-// This is a more complete approach than NewOSInfoRelease only
-func NewOSInfo(releaseFilePath string) (*OSInfo, error) {
+// GetOSInfo creates a OSInfo object and runs discoverOSDistro() on its creation
+func GetOSInfo() (*OSInfo, error) {
 	info := OSInfo{}
+	var err error
 
-	if err := info.DiscoverDistro(releaseFilePath); err != nil {
-		return nil, err
+	if info.OSReleaseInfo == nil {
+		info.OSReleaseInfo = make(map[OSReleaseField]string)
 	}
 
-	return &info, nil
-}
+	info.OSReleaseInfo[OS_KERNEL_RELEASE], err = UnameRelease()
+	if err != nil {
+		return &info, fmt.Errorf("could not determine uname release: %w", err)
+	}
 
-// NewOSInfoRelease creates a OSInfo object and runs DiscoverRelease() on its creation
-// This is a less complete approach than NewOSInfo call, recommended
-func NewOSInfoRelease() (*OSInfo, error) {
-	info := OSInfo{}
+	info.OSReleaseFilePath, err = checkEnvPath("LIBBPFGO_OSRELEASE_FILE") // useful if users wants to mount host os-release in a container
+	if err != nil {
+		return &info, err
+	} else if info.OSReleaseFilePath == "" {
+		info.OSReleaseFilePath = "/etc/os-release"
+	}
 
-	if err := info.DiscoverRelease(); err != nil {
-		return nil, err
+	if err = info.discoverOSDistro(); err != nil {
+		return &info, err
 	}
 
 	return &info, nil
@@ -195,8 +199,9 @@ func NewOSInfoRelease() (*OSInfo, error) {
 // 2) if OSInfo.OSRelease == helpers.UBUNTU => {} will allow to run code in specific distros
 //
 type OSInfo struct {
-	OSReleaseInfo map[OSReleaseField]string
-	OSRelease     OSReleaseID
+	OSReleaseInfo     map[OSReleaseField]string
+	OSRelease         OSReleaseID
+	OSReleaseFilePath string
 }
 
 // CompareOSBaseKernelRelease will compare a given kernel version/release string
@@ -209,57 +214,33 @@ func (btfi *OSInfo) CompareOSBaseKernelRelease(version string) int {
 	return CompareOSBaseKernelRelease(btfi.OSReleaseInfo[OS_KERNEL_RELEASE], version)
 }
 
-func (btfi *OSInfo) DiscoverRelease() error {
+// discoverOSDistro discover running Linux distribution information by reading UTS and
+// the /etc/os-releases file (https://man7.org/linux/man-pages/man5/os-release.5.html)
+func (btfi *OSInfo) discoverOSDistro() error {
 	var err error
 
-	if btfi.OSReleaseInfo == nil {
-		btfi.OSReleaseInfo = make(map[OSReleaseField]string)
+	if btfi.OSReleaseFilePath == "" {
+		return fmt.Errorf("should specify os-release filepath")
 	}
 
-	if btfi.OSReleaseInfo[OS_KERNEL_RELEASE], err = UnameRelease(); err != nil {
-		return fmt.Errorf("could not determine uname release: %w", err)
-	}
-
-	return nil
-}
-
-// DiscoverDistro discover running Linux distribution information by
-// reading /etc/os-releases and UTS name.
-// (https://man7.org/linux/man-pages/man5/os-release.5.html)
-func (btfi *OSInfo) DiscoverDistro(releaseFilePath string) error {
-	if releaseFilePath == "" {
-		releaseFilePath = "/etc/os-release"
-	}
-
-	if _, err := os.Stat(releaseFilePath); err != nil {
+	file, err := os.Open(btfi.OSReleaseFilePath)
+	if err != nil {
 		return err
 	}
 
-	if btfi.OSReleaseInfo == nil {
-		btfi.OSReleaseInfo = make(map[OSReleaseField]string)
-	}
-
-	if err := btfi.DiscoverRelease(); err != nil {
-		return err
-	}
-
-	file, _ := os.Open(releaseFilePath)
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
 
-	for i := 1; scanner.Scan(); i++ {
+	for scanner.Scan() {
 		val := strings.Split(scanner.Text(), "=")
 		if len(val) != 2 {
 			continue
 		}
-
 		keyID := StringToOSReleaseField[val[0]]
 		if keyID == 0 { // could not find KEY= from os-release in consts
 			continue
 		}
-
 		btfi.OSReleaseInfo[keyID] = val[1]
-
 		if keyID == OS_ID {
 			btfi.OSRelease = StringToOSReleaseID[strings.ToLower(val[1])]
 		}
