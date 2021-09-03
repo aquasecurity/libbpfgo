@@ -232,12 +232,10 @@ func (k *KernelConfig) GetKernelConfigFilePath() string {
 }
 
 // AddCustomKernelConfigs allows user to extend list of possible existing kconfigs to be parsed from kConfigFilePath
-func (k *KernelConfig) AddCustomKernelConfigs(values map[KernelConfigOption]string) error {
-	for key, value := range values {
-		// extend initial list of kconfig options: add other possible existing ones
-		KernelConfigKeyIDToString[key] = value
-		KernelConfigKeyStringToID[value] = key
-	}
+func (k *KernelConfig) AddCustomKernelConfigs(key KernelConfigOption, value string) error {
+	// extend initial list of kconfig options: add other possible existing ones
+	KernelConfigKeyIDToString[key] = value
+	KernelConfigKeyStringToID[value] = key
 
 	return k.initKernelConfig(k.kConfigFilePath)
 }
