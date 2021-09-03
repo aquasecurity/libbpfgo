@@ -232,11 +232,11 @@ func (k *KernelConfig) GetKernelConfigFilePath() string {
 }
 
 // AddCustomKernelConfigs allows user to extend list of possible existing kconfigs to be parsed from kConfigFilePath
-func (k *KernelConfig) AddCustomKernelConfigs(values map[uint32]string) error {
+func (k *KernelConfig) AddCustomKernelConfigs(values map[KernelConfigOption]string) error {
 	for key, value := range values {
 		// extend initial list of kconfig options: add other possible existing ones
-		KernelConfigKeyIDToString[KernelConfigOption(key)] = value
-		KernelConfigKeyStringToID[value] = KernelConfigOption(key)
+		KernelConfigKeyIDToString[key] = value
+		KernelConfigKeyStringToID[value] = key
 	}
 
 	return k.initKernelConfig(k.kConfigFilePath)
@@ -307,17 +307,8 @@ func (k *KernelConfig) readConfigFromScanner(reader io.Reader) {
 }
 
 // GetValue will return a KernelConfigOptionValue for a given KernelConfigOption when this is a BUILTIN or a MODULE
-func (k *KernelConfig) GetValue(option interface{}) (KernelConfigOptionValue, error) {
-	var o uint32
-
-	switch option.(type) {
-	case uint32:
-		o = uint32(option.(uint32))
-	case KernelConfigOption:
-		o = uint32(option.(KernelConfigOption))
-	}
-
-	value, ok := k.configs[KernelConfigOption(o)].(KernelConfigOptionValue)
+func (k *KernelConfig) GetValue(option KernelConfigOption) (KernelConfigOptionValue, error) {
+	value, ok := k.configs[KernelConfigOption(option)].(KernelConfigOptionValue)
 	if ok {
 		return value, nil
 	}
