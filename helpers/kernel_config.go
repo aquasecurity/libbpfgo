@@ -231,6 +231,17 @@ func (k *KernelConfig) GetKernelConfigFilePath() string {
 	return k.kConfigFilePath
 }
 
+// AddCustomKernelConfigs allows user to extend list of possible existing kconfigs to be parsed from kConfigFilePath
+func (k *KernelConfig) AddCustomKernelConfigs(values map[uint32]string) error {
+	for key, value := range values {
+		// extend initial list of kconfig options: add other possible existing ones
+		KernelConfigKeyIDToString[KernelConfigOption(key)] = value
+		KernelConfigKeyStringToID[value] = KernelConfigOption(key)
+	}
+
+	return k.initKernelConfig(k.kConfigFilePath)
+}
+
 // initKernelConfig inits internal KernelConfig data by calling appropriate readConfigFromXXX function
 func (k *KernelConfig) initKernelConfig(configFilePath string) error {
 	if _, err := os.Stat(configFilePath); err != nil {
@@ -266,8 +277,13 @@ func (k *KernelConfig) readConfigFromProcConfigGZ(filePath string) error {
 
 // readConfigFromScanner reads all existing KernelConfigOption's and KernelConfigOptionValue's from given io.Reader
 func (k *KernelConfig) readConfigFromScanner(reader io.Reader) {
-	k.configs = make(map[KernelConfigOption]interface{})
-	k.needed = make(map[KernelConfigOption]interface{})
+
+	if k.configs == nil {
+		k.configs = make(map[KernelConfigOption]interface{})
+	}
+	if k.needed == nil {
+		k.needed = make(map[KernelConfigOption]interface{})
+	}
 
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
@@ -291,8 +307,17 @@ func (k *KernelConfig) readConfigFromScanner(reader io.Reader) {
 }
 
 // GetValue will return a KernelConfigOptionValue for a given KernelConfigOption when this is a BUILTIN or a MODULE
-func (k *KernelConfig) GetValue(option KernelConfigOption) (KernelConfigOptionValue, error) {
-	value, ok := k.configs[option].(KernelConfigOptionValue)
+func (k *KernelConfig) GetValue(option interface{}) (KernelConfigOptionValue, error) {
+	var o uint32
+
+	switch option.(type) {
+	case uint32:
+		o = uint32(option.(uint32))
+	case KernelConfigOption:
+		o = uint32(option.(KernelConfigOption))
+	}
+
+	value, ok := k.configs[KernelConfigOption(o)].(KernelConfigOptionValue)
 	if ok {
 		return value, nil
 	}
