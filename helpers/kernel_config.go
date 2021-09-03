@@ -47,6 +47,7 @@ func (k KernelConfigOptionValue) String() string {
 
 // These constants are a limited number of the total kernel config options,
 // but are provided because they are most relevant for BPF development.
+
 const (
 	CONFIG_BPF KernelConfigOption = iota + 1
 	CONFIG_BPF_SYSCALL
@@ -174,7 +175,7 @@ var KernelConfigKeyIDToString = map[KernelConfigOption]string{
 type KernelConfig struct {
 	configs         map[KernelConfigOption]interface{} // predominantly KernelConfigOptionValue, sometimes string
 	needed          map[KernelConfigOption]interface{}
-	KConfigFilePath string
+	kConfigFilePath string
 }
 
 // InitKernelConfig inits external KernelConfig object
@@ -182,45 +183,52 @@ func InitKernelConfig() (*KernelConfig, error) {
 	config := KernelConfig{}
 
 	// special case: user provided kconfig file (it MUST exist)
+
 	osKConfigFilePath, err := checkEnvPath("LIBBPFGO_KCONFIG_FILE") // override /proc/config.gz or /boot/config-$(uname -r) if needed (containers)
 	if err != nil {
-		return nil, err
+		return &config, err
 	}
 	if len(osKConfigFilePath) > 2 {
 		if _, err := os.Stat(osKConfigFilePath); err != nil {
-			return nil, err
+			return &config, err
 		}
-		config.KConfigFilePath = osKConfigFilePath // user might need to know used KConfig file in order to override kconfig for libbpf (example)
+		config.kConfigFilePath = osKConfigFilePath
 		if err := config.initKernelConfig(osKConfigFilePath); err != nil {
-			return nil, err
+			return &config, err
 		}
 
 		return &config, nil
 	}
 
 	// fastpath: check config.gz in procfs first
+
 	configGZ := "/proc/config.gz"
 	if _, err1 := os.Stat(configGZ); err1 == nil {
-		config.KConfigFilePath = configGZ // same thing here
+		config.kConfigFilePath = configGZ
 		if err2 := config.initKernelConfig(configGZ); err2 != nil {
-			return nil, err2
+			return &config, err2
 		}
 
 		return &config, nil
 	} // ignore if /proc/config.gz does not exist
 
 	// slowerpath: /boot/$(uname -r)
+
 	releaseVersion, err := UnameRelease()
 	if err != nil {
-		return nil, err
-	}
-	releaseFilePath := fmt.Sprintf("/boot/config-%s", releaseVersion)
-	config.KConfigFilePath = releaseFilePath // and here
-	if err := config.initKernelConfig(releaseFilePath); err != nil {
-		return nil, err
+		return &config, err
 	}
 
-	return &config, nil
+	releaseFilePath := fmt.Sprintf("/boot/config-%s", releaseVersion)
+	config.kConfigFilePath = releaseFilePath
+	err = config.initKernelConfig(releaseFilePath)
+
+	return &config, err
+}
+
+// GetKernelConfigFilePath gives the kconfig file chosen by InitKernelConfig during initialization
+func (k *KernelConfig) GetKernelConfigFilePath() string {
+	return k.kConfigFilePath
 }
 
 // initKernelConfig inits internal KernelConfig data by calling appropriate readConfigFromXXX function
