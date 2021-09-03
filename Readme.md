@@ -103,7 +103,7 @@ libbpfgo does not yet have a regular schedule for cutting releases. There has no
 - __Major releases__ are cut when backwards compatibility is broken or major milestones are completed, such as reaching parity with libbpf's API.
 - __Minor releases__ are cut to incorporate new support for libbpf APIs.
 - __Patch releases__ are cut to incorporate important individual or groupings of bug fixes.
-- __libbpf support numbering__ indicates the _minimum_ required libbpf version that must be linked in order to ensure libbpfgo compatibility. For example, `v0.2.1-libbpf_0.4.0` means that version 0.2.1 of libbpfgo requires v0.4.0 or newer of libbpf.
+- __libbpf support numbering__ indicates the _minimum_ required libbpf version that must be linked in order to ensure libbpfgo compatibility. For example, `v0.2.1-libbpf-0.4.0` means that version 0.2.1 of libbpfgo requires v0.4.0 or newer of libbpf.
 
 *Note*: some distributions might have local changes to their libbpf package and their version might include backports and/or fixes differently than upstream versions. In those cases we recommend that libbpfgo is used statically compiled.
 
