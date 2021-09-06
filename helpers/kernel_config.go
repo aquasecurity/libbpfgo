@@ -25,7 +25,7 @@ const (
 )
 
 func (k KernelConfigOption) String() string {
-	return KernelConfigKeyIDToString[k]
+	return kernelConfigKeyIDToString[k]
 }
 
 func (k KernelConfigOptionValue) String() string {
@@ -89,7 +89,7 @@ const (
 	CONFIG_BPF_PRELOAD_UMD
 )
 
-var KernelConfigKeyStringToID = map[string]KernelConfigOption{
+var kernelConfigKeyStringToID = map[string]KernelConfigOption{
 	"CONFIG_BPF":                      CONFIG_BPF,
 	"CONFIG_BPF_SYSCALL":              CONFIG_BPF_SYSCALL,
 	"CONFIG_HAVE_EBPF_JIT":            CONFIG_HAVE_EBPF_JIT,
@@ -130,7 +130,7 @@ var KernelConfigKeyStringToID = map[string]KernelConfigOption{
 	"CONFIG_BPF_PRELOAD_UMD":          CONFIG_BPF_PRELOAD_UMD,
 }
 
-var KernelConfigKeyIDToString = map[KernelConfigOption]string{
+var kernelConfigKeyIDToString = map[KernelConfigOption]string{
 	CONFIG_BPF:                      "CONFIG_BPF",
 	CONFIG_BPF_SYSCALL:              "CONFIG_BPF_SYSCALL",
 	CONFIG_HAVE_EBPF_JIT:            "CONFIG_HAVE_EBPF_JIT",
@@ -234,8 +234,8 @@ func (k *KernelConfig) GetKernelConfigFilePath() string {
 // AddCustomKernelConfigs allows user to extend list of possible existing kconfigs to be parsed from kConfigFilePath
 func (k *KernelConfig) AddCustomKernelConfigs(key KernelConfigOption, value string) error {
 	// extend initial list of kconfig options: add other possible existing ones
-	KernelConfigKeyIDToString[key] = value
-	KernelConfigKeyStringToID[value] = key
+	kernelConfigKeyIDToString[key] = value
+	kernelConfigKeyStringToID[value] = key
 
 	return k.initKernelConfig(k.kConfigFilePath)
 }
@@ -290,7 +290,7 @@ func (k *KernelConfig) readConfigFromScanner(reader io.Reader) {
 			continue
 		}
 
-		configKeyID := KernelConfigKeyStringToID[kv[0]]
+		configKeyID := kernelConfigKeyStringToID[kv[0]]
 		if configKeyID == 0 {
 			continue
 		}
@@ -383,7 +383,7 @@ func (k *KernelConfig) CheckMissing() []KernelConfigOption {
 // kernelConfig.AddNeeded(helpers.CONFIG_HZ, "250")
 //
 func (k *KernelConfig) AddNeeded(option KernelConfigOption, value interface{}) {
-	if _, ok := KernelConfigKeyIDToString[option]; ok {
+	if _, ok := kernelConfigKeyIDToString[option]; ok {
 		k.needed[option] = value
 	}
 }
