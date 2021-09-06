@@ -87,6 +87,7 @@ const (
 	CONFIG_BPF_LSM
 	CONFIG_BPF_PRELOAD
 	CONFIG_BPF_PRELOAD_UMD
+	CUSTOM_OPTION_MARK KernelConfigOption = 1000
 )
 
 var kernelConfigKeyStringToID = map[string]KernelConfigOption{
@@ -231,12 +232,21 @@ func (k *KernelConfig) GetKernelConfigFilePath() string {
 	return k.kConfigFilePath
 }
 
-// AddCustomKernelConfigs allows user to extend list of possible existing kconfigs to be parsed from kConfigFilePath
-func (k *KernelConfig) AddCustomKernelConfigs(key KernelConfigOption, value string) error {
+// AddCustomKernelConfig allows user to extend list of possible existing kconfigs to be parsed from kConfigFilePath
+func (k *KernelConfig) AddCustomKernelConfig(key KernelConfigOption, value string) error {
+	if key < CUSTOM_OPTION_MARK {
+		return fmt.Errorf("KConfig key index must be bigger than %d (CUSTOM_OPTION_MARK)\n", CUSTOM_OPTION_MARK)
+	}
+
 	// extend initial list of kconfig options: add other possible existing ones
 	kernelConfigKeyIDToString[key] = value
 	kernelConfigKeyStringToID[value] = key
 
+	return nil
+}
+
+// LoadKernelConfig will (re)read kconfig file (likely after AddCustomKernelConfig was called)
+func (k *KernelConfig) LoadKernelConfig() error {
 	return k.initKernelConfig(k.kConfigFilePath)
 }
 
@@ -305,13 +315,13 @@ func (k *KernelConfig) readConfigFromScanner(reader io.Reader) {
 }
 
 // GetValue will return a KernelConfigOptionValue for a given KernelConfigOption when this is a BUILTIN or a MODULE
-func (k *KernelConfig) GetValue(option KernelConfigOption) (KernelConfigOptionValue, error) {
+func (k *KernelConfig) GetValue(option KernelConfigOption) KernelConfigOptionValue {
 	value, ok := k.configs[KernelConfigOption(option)].(KernelConfigOptionValue)
 	if ok {
-		return value, nil
+		return value
 	}
 
-	return UNDEFINED, fmt.Errorf("given option's value (%s) is undefined", option)
+	return UNDEFINED // not an error as the config option might not exist in kconfig file
 }
 
 // GetValueString will return a KernelConfigOptionValue for a given KernelConfigOption when this is actually a string
