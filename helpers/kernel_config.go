@@ -87,7 +87,7 @@ const (
 	CONFIG_BPF_LSM
 	CONFIG_BPF_PRELOAD
 	CONFIG_BPF_PRELOAD_UMD
-	CUSTOM_OPTION_MARK KernelConfigOption = 1000
+	CUSTOM_OPTION_START KernelConfigOption = 1000
 )
 
 var kernelConfigKeyStringToID = map[string]KernelConfigOption{
@@ -234,8 +234,8 @@ func (k *KernelConfig) GetKernelConfigFilePath() string {
 
 // AddCustomKernelConfig allows user to extend list of possible existing kconfigs to be parsed from kConfigFilePath
 func (k *KernelConfig) AddCustomKernelConfig(key KernelConfigOption, value string) error {
-	if key < CUSTOM_OPTION_MARK {
-		return fmt.Errorf("KConfig key index must be bigger than %d (CUSTOM_OPTION_MARK)\n", CUSTOM_OPTION_MARK)
+	if key < CUSTOM_OPTION_START {
+		return fmt.Errorf("KConfig key index must be bigger than %d (CUSTOM_OPTION_START)\n", CUSTOM_OPTION_START)
 	}
 
 	// extend initial list of kconfig options: add other possible existing ones
