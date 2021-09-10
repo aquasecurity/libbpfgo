@@ -106,7 +106,7 @@ execution. Example:
 
 ```go
 	const (
-		CONFIG_ARCH_HAS_SYSCALL_WRAPPER helpers.KernelConfigOption = iota + helpers.CUSTOM_OPTION_MARK
+		CONFIG_ARCH_HAS_SYSCALL_WRAPPER helpers.KernelConfigOption = iota + helpers.CUSTOM_OPTION_START
 	)
 ```
 
