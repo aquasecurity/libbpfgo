@@ -752,25 +752,21 @@ func (p *BPFProg) SetTracepoint() error {
 	return nil
 }
 
-func (p *BPFProg) AttachTracepoint(tp string) (*BPFLink, error) {
-	tpEvent := strings.Split(tp, ":")
-	if len(tpEvent) != 2 {
-		return nil, fmt.Errorf("tracepoint must be in 'category:name' format")
-	}
-	tpCategory := C.CString(tpEvent[0])
-	tpName := C.CString(tpEvent[1])
+func (p *BPFProg) AttachTracepoint(category, name string) (*BPFLink, error) {
+	tpCategory := C.CString(category)
+	tpName := C.CString(name)
 	link := C.bpf_program__attach_tracepoint(p.prog, tpCategory, tpName)
 	C.free(unsafe.Pointer(tpCategory))
 	C.free(unsafe.Pointer(tpName))
 	if C.IS_ERR_OR_NULL(unsafe.Pointer(link)) {
-		return nil, errptrError(unsafe.Pointer(link), "failed to attach tracepoint %s to program %s", tp, p.name)
+		return nil, errptrError(unsafe.Pointer(link), "failed to attach tracepoint %s to program %s", name, p.name)
 	}
 
 	bpfLink := &BPFLink{
 		link:      link,
 		prog:      p,
 		linkType:  Tracepoint,
-		eventName: tp,
+		eventName: name,
 	}
 	p.module.links = append(p.module.links, bpfLink)
 	return bpfLink, nil
