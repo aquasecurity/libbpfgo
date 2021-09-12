@@ -2,6 +2,7 @@ package libbpfgo
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -38,7 +39,11 @@ func Test_LoadAndAttach(t *testing.T) {
 			prog:      "tracepoint__sys_enter_dup",
 			attachArg: "syscalls:sys_enter_dup",
 			attachFn: func(prog *BPFProg, name string) (*BPFLink, error) {
-				return prog.AttachTracepoint(name)
+				tpEvent := strings.Split(name, ":")
+				if len(tpEvent) != 2 {
+					return nil, fmt.Errorf("tracepoint must be in 'category:name' format")
+				}
+				return prog.AttachTracepoint(tpEvent[0], tpEvent[1])
 			},
 		},
 		{
