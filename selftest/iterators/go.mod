@@ -2,6 +2,6 @@ module github.com/aquasecurity/libbpfgo/selftest/iterators
 
 go 1.16
 
-require github.com/aquasecurity/libbpfgo v0.0.0-20210517223445-485e1cdc10ae
+require github.com/aquasecurity/libbpfgo v0.2.1-libbpf-0.4.0
 
 replace github.com/aquasecurity/libbpfgo => ../../
