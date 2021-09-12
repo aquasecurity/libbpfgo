@@ -260,6 +260,10 @@ func (l *BPFLink) Destroy() error {
 	return nil
 }
 
+func (l *BPFLink) GetFd() int {
+	return int(C.bpf_link__fd(l.link))
+}
+
 type PerfBuffer struct {
 	pb         *C.struct_perf_buffer
 	bpfMap     *BPFMap
