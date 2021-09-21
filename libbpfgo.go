@@ -483,7 +483,7 @@ func (b *BPFMap) SetPinPath(pinPath string) error {
 // Note: for ring buffer and perf buffer, maxEntries is the
 // capacity in bytes.
 func (b *BPFMap) Resize(maxEntries uint32) error {
-	errC := C.bpf_map__resize(b.bpfMap, C.uint(maxEntries))
+	errC := C.bpf_map__set_max_entries(b.bpfMap, C.uint(maxEntries))
 	if errC != 0 {
 		return fmt.Errorf("failed to resize map %s to %v", b.name, maxEntries)
 	}
