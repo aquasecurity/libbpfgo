@@ -197,7 +197,6 @@ import (
 	"fmt"
 	"net"
 	"path/filepath"
-	"strings"
 	"sync"
 	"syscall"
 	"unsafe"
@@ -356,7 +355,7 @@ func NewModuleFromFileArgs(args NewModuleArgs) (*Module, error) {
 
 func NewModuleFromBuffer(bpfObjBuff []byte, bpfObjName string) (*Module, error) {
 
-	return NewModuleFromFileArgs(NewModuleArgs{
+	return NewModuleFromBufferArgs(NewModuleArgs{
 		BPFObjBuff: bpfObjBuff,
 		BPFObjName: bpfObjName,
 	})
