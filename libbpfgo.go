@@ -324,19 +324,23 @@ func NewModuleFromFileArgs(args NewModuleArgs) (*Module, error) {
 	if err := bumpMemlockRlimit(); err != nil {
 		return nil, err
 	}
-	if args.BTFObjPath == "" {
-		args.BTFObjPath = "/sys/kernel/btf/vmlinux"
-	}
-	btfFile := C.CString(args.BTFObjPath)
-	bpfFile := C.CString(args.BPFObjPath)
-
 	opts := C.struct_bpf_object_open_opts{}
 	opts.sz = C.sizeof_struct_bpf_object_open_opts
-	opts.btf_custom_path = btfFile // instruct libbpf to use user provided kernel BTF file
 
-	if strings.Compare(args.KConfigFilePath, "") != 0 {
+	bpfFile := C.CString(args.BPFObjPath)
+	defer C.free(unsafe.Pointer(bpfFile))
+
+	// instruct libbpf to use user provided kernel BTF file
+	if args.BTFObjPath != "" {
+		btfFile := C.CString(args.BTFObjPath)
+		opts.btf_custom_path = btfFile
+		defer C.free(unsafe.Pointer(btfFile))
+	}
+
+	// instruct libbpf to use user provided KConfigFile
+	if args.KConfigFilePath != "" {
 		kConfigFile := C.CString(args.KConfigFilePath)
-		opts.kconfig = kConfigFile // instruct libbpf to use user provided KConfigFile
+		opts.kconfig = kConfigFile
 		defer C.free(unsafe.Pointer(kConfigFile))
 	}
 
@@ -344,9 +348,6 @@ func NewModuleFromFileArgs(args NewModuleArgs) (*Module, error) {
 	if C.IS_ERR_OR_NULL(unsafe.Pointer(obj)) {
 		return nil, errptrError(unsafe.Pointer(obj), "failed to open BPF object %s", args.BPFObjPath)
 	}
-
-	C.free(unsafe.Pointer(bpfFile))
-	C.free(unsafe.Pointer(btfFile))
 
 	return &Module{
 		obj: obj,
