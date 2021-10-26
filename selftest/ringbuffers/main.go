@@ -5,6 +5,7 @@ import "C"
 import (
 	"os"
 	"syscall"
+	"time"
 
 	"encoding/binary"
 	"fmt"
@@ -69,6 +70,7 @@ func main() {
 	go func() {
 		for {
 			syscall.Mmap(999, 999, 999, 1, 1)
+			time.Sleep(time.Second / 2)
 		}
 	}()
 recvLoop:
