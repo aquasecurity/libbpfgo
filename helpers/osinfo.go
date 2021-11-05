@@ -58,7 +58,9 @@ const (
 	OS_BUILD_ID
 	OS_IMAGE_ID
 	OS_IMAGE_VERSION
-	OS_KERNEL_RELEASE // not part of default os-release, but we can use it here to facilitate things
+	// not part of default os-release:
+	OS_KERNEL_RELEASE
+	OS_ARCH
 )
 
 type OSReleaseField uint32
@@ -82,6 +84,7 @@ var stringToOSReleaseField = map[string]OSReleaseField{
 	"IMAGE_ID":         OS_IMAGE_ID,
 	"IMAGE_VERSION":    OS_IMAGE_VERSION,
 	"KERNEL_RELEASE":   OS_KERNEL_RELEASE,
+	"ARCH":             OS_ARCH,
 }
 
 // osReleaseFieldToString is a map of os-release file fields
@@ -99,6 +102,7 @@ var osReleaseFieldToString = map[OSReleaseField]string{
 	OS_IMAGE_ID:         "IMAGE_ID",
 	OS_IMAGE_VERSION:    "IMAGE_VERSION",
 	OS_KERNEL_RELEASE:   "KERNEL_RELEASE",
+	OS_ARCH:             "ARCH",
 }
 
 // OSBTFEnabled checks if kernel has embedded BTF vmlinux file
@@ -120,6 +124,11 @@ func GetOSInfo() (*OSInfo, error) {
 	info.osReleaseFieldValues[OS_KERNEL_RELEASE], err = UnameRelease()
 	if err != nil {
 		return &info, fmt.Errorf("could not determine uname release: %w", err)
+	}
+
+	info.osReleaseFieldValues[OS_ARCH], err = UnameMachine()
+	if err != nil {
+		return &info, fmt.Errorf("could not determine uname machine: %w", err)
 	}
 
 	info.osReleaseFilePath, err = checkEnvPath("LIBBPFGO_OSRELEASE_FILE") // useful if users wants to mount host os-release in a container
