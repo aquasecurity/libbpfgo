@@ -210,76 +210,76 @@ func ParseExecFlags(flags uint32) string {
 // https://man7.org/linux/man-pages/man2/clone.2.html
 func ParseCloneFlags(flags uint64) string {
 	var f []string
-	if flags&0x00000100 == 0x00000100 {
+	if cloneFlagsContains(flags, CLONE_VM) {
 		f = append(f, "CLONE_VM")
 	}
-	if flags&0x00000200 == 0x00000200 {
+	if cloneFlagsContains(flags, CLONE_FS) {
 		f = append(f, "CLONE_FS")
 	}
-	if flags&0x00000400 == 0x00000400 {
+	if cloneFlagsContains(flags, CLONE_FILES) {
 		f = append(f, "CLONE_FILES")
 	}
-	if flags&0x00000800 == 0x00000800 {
+	if cloneFlagsContains(flags, CLONE_SIGHAND) {
 		f = append(f, "CLONE_SIGHAND")
 	}
-	if flags&0x00001000 == 0x00001000 {
+	if cloneFlagsContains(flags, CLONE_PIDFD) {
 		f = append(f, "CLONE_PIDFD")
 	}
-	if flags&0x00002000 == 0x00002000 {
+	if cloneFlagsContains(flags, CLONE_PTRACE) {
 		f = append(f, "CLONE_PTRACE")
 	}
-	if flags&0x00004000 == 0x00004000 {
+	if cloneFlagsContains(flags, CLONE_VFORK) {
 		f = append(f, "CLONE_VFORK")
 	}
-	if flags&0x00008000 == 0x00008000 {
+	if cloneFlagsContains(flags, CLONE_PARENT) {
 		f = append(f, "CLONE_PARENT")
 	}
-	if flags&0x00010000 == 0x00010000 {
+	if cloneFlagsContains(flags, CLONE_THREAD) {
 		f = append(f, "CLONE_THREAD")
 	}
-	if flags&0x00020000 == 0x00020000 {
+	if cloneFlagsContains(flags, CLONE_NEWNS) {
 		f = append(f, "CLONE_NEWNS")
 	}
-	if flags&0x00040000 == 0x00040000 {
+	if cloneFlagsContains(flags, CLONE_SYSVSEM) {
 		f = append(f, "CLONE_SYSVSEM")
 	}
-	if flags&0x00080000 == 0x00080000 {
+	if cloneFlagsContains(flags, CLONE_SETTLS) {
 		f = append(f, "CLONE_SETTLS")
 	}
-	if flags&0x00100000 == 0x00100000 {
+	if cloneFlagsContains(flags, CLONE_PARENT_SETTID) {
 		f = append(f, "CLONE_PARENT_SETTID")
 	}
-	if flags&0x00200000 == 0x00200000 {
+	if cloneFlagsContains(flags, CLONE_CHILD_CLEARTID) {
 		f = append(f, "CLONE_CHILD_CLEARTID")
 	}
-	if flags&0x00400000 == 0x00400000 {
+	if cloneFlagsContains(flags, CLONE_DETACHED) {
 		f = append(f, "CLONE_DETACHED")
 	}
-	if flags&0x00800000 == 0x00800000 {
+	if cloneFlagsContains(flags, CLONE_UNTRACED) {
 		f = append(f, "CLONE_UNTRACED")
 	}
-	if flags&0x01000000 == 0x01000000 {
+	if cloneFlagsContains(flags, CLONE_CHILD_SETTID) {
 		f = append(f, "CLONE_CHILD_SETTID")
 	}
-	if flags&0x02000000 == 0x02000000 {
+	if cloneFlagsContains(flags, CLONE_NEWCGROUP) {
 		f = append(f, "CLONE_NEWCGROUP")
 	}
-	if flags&0x04000000 == 0x04000000 {
+	if cloneFlagsContains(flags, CLONE_NEWUTS) {
 		f = append(f, "CLONE_NEWUTS")
 	}
-	if flags&0x08000000 == 0x08000000 {
+	if cloneFlagsContains(flags, CLONE_NEWIPC) {
 		f = append(f, "CLONE_NEWIPC")
 	}
-	if flags&0x10000000 == 0x10000000 {
+	if cloneFlagsContains(flags, CLONE_NEWUSER) {
 		f = append(f, "CLONE_NEWUSER")
 	}
-	if flags&0x20000000 == 0x20000000 {
+	if cloneFlagsContains(flags, CLONE_NEWPID) {
 		f = append(f, "CLONE_NEWPID")
 	}
-	if flags&0x40000000 == 0x40000000 {
+	if cloneFlagsContains(flags, CLONE_NEWNET) {
 		f = append(f, "CLONE_NEWNET")
 	}
-	if flags&0x80000000 == 0x80000000 {
+	if cloneFlagsContains(flags, CLONE_IO) {
 		f = append(f, "CLONE_IO")
 	}
 	if len(f) == 0 {
