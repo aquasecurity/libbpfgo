@@ -107,61 +107,61 @@ func ParseOpenFlags(flags uint32) string {
 
 	// access mode
 	switch {
-	case flags&01 == 01:
+	case openFlagsContains(flags, O_WRONLY):
 		f = append(f, "O_WRONLY")
-	case flags&02 == 02:
+	case openFlagsContains(flags, O_RDWR):
 		f = append(f, "O_RDWR")
 	default:
 		f = append(f, "O_RDONLY")
 	}
 
 	// file creation and status flags
-	if flags&0100 == 0100 {
+	if openFlagsContains(flags, O_CREAT) {
 		f = append(f, "O_CREAT")
 	}
-	if flags&0200 == 0200 {
+	if openFlagsContains(flags, O_EXCL) {
 		f = append(f, "O_EXCL")
 	}
-	if flags&0400 == 0400 {
+	if openFlagsContains(flags, O_NOCTTY) {
 		f = append(f, "O_NOCTTY")
 	}
-	if flags&01000 == 01000 {
+	if openFlagsContains(flags, O_TRUNC) {
 		f = append(f, "O_TRUNC")
 	}
-	if flags&02000 == 02000 {
+	if openFlagsContains(flags, O_APPEND) {
 		f = append(f, "O_APPEND")
 	}
-	if flags&04000 == 04000 {
+	if openFlagsContains(flags, O_NONBLOCK) {
 		f = append(f, "O_NONBLOCK")
 	}
-	if flags&04010000 == 04010000 {
+	if openFlagsContains(flags, O_SYNC) {
 		f = append(f, "O_SYNC")
 	}
-	if flags&020000 == 020000 {
+	if openFlagsContains(flags, O_ASYNC) {
 		f = append(f, "O_ASYNC")
 	}
-	if flags&0100000 == 0100000 {
+	if openFlagsContains(flags, O_LARGEFILE) {
 		f = append(f, "O_LARGEFILE")
 	}
-	if flags&0200000 == 0200000 {
+	if openFlagsContains(flags, O_DIRECTORY) {
 		f = append(f, "O_DIRECTORY")
 	}
-	if flags&0400000 == 0400000 {
+	if openFlagsContains(flags, O_NOFOLLOW) {
 		f = append(f, "O_NOFOLLOW")
 	}
-	if flags&02000000 == 02000000 {
+	if openFlagsContains(flags, O_CLOEXEC) {
 		f = append(f, "O_CLOEXEC")
 	}
-	if flags&040000 == 040000 {
+	if openFlagsContains(flags, O_DIRECT) {
 		f = append(f, "O_DIRECT")
 	}
-	if flags&01000000 == 01000000 {
+	if openFlagsContains(flags, O_NOATIME) {
 		f = append(f, "O_NOATIME")
 	}
-	if flags&010000000 == 010000000 {
+	if openFlagsContains(flags, O_PATH) {
 		f = append(f, "O_PATH")
 	}
-	if flags&020000000 == 020000000 {
+	if openFlagsContains(flags, O_TMPFILE) {
 		f = append(f, "O_TMPFILE")
 	}
 
