@@ -107,61 +107,61 @@ func ParseOpenFlags(flags uint32) string {
 
 	// access mode
 	switch {
-	case openFlagsContains(flags, O_WRONLY):
+	case flagsContains(uint64(flags), O_WRONLY):
 		f = append(f, "O_WRONLY")
-	case openFlagsContains(flags, O_RDWR):
+	case flagsContains(uint64(flags), O_RDWR):
 		f = append(f, "O_RDWR")
 	default:
 		f = append(f, "O_RDONLY")
 	}
 
 	// file creation and status flags
-	if openFlagsContains(flags, O_CREAT) {
+	if flagsContains(uint64(flags), O_CREAT) {
 		f = append(f, "O_CREAT")
 	}
-	if openFlagsContains(flags, O_EXCL) {
+	if flagsContains(uint64(flags), O_EXCL) {
 		f = append(f, "O_EXCL")
 	}
-	if openFlagsContains(flags, O_NOCTTY) {
+	if flagsContains(uint64(flags), O_NOCTTY) {
 		f = append(f, "O_NOCTTY")
 	}
-	if openFlagsContains(flags, O_TRUNC) {
+	if flagsContains(uint64(flags), O_TRUNC) {
 		f = append(f, "O_TRUNC")
 	}
-	if openFlagsContains(flags, O_APPEND) {
+	if flagsContains(uint64(flags), O_APPEND) {
 		f = append(f, "O_APPEND")
 	}
-	if openFlagsContains(flags, O_NONBLOCK) {
+	if flagsContains(uint64(flags), O_NONBLOCK) {
 		f = append(f, "O_NONBLOCK")
 	}
-	if openFlagsContains(flags, O_SYNC) {
+	if flagsContains(uint64(flags), O_SYNC) {
 		f = append(f, "O_SYNC")
 	}
-	if openFlagsContains(flags, O_ASYNC) {
+	if flagsContains(uint64(flags), O_ASYNC) {
 		f = append(f, "O_ASYNC")
 	}
-	if openFlagsContains(flags, O_LARGEFILE) {
+	if flagsContains(uint64(flags), O_LARGEFILE) {
 		f = append(f, "O_LARGEFILE")
 	}
-	if openFlagsContains(flags, O_DIRECTORY) {
+	if flagsContains(uint64(flags), O_DIRECTORY) {
 		f = append(f, "O_DIRECTORY")
 	}
-	if openFlagsContains(flags, O_NOFOLLOW) {
+	if flagsContains(uint64(flags), O_NOFOLLOW) {
 		f = append(f, "O_NOFOLLOW")
 	}
-	if openFlagsContains(flags, O_CLOEXEC) {
+	if flagsContains(uint64(flags), O_CLOEXEC) {
 		f = append(f, "O_CLOEXEC")
 	}
-	if openFlagsContains(flags, O_DIRECT) {
+	if flagsContains(uint64(flags), O_DIRECT) {
 		f = append(f, "O_DIRECT")
 	}
-	if openFlagsContains(flags, O_NOATIME) {
+	if flagsContains(uint64(flags), O_NOATIME) {
 		f = append(f, "O_NOATIME")
 	}
-	if openFlagsContains(flags, O_PATH) {
+	if flagsContains(uint64(flags), O_PATH) {
 		f = append(f, "O_PATH")
 	}
-	if openFlagsContains(flags, O_TMPFILE) {
+	if flagsContains(uint64(flags), O_TMPFILE) {
 		f = append(f, "O_TMPFILE")
 	}
 
@@ -210,76 +210,76 @@ func ParseExecFlags(flags uint32) string {
 // https://man7.org/linux/man-pages/man2/clone.2.html
 func ParseCloneFlags(flags uint64) string {
 	var f []string
-	if cloneFlagsContains(flags, CLONE_VM) {
+	if flagsContains(flags, CLONE_VM) {
 		f = append(f, "CLONE_VM")
 	}
-	if cloneFlagsContains(flags, CLONE_FS) {
+	if flagsContains(flags, CLONE_FS) {
 		f = append(f, "CLONE_FS")
 	}
-	if cloneFlagsContains(flags, CLONE_FILES) {
+	if flagsContains(flags, CLONE_FILES) {
 		f = append(f, "CLONE_FILES")
 	}
-	if cloneFlagsContains(flags, CLONE_SIGHAND) {
+	if flagsContains(flags, CLONE_SIGHAND) {
 		f = append(f, "CLONE_SIGHAND")
 	}
-	if cloneFlagsContains(flags, CLONE_PIDFD) {
+	if flagsContains(flags, CLONE_PIDFD) {
 		f = append(f, "CLONE_PIDFD")
 	}
-	if cloneFlagsContains(flags, CLONE_PTRACE) {
+	if flagsContains(flags, CLONE_PTRACE) {
 		f = append(f, "CLONE_PTRACE")
 	}
-	if cloneFlagsContains(flags, CLONE_VFORK) {
+	if flagsContains(flags, CLONE_VFORK) {
 		f = append(f, "CLONE_VFORK")
 	}
-	if cloneFlagsContains(flags, CLONE_PARENT) {
+	if flagsContains(flags, CLONE_PARENT) {
 		f = append(f, "CLONE_PARENT")
 	}
-	if cloneFlagsContains(flags, CLONE_THREAD) {
+	if flagsContains(flags, CLONE_THREAD) {
 		f = append(f, "CLONE_THREAD")
 	}
-	if cloneFlagsContains(flags, CLONE_NEWNS) {
+	if flagsContains(flags, CLONE_NEWNS) {
 		f = append(f, "CLONE_NEWNS")
 	}
-	if cloneFlagsContains(flags, CLONE_SYSVSEM) {
+	if flagsContains(flags, CLONE_SYSVSEM) {
 		f = append(f, "CLONE_SYSVSEM")
 	}
-	if cloneFlagsContains(flags, CLONE_SETTLS) {
+	if flagsContains(flags, CLONE_SETTLS) {
 		f = append(f, "CLONE_SETTLS")
 	}
-	if cloneFlagsContains(flags, CLONE_PARENT_SETTID) {
+	if flagsContains(flags, CLONE_PARENT_SETTID) {
 		f = append(f, "CLONE_PARENT_SETTID")
 	}
-	if cloneFlagsContains(flags, CLONE_CHILD_CLEARTID) {
+	if flagsContains(flags, CLONE_CHILD_CLEARTID) {
 		f = append(f, "CLONE_CHILD_CLEARTID")
 	}
-	if cloneFlagsContains(flags, CLONE_DETACHED) {
+	if flagsContains(flags, CLONE_DETACHED) {
 		f = append(f, "CLONE_DETACHED")
 	}
-	if cloneFlagsContains(flags, CLONE_UNTRACED) {
+	if flagsContains(flags, CLONE_UNTRACED) {
 		f = append(f, "CLONE_UNTRACED")
 	}
-	if cloneFlagsContains(flags, CLONE_CHILD_SETTID) {
+	if flagsContains(flags, CLONE_CHILD_SETTID) {
 		f = append(f, "CLONE_CHILD_SETTID")
 	}
-	if cloneFlagsContains(flags, CLONE_NEWCGROUP) {
+	if flagsContains(flags, CLONE_NEWCGROUP) {
 		f = append(f, "CLONE_NEWCGROUP")
 	}
-	if cloneFlagsContains(flags, CLONE_NEWUTS) {
+	if flagsContains(flags, CLONE_NEWUTS) {
 		f = append(f, "CLONE_NEWUTS")
 	}
-	if cloneFlagsContains(flags, CLONE_NEWIPC) {
+	if flagsContains(flags, CLONE_NEWIPC) {
 		f = append(f, "CLONE_NEWIPC")
 	}
-	if cloneFlagsContains(flags, CLONE_NEWUSER) {
+	if flagsContains(flags, CLONE_NEWUSER) {
 		f = append(f, "CLONE_NEWUSER")
 	}
-	if cloneFlagsContains(flags, CLONE_NEWPID) {
+	if flagsContains(flags, CLONE_NEWPID) {
 		f = append(f, "CLONE_NEWPID")
 	}
-	if cloneFlagsContains(flags, CLONE_NEWNET) {
+	if flagsContains(flags, CLONE_NEWNET) {
 		f = append(f, "CLONE_NEWNET")
 	}
-	if cloneFlagsContains(flags, CLONE_IO) {
+	if flagsContains(flags, CLONE_IO) {
 		f = append(f, "CLONE_IO")
 	}
 	if len(f) == 0 {
