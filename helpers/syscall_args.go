@@ -55,6 +55,18 @@ const (
 	X_OK uint64 = 1
 	W_OK uint64 = 2
 	R_OK uint64 = 4
+
+	AT_SYMLINK_NOFOLLOW   uint64 = 0x100
+	AT_EACCESS            uint64 = 0x200
+	AT_REMOVEDIR          uint64 = 0x200
+	AT_SYMLINK_FOLLOW     uint64 = 0x400
+	AT_NO_AUTOMOUNT       uint64 = 0x800
+	AT_EMPTY_PATH         uint64 = 0x1000
+	AT_STATX_SYNC_TYPE    uint64 = 0x6000
+	AT_STATX_SYNC_AS_STAT uint64 = 0x0000
+	AT_STATX_FORCE_SYNC   uint64 = 0x2000
+	AT_STATX_DONT_SYNC    uint64 = 0x4000
+	AT_RECURSIVE          uint64 = 0x8000
 )
 
 // EventArgumentContainsOption checks whether the argument (rawArgument)
@@ -63,9 +75,9 @@ const (
 // argument via bitmasks, which this function checks for.
 // It is meant to be used with the constants redefined in this package.
 func EventArgumentContainsOption(option, rawArgument uint64) bool {
-	return flagsContains(option, rawArgument)
+	return eventArgumentContainsOption(option, rawArgument)
 }
 
-func flagsContains(option, rawArgument uint64) bool {
+func eventArgumentContainsOption(option, rawArgument uint64) bool {
 	return option&rawArgument == option
 }

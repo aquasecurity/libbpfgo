@@ -107,61 +107,61 @@ func ParseOpenFlags(flags uint32) string {
 
 	// access mode
 	switch {
-	case flagsContains(uint64(flags), O_WRONLY):
+	case eventArgumentContainsOption(uint64(flags), O_WRONLY):
 		f = append(f, "O_WRONLY")
-	case flagsContains(uint64(flags), O_RDWR):
+	case eventArgumentContainsOption(uint64(flags), O_RDWR):
 		f = append(f, "O_RDWR")
 	default:
 		f = append(f, "O_RDONLY")
 	}
 
 	// file creation and status flags
-	if flagsContains(uint64(flags), O_CREAT) {
+	if eventArgumentContainsOption(uint64(flags), O_CREAT) {
 		f = append(f, "O_CREAT")
 	}
-	if flagsContains(uint64(flags), O_EXCL) {
+	if eventArgumentContainsOption(uint64(flags), O_EXCL) {
 		f = append(f, "O_EXCL")
 	}
-	if flagsContains(uint64(flags), O_NOCTTY) {
+	if eventArgumentContainsOption(uint64(flags), O_NOCTTY) {
 		f = append(f, "O_NOCTTY")
 	}
-	if flagsContains(uint64(flags), O_TRUNC) {
+	if eventArgumentContainsOption(uint64(flags), O_TRUNC) {
 		f = append(f, "O_TRUNC")
 	}
-	if flagsContains(uint64(flags), O_APPEND) {
+	if eventArgumentContainsOption(uint64(flags), O_APPEND) {
 		f = append(f, "O_APPEND")
 	}
-	if flagsContains(uint64(flags), O_NONBLOCK) {
+	if eventArgumentContainsOption(uint64(flags), O_NONBLOCK) {
 		f = append(f, "O_NONBLOCK")
 	}
-	if flagsContains(uint64(flags), O_SYNC) {
+	if eventArgumentContainsOption(uint64(flags), O_SYNC) {
 		f = append(f, "O_SYNC")
 	}
-	if flagsContains(uint64(flags), O_ASYNC) {
+	if eventArgumentContainsOption(uint64(flags), O_ASYNC) {
 		f = append(f, "O_ASYNC")
 	}
-	if flagsContains(uint64(flags), O_LARGEFILE) {
+	if eventArgumentContainsOption(uint64(flags), O_LARGEFILE) {
 		f = append(f, "O_LARGEFILE")
 	}
-	if flagsContains(uint64(flags), O_DIRECTORY) {
+	if eventArgumentContainsOption(uint64(flags), O_DIRECTORY) {
 		f = append(f, "O_DIRECTORY")
 	}
-	if flagsContains(uint64(flags), O_NOFOLLOW) {
+	if eventArgumentContainsOption(uint64(flags), O_NOFOLLOW) {
 		f = append(f, "O_NOFOLLOW")
 	}
-	if flagsContains(uint64(flags), O_CLOEXEC) {
+	if eventArgumentContainsOption(uint64(flags), O_CLOEXEC) {
 		f = append(f, "O_CLOEXEC")
 	}
-	if flagsContains(uint64(flags), O_DIRECT) {
+	if eventArgumentContainsOption(uint64(flags), O_DIRECT) {
 		f = append(f, "O_DIRECT")
 	}
-	if flagsContains(uint64(flags), O_NOATIME) {
+	if eventArgumentContainsOption(uint64(flags), O_NOATIME) {
 		f = append(f, "O_NOATIME")
 	}
-	if flagsContains(uint64(flags), O_PATH) {
+	if eventArgumentContainsOption(uint64(flags), O_PATH) {
 		f = append(f, "O_PATH")
 	}
-	if flagsContains(uint64(flags), O_TMPFILE) {
+	if eventArgumentContainsOption(uint64(flags), O_TMPFILE) {
 		f = append(f, "O_TMPFILE")
 	}
 
@@ -190,13 +190,13 @@ func ParseAccessMode(mode uint32) string {
 }
 
 // ParseExecFlags parses the `flags` bitmask argument of the `execve` syscall
-// http://man7.org/linux/man-pages/man2/axecveat.2.html
+// http://man7.org/linux/man-pages/man2/execveat.2.html
 func ParseExecFlags(flags uint32) string {
 	var f []string
-	if flags&0x100 == 0x100 {
+	if eventArgumentContainsOption(uint64(flags), AT_EMPTY_PATH) {
 		f = append(f, "AT_EMPTY_PATH")
 	}
-	if flags&0x1000 == 0x1000 {
+	if eventArgumentContainsOption(uint64(flags), AT_SYMLINK_NOFOLLOW) {
 		f = append(f, "AT_SYMLINK_NOFOLLOW")
 	}
 	if len(f) == 0 {
@@ -210,76 +210,76 @@ func ParseExecFlags(flags uint32) string {
 // https://man7.org/linux/man-pages/man2/clone.2.html
 func ParseCloneFlags(flags uint64) string {
 	var f []string
-	if flagsContains(flags, CLONE_VM) {
+	if eventArgumentContainsOption(flags, CLONE_VM) {
 		f = append(f, "CLONE_VM")
 	}
-	if flagsContains(flags, CLONE_FS) {
+	if eventArgumentContainsOption(flags, CLONE_FS) {
 		f = append(f, "CLONE_FS")
 	}
-	if flagsContains(flags, CLONE_FILES) {
+	if eventArgumentContainsOption(flags, CLONE_FILES) {
 		f = append(f, "CLONE_FILES")
 	}
-	if flagsContains(flags, CLONE_SIGHAND) {
+	if eventArgumentContainsOption(flags, CLONE_SIGHAND) {
 		f = append(f, "CLONE_SIGHAND")
 	}
-	if flagsContains(flags, CLONE_PIDFD) {
+	if eventArgumentContainsOption(flags, CLONE_PIDFD) {
 		f = append(f, "CLONE_PIDFD")
 	}
-	if flagsContains(flags, CLONE_PTRACE) {
+	if eventArgumentContainsOption(flags, CLONE_PTRACE) {
 		f = append(f, "CLONE_PTRACE")
 	}
-	if flagsContains(flags, CLONE_VFORK) {
+	if eventArgumentContainsOption(flags, CLONE_VFORK) {
 		f = append(f, "CLONE_VFORK")
 	}
-	if flagsContains(flags, CLONE_PARENT) {
+	if eventArgumentContainsOption(flags, CLONE_PARENT) {
 		f = append(f, "CLONE_PARENT")
 	}
-	if flagsContains(flags, CLONE_THREAD) {
+	if eventArgumentContainsOption(flags, CLONE_THREAD) {
 		f = append(f, "CLONE_THREAD")
 	}
-	if flagsContains(flags, CLONE_NEWNS) {
+	if eventArgumentContainsOption(flags, CLONE_NEWNS) {
 		f = append(f, "CLONE_NEWNS")
 	}
-	if flagsContains(flags, CLONE_SYSVSEM) {
+	if eventArgumentContainsOption(flags, CLONE_SYSVSEM) {
 		f = append(f, "CLONE_SYSVSEM")
 	}
-	if flagsContains(flags, CLONE_SETTLS) {
+	if eventArgumentContainsOption(flags, CLONE_SETTLS) {
 		f = append(f, "CLONE_SETTLS")
 	}
-	if flagsContains(flags, CLONE_PARENT_SETTID) {
+	if eventArgumentContainsOption(flags, CLONE_PARENT_SETTID) {
 		f = append(f, "CLONE_PARENT_SETTID")
 	}
-	if flagsContains(flags, CLONE_CHILD_CLEARTID) {
+	if eventArgumentContainsOption(flags, CLONE_CHILD_CLEARTID) {
 		f = append(f, "CLONE_CHILD_CLEARTID")
 	}
-	if flagsContains(flags, CLONE_DETACHED) {
+	if eventArgumentContainsOption(flags, CLONE_DETACHED) {
 		f = append(f, "CLONE_DETACHED")
 	}
-	if flagsContains(flags, CLONE_UNTRACED) {
+	if eventArgumentContainsOption(flags, CLONE_UNTRACED) {
 		f = append(f, "CLONE_UNTRACED")
 	}
-	if flagsContains(flags, CLONE_CHILD_SETTID) {
+	if eventArgumentContainsOption(flags, CLONE_CHILD_SETTID) {
 		f = append(f, "CLONE_CHILD_SETTID")
 	}
-	if flagsContains(flags, CLONE_NEWCGROUP) {
+	if eventArgumentContainsOption(flags, CLONE_NEWCGROUP) {
 		f = append(f, "CLONE_NEWCGROUP")
 	}
-	if flagsContains(flags, CLONE_NEWUTS) {
+	if eventArgumentContainsOption(flags, CLONE_NEWUTS) {
 		f = append(f, "CLONE_NEWUTS")
 	}
-	if flagsContains(flags, CLONE_NEWIPC) {
+	if eventArgumentContainsOption(flags, CLONE_NEWIPC) {
 		f = append(f, "CLONE_NEWIPC")
 	}
-	if flagsContains(flags, CLONE_NEWUSER) {
+	if eventArgumentContainsOption(flags, CLONE_NEWUSER) {
 		f = append(f, "CLONE_NEWUSER")
 	}
-	if flagsContains(flags, CLONE_NEWPID) {
+	if eventArgumentContainsOption(flags, CLONE_NEWPID) {
 		f = append(f, "CLONE_NEWPID")
 	}
-	if flagsContains(flags, CLONE_NEWNET) {
+	if eventArgumentContainsOption(flags, CLONE_NEWNET) {
 		f = append(f, "CLONE_NEWNET")
 	}
-	if flagsContains(flags, CLONE_IO) {
+	if eventArgumentContainsOption(flags, CLONE_IO) {
 		f = append(f, "CLONE_IO")
 	}
 	if len(f) == 0 {
