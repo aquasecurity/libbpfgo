@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-type SystemCallArgument interface {
+type SystemFunctionArgument interface {
 	fmt.Stringer
 	Value() uint64
 }
@@ -336,12 +336,18 @@ const (
 	AF_XDP
 )
 
-// OptionIsContainedInArgument checks whether the argument (rawArgument)
-// contains the 'option' such as with flags passed to the clone flag.
+// OptionAreContainedInArgument checks whether the argument (rawArgument)
+// contains all of the 'options' such as with flags passed to the clone flag.
+// This function takes an arbitrary number of SystemCallArguments.It will
+// only return true if each and every option is present in rawArgument.
 // Typically linux syscalls have multiple options specified in a single
 // argument via bitmasks = which this function checks for.
-func OptionIsContainedInArgument(rawArgument SystemCallArgument, option SystemCallArgument) bool {
-	return option.Value()&rawArgument.Value() == option.Value()
+func OptionAreContainedInArgument(rawArgument SystemFunctionArgument, options ...SystemFunctionArgument) bool {
+	var isPresent = true
+	for _, option := range options {
+		isPresent = isPresent && (option.Value()&rawArgument.Value() == option.Value())
+	}
+	return isPresent
 }
 
 type CloneFlagArgument uint64
@@ -350,76 +356,76 @@ func (c CloneFlagArgument) Value() uint64 { return uint64(c) }
 
 func (c CloneFlagArgument) String() string {
 	var f []string
-	if OptionIsContainedInArgument(c, CLONE_VM) {
+	if OptionAreContainedInArgument(c, CLONE_VM) {
 		f = append(f, "CLONE_VM")
 	}
-	if OptionIsContainedInArgument(c, CLONE_FS) {
+	if OptionAreContainedInArgument(c, CLONE_FS) {
 		f = append(f, "CLONE_FS")
 	}
-	if OptionIsContainedInArgument(c, CLONE_FILES) {
+	if OptionAreContainedInArgument(c, CLONE_FILES) {
 		f = append(f, "CLONE_FILES")
 	}
-	if OptionIsContainedInArgument(c, CLONE_SIGHAND) {
+	if OptionAreContainedInArgument(c, CLONE_SIGHAND) {
 		f = append(f, "CLONE_SIGHAND")
 	}
-	if OptionIsContainedInArgument(c, CLONE_PIDFD) {
+	if OptionAreContainedInArgument(c, CLONE_PIDFD) {
 		f = append(f, "CLONE_PIDFD")
 	}
-	if OptionIsContainedInArgument(c, CLONE_PTRACE) {
+	if OptionAreContainedInArgument(c, CLONE_PTRACE) {
 		f = append(f, "CLONE_PTRACE")
 	}
-	if OptionIsContainedInArgument(c, CLONE_VFORK) {
+	if OptionAreContainedInArgument(c, CLONE_VFORK) {
 		f = append(f, "CLONE_VFORK")
 	}
-	if OptionIsContainedInArgument(c, CLONE_PARENT) {
+	if OptionAreContainedInArgument(c, CLONE_PARENT) {
 		f = append(f, "CLONE_PARENT")
 	}
-	if OptionIsContainedInArgument(c, CLONE_THREAD) {
+	if OptionAreContainedInArgument(c, CLONE_THREAD) {
 		f = append(f, "CLONE_THREAD")
 	}
-	if OptionIsContainedInArgument(c, CLONE_NEWNS) {
+	if OptionAreContainedInArgument(c, CLONE_NEWNS) {
 		f = append(f, "CLONE_NEWNS")
 	}
-	if OptionIsContainedInArgument(c, CLONE_SYSVSEM) {
+	if OptionAreContainedInArgument(c, CLONE_SYSVSEM) {
 		f = append(f, "CLONE_SYSVSEM")
 	}
-	if OptionIsContainedInArgument(c, CLONE_SETTLS) {
+	if OptionAreContainedInArgument(c, CLONE_SETTLS) {
 		f = append(f, "CLONE_SETTLS")
 	}
-	if OptionIsContainedInArgument(c, CLONE_PARENT_SETTID) {
+	if OptionAreContainedInArgument(c, CLONE_PARENT_SETTID) {
 		f = append(f, "CLONE_PARENT_SETTID")
 	}
-	if OptionIsContainedInArgument(c, CLONE_CHILD_CLEARTID) {
+	if OptionAreContainedInArgument(c, CLONE_CHILD_CLEARTID) {
 		f = append(f, "CLONE_CHILD_CLEARTID")
 	}
-	if OptionIsContainedInArgument(c, CLONE_DETACHED) {
+	if OptionAreContainedInArgument(c, CLONE_DETACHED) {
 		f = append(f, "CLONE_DETACHED")
 	}
-	if OptionIsContainedInArgument(c, CLONE_UNTRACED) {
+	if OptionAreContainedInArgument(c, CLONE_UNTRACED) {
 		f = append(f, "CLONE_UNTRACED")
 	}
-	if OptionIsContainedInArgument(c, CLONE_CHILD_SETTID) {
+	if OptionAreContainedInArgument(c, CLONE_CHILD_SETTID) {
 		f = append(f, "CLONE_CHILD_SETTID")
 	}
-	if OptionIsContainedInArgument(c, CLONE_NEWCGROUP) {
+	if OptionAreContainedInArgument(c, CLONE_NEWCGROUP) {
 		f = append(f, "CLONE_NEWCGROUP")
 	}
-	if OptionIsContainedInArgument(c, CLONE_NEWUTS) {
+	if OptionAreContainedInArgument(c, CLONE_NEWUTS) {
 		f = append(f, "CLONE_NEWUTS")
 	}
-	if OptionIsContainedInArgument(c, CLONE_NEWIPC) {
+	if OptionAreContainedInArgument(c, CLONE_NEWIPC) {
 		f = append(f, "CLONE_NEWIPC")
 	}
-	if OptionIsContainedInArgument(c, CLONE_NEWUSER) {
+	if OptionAreContainedInArgument(c, CLONE_NEWUSER) {
 		f = append(f, "CLONE_NEWUSER")
 	}
-	if OptionIsContainedInArgument(c, CLONE_NEWPID) {
+	if OptionAreContainedInArgument(c, CLONE_NEWPID) {
 		f = append(f, "CLONE_NEWPID")
 	}
-	if OptionIsContainedInArgument(c, CLONE_NEWNET) {
+	if OptionAreContainedInArgument(c, CLONE_NEWNET) {
 		f = append(f, "CLONE_NEWNET")
 	}
-	if OptionIsContainedInArgument(c, CLONE_IO) {
+	if OptionAreContainedInArgument(c, CLONE_IO) {
 		f = append(f, "CLONE_IO")
 	}
 	if len(f) == 0 {
@@ -441,61 +447,61 @@ func (o OpenFlagArgument) String() string {
 
 	// access mode
 	switch {
-	case OptionIsContainedInArgument(o, O_WRONLY):
+	case OptionAreContainedInArgument(o, O_WRONLY):
 		f = append(f, "O_WRONLY")
-	case OptionIsContainedInArgument(o, O_RDWR):
+	case OptionAreContainedInArgument(o, O_RDWR):
 		f = append(f, "O_RDWR")
 	default:
 		f = append(f, "O_RDONLY")
 	}
 
 	// file creation and status flags
-	if OptionIsContainedInArgument(o, O_CREAT) {
+	if OptionAreContainedInArgument(o, O_CREAT) {
 		f = append(f, "O_CREAT")
 	}
-	if OptionIsContainedInArgument(o, O_EXCL) {
+	if OptionAreContainedInArgument(o, O_EXCL) {
 		f = append(f, "O_EXCL")
 	}
-	if OptionIsContainedInArgument(o, O_NOCTTY) {
+	if OptionAreContainedInArgument(o, O_NOCTTY) {
 		f = append(f, "O_NOCTTY")
 	}
-	if OptionIsContainedInArgument(o, O_TRUNC) {
+	if OptionAreContainedInArgument(o, O_TRUNC) {
 		f = append(f, "O_TRUNC")
 	}
-	if OptionIsContainedInArgument(o, O_APPEND) {
+	if OptionAreContainedInArgument(o, O_APPEND) {
 		f = append(f, "O_APPEND")
 	}
-	if OptionIsContainedInArgument(o, O_NONBLOCK) {
+	if OptionAreContainedInArgument(o, O_NONBLOCK) {
 		f = append(f, "O_NONBLOCK")
 	}
-	if OptionIsContainedInArgument(o, O_SYNC) {
+	if OptionAreContainedInArgument(o, O_SYNC) {
 		f = append(f, "O_SYNC")
 	}
-	if OptionIsContainedInArgument(o, O_ASYNC) {
+	if OptionAreContainedInArgument(o, O_ASYNC) {
 		f = append(f, "O_ASYNC")
 	}
-	if OptionIsContainedInArgument(o, O_LARGEFILE) {
+	if OptionAreContainedInArgument(o, O_LARGEFILE) {
 		f = append(f, "O_LARGEFILE")
 	}
-	if OptionIsContainedInArgument(o, O_DIRECTORY) {
+	if OptionAreContainedInArgument(o, O_DIRECTORY) {
 		f = append(f, "O_DIRECTORY")
 	}
-	if OptionIsContainedInArgument(o, O_NOFOLLOW) {
+	if OptionAreContainedInArgument(o, O_NOFOLLOW) {
 		f = append(f, "O_NOFOLLOW")
 	}
-	if OptionIsContainedInArgument(o, O_CLOEXEC) {
+	if OptionAreContainedInArgument(o, O_CLOEXEC) {
 		f = append(f, "O_CLOEXEC")
 	}
-	if OptionIsContainedInArgument(o, O_DIRECT) {
+	if OptionAreContainedInArgument(o, O_DIRECT) {
 		f = append(f, "O_DIRECT")
 	}
-	if OptionIsContainedInArgument(o, O_NOATIME) {
+	if OptionAreContainedInArgument(o, O_NOATIME) {
 		f = append(f, "O_NOATIME")
 	}
-	if OptionIsContainedInArgument(o, O_PATH) {
+	if OptionAreContainedInArgument(o, O_PATH) {
 		f = append(f, "O_PATH")
 	}
-	if OptionIsContainedInArgument(o, O_TMPFILE) {
+	if OptionAreContainedInArgument(o, O_TMPFILE) {
 		f = append(f, "O_TMPFILE")
 	}
 
@@ -513,13 +519,13 @@ func (a AccessFlagArgument) String() string {
 	if a == 0x0 {
 		f = append(f, "F_OK")
 	} else {
-		if OptionIsContainedInArgument(a, R_OK) {
+		if OptionAreContainedInArgument(a, R_OK) {
 			f = append(f, "R_OK")
 		}
-		if OptionIsContainedInArgument(a, W_OK) {
+		if OptionAreContainedInArgument(a, W_OK) {
 			f = append(f, "W_OK")
 		}
-		if OptionIsContainedInArgument(a, X_OK) {
+		if OptionAreContainedInArgument(a, X_OK) {
 			f = append(f, "X_OK")
 		}
 	}
@@ -532,31 +538,31 @@ func (e ExecFlagArgument) Value() uint64 { return uint64(e) }
 
 func (e ExecFlagArgument) String() string {
 	var f []string
-	if OptionIsContainedInArgument(e, AT_EMPTY_PATH) {
+	if OptionAreContainedInArgument(e, AT_EMPTY_PATH) {
 		f = append(f, "AT_EMPTY_PATH")
 	}
-	if OptionIsContainedInArgument(e, AT_SYMLINK_NOFOLLOW) {
+	if OptionAreContainedInArgument(e, AT_SYMLINK_NOFOLLOW) {
 		f = append(f, "AT_SYMLINK_NOFOLLOW")
 	}
-	if OptionIsContainedInArgument(e, AT_EACCESS) {
+	if OptionAreContainedInArgument(e, AT_EACCESS) {
 		f = append(f, "AT_EACCESS")
 	}
-	if OptionIsContainedInArgument(e, AT_REMOVEDIR) {
+	if OptionAreContainedInArgument(e, AT_REMOVEDIR) {
 		f = append(f, "AT_REMOVEDIR")
 	}
-	if OptionIsContainedInArgument(e, AT_NO_AUTOMOUNT) {
+	if OptionAreContainedInArgument(e, AT_NO_AUTOMOUNT) {
 		f = append(f, "AT_NO_AUTOMOUNT")
 	}
-	if OptionIsContainedInArgument(e, AT_STATX_SYNC_TYPE) {
+	if OptionAreContainedInArgument(e, AT_STATX_SYNC_TYPE) {
 		f = append(f, "AT_STATX_SYNC_TYPE")
 	}
-	if OptionIsContainedInArgument(e, AT_STATX_FORCE_SYNC) {
+	if OptionAreContainedInArgument(e, AT_STATX_FORCE_SYNC) {
 		f = append(f, "AT_STATX_FORCE_SYNC")
 	}
-	if OptionIsContainedInArgument(e, AT_STATX_DONT_SYNC) {
+	if OptionAreContainedInArgument(e, AT_STATX_DONT_SYNC) {
 		f = append(f, "AT_STATX_DONT_SYNC")
 	}
-	if OptionIsContainedInArgument(e, AT_RECURSIVE) {
+	if OptionAreContainedInArgument(e, AT_RECURSIVE) {
 		f = append(f, "AT_RECURSIVE")
 	}
 	if len(f) == 0 {
@@ -893,10 +899,10 @@ func (s SocketTypeArgument) String() string {
 	} else {
 		f = append(f, strconv.Itoa(int(s)))
 	}
-	if OptionIsContainedInArgument(s, SOCK_NONBLOCK) {
+	if OptionAreContainedInArgument(s, SOCK_NONBLOCK) {
 		f = append(f, "SOCK_NONBLOCK")
 	}
-	if OptionIsContainedInArgument(s, SOCK_CLOEXEC) {
+	if OptionAreContainedInArgument(s, SOCK_CLOEXEC) {
 		f = append(f, "SOCK_CLOEXEC")
 	}
 
@@ -912,62 +918,62 @@ func (mode InodeModeArgument) String() string {
 
 	// File Type
 	switch {
-	case OptionIsContainedInArgument(mode, S_IFSOCK):
+	case OptionAreContainedInArgument(mode, S_IFSOCK):
 		f = append(f, "S_IFSOCK")
-	case OptionIsContainedInArgument(mode, S_IFLNK):
+	case OptionAreContainedInArgument(mode, S_IFLNK):
 		f = append(f, "S_IFLNK")
-	case OptionIsContainedInArgument(mode, S_IFREG):
+	case OptionAreContainedInArgument(mode, S_IFREG):
 		f = append(f, "S_IFREG")
-	case OptionIsContainedInArgument(mode, S_IFBLK):
+	case OptionAreContainedInArgument(mode, S_IFBLK):
 		f = append(f, "S_IFBLK")
-	case OptionIsContainedInArgument(mode, S_IFDIR):
+	case OptionAreContainedInArgument(mode, S_IFDIR):
 		f = append(f, "S_IFDIR")
-	case OptionIsContainedInArgument(mode, S_IFCHR):
+	case OptionAreContainedInArgument(mode, S_IFCHR):
 		f = append(f, "S_IFCHR")
-	case OptionIsContainedInArgument(mode, S_IFIFO):
+	case OptionAreContainedInArgument(mode, S_IFIFO):
 		f = append(f, "S_IFIFO")
 	}
 
 	// File Mode
 	// Owner
-	if OptionIsContainedInArgument(mode, S_IRWXU) {
+	if OptionAreContainedInArgument(mode, S_IRWXU) {
 		f = append(f, "S_IRWXU")
 	} else {
-		if OptionIsContainedInArgument(mode, S_IRUSR) {
+		if OptionAreContainedInArgument(mode, S_IRUSR) {
 			f = append(f, "S_IRUSR")
 		}
-		if OptionIsContainedInArgument(mode, S_IWUSR) {
+		if OptionAreContainedInArgument(mode, S_IWUSR) {
 			f = append(f, "S_IWUSR")
 		}
-		if OptionIsContainedInArgument(mode, S_IXUSR) {
+		if OptionAreContainedInArgument(mode, S_IXUSR) {
 			f = append(f, "S_IXUSR")
 		}
 	}
 	// Group
-	if OptionIsContainedInArgument(mode, S_IRWXG) {
+	if OptionAreContainedInArgument(mode, S_IRWXG) {
 		f = append(f, "S_IRWXG")
 	} else {
-		if OptionIsContainedInArgument(mode, S_IRGRP) {
+		if OptionAreContainedInArgument(mode, S_IRGRP) {
 			f = append(f, "S_IRGRP")
 		}
-		if OptionIsContainedInArgument(mode, S_IWGRP) {
+		if OptionAreContainedInArgument(mode, S_IWGRP) {
 			f = append(f, "S_IWGRP")
 		}
-		if OptionIsContainedInArgument(mode, S_IXGRP) {
+		if OptionAreContainedInArgument(mode, S_IXGRP) {
 			f = append(f, "S_IXGRP")
 		}
 	}
 	// Others
-	if OptionIsContainedInArgument(mode, S_IRWXO) {
+	if OptionAreContainedInArgument(mode, S_IRWXO) {
 		f = append(f, "S_IRWXO")
 	} else {
-		if OptionIsContainedInArgument(mode, S_IROTH) {
+		if OptionAreContainedInArgument(mode, S_IROTH) {
 			f = append(f, "S_IROTH")
 		}
-		if OptionIsContainedInArgument(mode, S_IWOTH) {
+		if OptionAreContainedInArgument(mode, S_IWOTH) {
 			f = append(f, "S_IWOTH")
 		}
-		if OptionIsContainedInArgument(mode, S_IXOTH) {
+		if OptionAreContainedInArgument(mode, S_IXOTH) {
 			f = append(f, "S_IXOTH")
 		}
 	}
@@ -987,22 +993,22 @@ func (p MmapProtArgument) String() string {
 	if p == PROT_NONE {
 		f = append(f, "PROT_NONE")
 	} else {
-		if OptionIsContainedInArgument(p, PROT_READ) {
+		if OptionAreContainedInArgument(p, PROT_READ) {
 			f = append(f, "PROT_READ")
 		}
-		if OptionIsContainedInArgument(p, PROT_WRITE) {
+		if OptionAreContainedInArgument(p, PROT_WRITE) {
 			f = append(f, "PROT_WRITE")
 		}
-		if OptionIsContainedInArgument(p, PROT_EXEC) {
+		if OptionAreContainedInArgument(p, PROT_EXEC) {
 			f = append(f, "PROT_EXEC")
 		}
-		if OptionIsContainedInArgument(p, PROT_SEM) {
+		if OptionAreContainedInArgument(p, PROT_SEM) {
 			f = append(f, "PROT_SEM")
 		}
-		if OptionIsContainedInArgument(p, PROT_GROWSDOWN) {
+		if OptionAreContainedInArgument(p, PROT_GROWSDOWN) {
 			f = append(f, "PROT_GROWSDOWN")
 		}
-		if OptionIsContainedInArgument(p, PROT_GROWSUP) {
+		if OptionAreContainedInArgument(p, PROT_GROWSUP) {
 			f = append(f, "PROT_GROWSUP")
 		}
 	}
