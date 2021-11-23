@@ -2,6 +2,8 @@ package helpers
 
 import (
 	"bufio"
+	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -227,4 +229,16 @@ func (btfi *OSInfo) discoverOSDistro() error {
 	}
 
 	return nil
+}
+
+func FtraceEnabled() (bool, error) {
+	b, err := os.ReadFile("/proc/sys/kernel/ftrace_enabled")
+	if err != nil {
+		return false, fmt.Errorf("could not read from ftrace_enabled file: %s", err.Error())
+	}
+	b = bytes.TrimSpace(b)
+	if len(b) != 1 {
+		return false, errors.New("malformed ftrace_enabled file")
+	}
+	return b[0] == '1', nil
 }
