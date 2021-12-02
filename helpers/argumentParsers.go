@@ -63,22 +63,22 @@ var (
 	O_PATH      OpenFlagArgument = OpenFlagArgument{rawValue: 040000000, stringValue: "O_PATH"}
 	O_TMPFILE   OpenFlagArgument = OpenFlagArgument{rawValue: 020000000, stringValue: "O_TMPFILE"}
 
-	F_OK AccessFlagArgument = 0
-	X_OK AccessFlagArgument = 1
-	W_OK AccessFlagArgument = 2
-	R_OK AccessFlagArgument = 4
+	F_OK AccessModeArgument = AccessModeArgument{rawValue: 0, stringValue: "F_OK"}
+	X_OK AccessModeArgument = AccessModeArgument{rawValue: 1, stringValue: "X_OK"}
+	W_OK AccessModeArgument = AccessModeArgument{rawValue: 2, stringValue: "W_OK"}
+	R_OK AccessModeArgument = AccessModeArgument{rawValue: 4, stringValue: "R_OK"}
 
-	AT_SYMLINK_NOFOLLOW   ExecFlagArgument = 0x100
-	AT_EACCESS            ExecFlagArgument = 0x200
-	AT_REMOVEDIR          ExecFlagArgument = 0x200
-	AT_SYMLINK_FOLLOW     ExecFlagArgument = 0x400
-	AT_NO_AUTOMOUNT       ExecFlagArgument = 0x800
-	AT_EMPTY_PATH         ExecFlagArgument = 0x1000
-	AT_STATX_SYNC_TYPE    ExecFlagArgument = 0x6000
-	AT_STATX_SYNC_AS_STAT ExecFlagArgument = 0x0000
-	AT_STATX_FORCE_SYNC   ExecFlagArgument = 0x2000
-	AT_STATX_DONT_SYNC    ExecFlagArgument = 0x4000
-	AT_RECURSIVE          ExecFlagArgument = 0x8000
+	AT_SYMLINK_NOFOLLOW   ExecFlagArgument = ExecFlagArgument{stringValue: "AT_SYMLINK_NOFOLLOW", rawValue: 0x100}
+	AT_EACCESS            ExecFlagArgument = ExecFlagArgument{stringValue: "AT_EACCESS", rawValue: 0x200}
+	AT_REMOVEDIR          ExecFlagArgument = ExecFlagArgument{stringValue: "AT_REMOVEDIR", rawValue: 0x200}
+	AT_SYMLINK_FOLLOW     ExecFlagArgument = ExecFlagArgument{stringValue: "AT_SYMLINK_FOLLOW", rawValue: 0x400}
+	AT_NO_AUTOMOUNT       ExecFlagArgument = ExecFlagArgument{stringValue: "AT_NO_AUTOMOUNT", rawValue: 0x800}
+	AT_EMPTY_PATH         ExecFlagArgument = ExecFlagArgument{stringValue: "AT_EMPTY_PATH", rawValue: 0x1000}
+	AT_STATX_SYNC_TYPE    ExecFlagArgument = ExecFlagArgument{stringValue: "AT_STATX_SYNC_TYPE", rawValue: 0x6000}
+	AT_STATX_SYNC_AS_STAT ExecFlagArgument = ExecFlagArgument{stringValue: "AT_STATX_SYNC_AS_STAT", rawValue: 0x0000}
+	AT_STATX_FORCE_SYNC   ExecFlagArgument = ExecFlagArgument{stringValue: "AT_STATX_FORCE_SYNC", rawValue: 0x2000}
+	AT_STATX_DONT_SYNC    ExecFlagArgument = ExecFlagArgument{stringValue: "AT_STATX_DONT_SYNC", rawValue: 0x4000}
+	AT_RECURSIVE          ExecFlagArgument = ExecFlagArgument{stringValue: "AT_RECURSIVE", rawValue: 0x8000}
 
 	PTRACE_TRACEME              PtraceRequestArgument = 0
 	PTRACE_PEEKTEXT             PtraceRequestArgument = 1
@@ -114,43 +114,43 @@ var (
 	PTRACE_SECCOMP_GET_FILTER   PtraceRequestArgument = 0x420c
 	PTRACE_SECCOMP_GET_METADATA PtraceRequestArgument = 0x420d
 
-	SOCK_STREAM    SocketTypeArgument = 1
-	SOCK_DGRAM     SocketTypeArgument = 2
-	SOCK_RAW       SocketTypeArgument = 3
-	SOCK_RDM       SocketTypeArgument = 4
-	SOCK_SEQPACKET SocketTypeArgument = 5
-	SOCK_DCCP      SocketTypeArgument = 6
-	SOCK_PACKET    SocketTypeArgument = 10
-	SOCK_NONBLOCK  SocketTypeArgument = 000004000
-	SOCK_CLOEXEC   SocketTypeArgument = 002000000
+	SOCK_STREAM    SocketTypeArgument = SocketTypeArgument{rawValue: 1, stringValue: "SOCK_STREAM"}
+	SOCK_DGRAM     SocketTypeArgument = SocketTypeArgument{rawValue: 2, stringValue: "SOCK_DGRAM"}
+	SOCK_RAW       SocketTypeArgument = SocketTypeArgument{rawValue: 3, stringValue: "SOCK_RAW"}
+	SOCK_RDM       SocketTypeArgument = SocketTypeArgument{rawValue: 4, stringValue: "SOCK_RDM"}
+	SOCK_SEQPACKET SocketTypeArgument = SocketTypeArgument{rawValue: 5, stringValue: "SOCK_SEQPACKET"}
+	SOCK_DCCP      SocketTypeArgument = SocketTypeArgument{rawValue: 6, stringValue: "SOCK_DCCP"}
+	SOCK_PACKET    SocketTypeArgument = SocketTypeArgument{rawValue: 10, stringValue: "SOCK_PACKET"}
+	SOCK_NONBLOCK  SocketTypeArgument = SocketTypeArgument{rawValue: 000004000, stringValue: "SOCK_NONBLOCK"}
+	SOCK_CLOEXEC   SocketTypeArgument = SocketTypeArgument{rawValue: 002000000, stringValue: "SOCK_CLOEXEC"}
 
-	S_IFSOCK InodeModeArgument = 0140000
-	S_IFLNK  InodeModeArgument = 0120000
-	S_IFREG  InodeModeArgument = 0100000
-	S_IFBLK  InodeModeArgument = 060000
-	S_IFDIR  InodeModeArgument = 040000
-	S_IFCHR  InodeModeArgument = 020000
-	S_IFIFO  InodeModeArgument = 010000
-	S_IRWXU  InodeModeArgument = 00700
-	S_IRUSR  InodeModeArgument = 00400
-	S_IWUSR  InodeModeArgument = 00200
-	S_IXUSR  InodeModeArgument = 00100
-	S_IRWXG  InodeModeArgument = 00070
-	S_IRGRP  InodeModeArgument = 00040
-	S_IWGRP  InodeModeArgument = 00020
-	S_IXGRP  InodeModeArgument = 00010
-	S_IRWXO  InodeModeArgument = 00007
-	S_IROTH  InodeModeArgument = 00004
-	S_IWOTH  InodeModeArgument = 00002
-	S_IXOTH  InodeModeArgument = 00001
+	S_IFSOCK InodeModeArgument = InodeModeArgument{stringValue: "S_IFSOCK", rawValue: 0140000}
+	S_IFLNK  InodeModeArgument = InodeModeArgument{stringValue: "S_IFLNK", rawValue: 0120000}
+	S_IFREG  InodeModeArgument = InodeModeArgument{stringValue: "S_IFREG", rawValue: 0100000}
+	S_IFBLK  InodeModeArgument = InodeModeArgument{stringValue: "S_IFBLK", rawValue: 060000}
+	S_IFDIR  InodeModeArgument = InodeModeArgument{stringValue: "S_IFDIR", rawValue: 040000}
+	S_IFCHR  InodeModeArgument = InodeModeArgument{stringValue: "S_IFCHR", rawValue: 020000}
+	S_IFIFO  InodeModeArgument = InodeModeArgument{stringValue: "S_IFIFO", rawValue: 010000}
+	S_IRWXU  InodeModeArgument = InodeModeArgument{stringValue: "S_IRWXU", rawValue: 00700}
+	S_IRUSR  InodeModeArgument = InodeModeArgument{stringValue: "S_IRUSR", rawValue: 00400}
+	S_IWUSR  InodeModeArgument = InodeModeArgument{stringValue: "S_IWUSR", rawValue: 00200}
+	S_IXUSR  InodeModeArgument = InodeModeArgument{stringValue: "S_IXUSR", rawValue: 00100}
+	S_IRWXG  InodeModeArgument = InodeModeArgument{stringValue: "S_IRWXG", rawValue: 00070}
+	S_IRGRP  InodeModeArgument = InodeModeArgument{stringValue: "S_IRGRP", rawValue: 00040}
+	S_IWGRP  InodeModeArgument = InodeModeArgument{stringValue: "S_IWGRP", rawValue: 00020}
+	S_IXGRP  InodeModeArgument = InodeModeArgument{stringValue: "S_IXGRP", rawValue: 00010}
+	S_IRWXO  InodeModeArgument = InodeModeArgument{stringValue: "S_IRWXO", rawValue: 00007}
+	S_IROTH  InodeModeArgument = InodeModeArgument{stringValue: "S_IROTH", rawValue: 00004}
+	S_IWOTH  InodeModeArgument = InodeModeArgument{stringValue: "S_IWOTH", rawValue: 00002}
+	S_IXOTH  InodeModeArgument = InodeModeArgument{stringValue: "S_IXOTH", rawValue: 00001}
 
-	PROT_READ      MmapProtArgument = 0x1
-	PROT_WRITE     MmapProtArgument = 0x2
-	PROT_EXEC      MmapProtArgument = 0x4
-	PROT_SEM       MmapProtArgument = 0x8
-	PROT_NONE      MmapProtArgument = 0x0
-	PROT_GROWSDOWN MmapProtArgument = 0x01000000
-	PROT_GROWSUP   MmapProtArgument = 0x02000000
+	PROT_READ      MmapProtArgument = MmapProtArgument{stringValue: "PROT_READ", rawValue: 0x1}
+	PROT_WRITE     MmapProtArgument = MmapProtArgument{stringValue: "PROT_WRITE", rawValue: 0x2}
+	PROT_EXEC      MmapProtArgument = MmapProtArgument{stringValue: "PROT_EXEC", rawValue: 0x4}
+	PROT_SEM       MmapProtArgument = MmapProtArgument{stringValue: "PROT_SEM", rawValue: 0x8}
+	PROT_NONE      MmapProtArgument = MmapProtArgument{stringValue: "PROT_NONE", rawValue: 0x0}
+	PROT_GROWSDOWN MmapProtArgument = MmapProtArgument{stringValue: "PROT_GROWSDOWN", rawValue: 0x01000000}
+	PROT_GROWSUP   MmapProtArgument = MmapProtArgument{stringValue: "PROT_GROWSUP", rawValue: 0x02000000}
 )
 
 const (
@@ -438,26 +438,6 @@ func ParseCloneFlags(rawValue uint64) (CloneFlagArgument, error) {
 	return CloneFlagArgument{stringValue: strings.Join(f, "|"), rawValue: rawValue}, nil
 }
 
-// ParseSocketType parses the `type` bitmask argument of the `socket` syscall
-// http://man7.org/linux/man-pages/man2/socket.2.html
-func ParseSocketType(st uint64) (SocketTypeArgument, error) {
-	var socketTypes = map[uint64]SocketTypeArgument{
-		1:  SOCK_STREAM,
-		2:  SOCK_DGRAM,
-		3:  SOCK_RAW,
-		4:  SOCK_RDM,
-		5:  SOCK_SEQPACKET,
-		6:  SOCK_DCCP,
-		10: SOCK_PACKET,
-	}
-
-	v, ok := socketTypes[st]
-	if !ok {
-		return 0, fmt.Errorf("not a valid argument: %d", st)
-	}
-	return v, nil
-}
-
 type OpenFlagArgument struct {
 	rawValue    uint64
 	stringValue string
@@ -539,28 +519,38 @@ func (o OpenFlagArgument) ParseOpenFlagArgument(rawValue uint64) (OpenFlagArgume
 	return OpenFlagArgument{rawValue: rawValue, stringValue: strings.Join(f, "|")}, nil
 }
 
-type AccessFlagArgument uint64
+type AccessModeArgument struct {
+	rawValue    uint64
+	stringValue string
+}
 
-func (a AccessFlagArgument) Value() uint64 { return uint64(a) }
+func (a AccessModeArgument) Value() uint64 { return a.rawValue }
 
-// String parses the mode from the `access` system call
+func (a AccessModeArgument) String() string { return a.stringValue }
+
+// ParseAccessMode parses the mode from the `access` system call
 // http://man7.org/linux/man-pages/man2/access.2.html
-func (a AccessFlagArgument) String() string {
+func ParseAccessMode(rawValue uint64) (AccessModeArgument, error) {
 	var f []string
-	if a == 0x0 {
-		f = append(f, "F_OK")
+	if rawValue == 0x0 {
+		f = append(f, F_OK.String())
 	} else {
-		if OptionAreContainedInArgument(a.Value(), R_OK) {
-			f = append(f, "R_OK")
+		if OptionAreContainedInArgument(rawValue, R_OK) {
+			f = append(f, R_OK.String())
 		}
-		if OptionAreContainedInArgument(a.Value(), W_OK) {
-			f = append(f, "W_OK")
+		if OptionAreContainedInArgument(rawValue, W_OK) {
+			f = append(f, W_OK.String())
 		}
-		if OptionAreContainedInArgument(a.Value(), X_OK) {
-			f = append(f, "X_OK")
+		if OptionAreContainedInArgument(rawValue, X_OK) {
+			f = append(f, X_OK.String())
 		}
 	}
-	return strings.Join(f, "|")
+
+	if len(f) == 0 {
+		return AccessModeArgument{}, fmt.Errorf("no valid access mode values present in raw value: 0x%x", rawValue)
+	}
+
+	return AccessModeArgument{stringValue: strings.Join(f, "|"), rawValue: rawValue}, nil
 }
 
 // ParseSocketDomain parses the `domain` bitmask argument of the `socket` syscall
@@ -621,44 +611,47 @@ func ParseSocketDomain(sd uint32) (string, error) {
 	return v.String(), nil
 }
 
-type ExecFlagArgument uint64
+type ExecFlagArgument struct {
+	rawValue    uint64
+	stringValue string
+}
 
-func (e ExecFlagArgument) Value() uint64 { return uint64(e) }
+func (e ExecFlagArgument) Value() uint64  { return e.rawValue }
+func (e ExecFlagArgument) String() string { return e.stringValue }
 
-func (e ExecFlagArgument) String() string {
+func (e ExecFlagArgument) ParseExecFlag(rawValue uint64) (ExecFlagArgument, error) {
 	var f []string
-	if OptionAreContainedInArgument(e.Value(), AT_EMPTY_PATH) {
+	if OptionAreContainedInArgument(rawValue, AT_EMPTY_PATH) {
 		f = append(f, "AT_EMPTY_PATH")
 	}
-	if OptionAreContainedInArgument(e.Value(), AT_SYMLINK_NOFOLLOW) {
+	if OptionAreContainedInArgument(rawValue, AT_SYMLINK_NOFOLLOW) {
 		f = append(f, "AT_SYMLINK_NOFOLLOW")
 	}
-	if OptionAreContainedInArgument(e.Value(), AT_EACCESS) {
+	if OptionAreContainedInArgument(rawValue, AT_EACCESS) {
 		f = append(f, "AT_EACCESS")
 	}
-	if OptionAreContainedInArgument(e.Value(), AT_REMOVEDIR) {
+	if OptionAreContainedInArgument(rawValue, AT_REMOVEDIR) {
 		f = append(f, "AT_REMOVEDIR")
 	}
-	if OptionAreContainedInArgument(e.Value(), AT_NO_AUTOMOUNT) {
+	if OptionAreContainedInArgument(rawValue, AT_NO_AUTOMOUNT) {
 		f = append(f, "AT_NO_AUTOMOUNT")
 	}
-	if OptionAreContainedInArgument(e.Value(), AT_STATX_SYNC_TYPE) {
+	if OptionAreContainedInArgument(rawValue, AT_STATX_SYNC_TYPE) {
 		f = append(f, "AT_STATX_SYNC_TYPE")
 	}
-	if OptionAreContainedInArgument(e.Value(), AT_STATX_FORCE_SYNC) {
+	if OptionAreContainedInArgument(rawValue, AT_STATX_FORCE_SYNC) {
 		f = append(f, "AT_STATX_FORCE_SYNC")
 	}
-	if OptionAreContainedInArgument(e.Value(), AT_STATX_DONT_SYNC) {
+	if OptionAreContainedInArgument(rawValue, AT_STATX_DONT_SYNC) {
 		f = append(f, "AT_STATX_DONT_SYNC")
 	}
-	if OptionAreContainedInArgument(e.Value(), AT_RECURSIVE) {
+	if OptionAreContainedInArgument(rawValue, AT_RECURSIVE) {
 		f = append(f, "AT_RECURSIVE")
 	}
 	if len(f) == 0 {
-		f = append(f, "0")
+		return ExecFlagArgument{}, fmt.Errorf("no valid exec flag values present in raw value: 0x%x", rawValue)
 	}
-
-	return strings.Join(f, "|")
+	return ExecFlagArgument{stringValue: strings.Join(f, "|"), rawValue: rawValue}, nil
 }
 
 type CapabilityFlagArgument uint64
@@ -775,58 +768,58 @@ func (p PrctlFlagArgument) Value() uint64 { return uint64(p) }
 // http://man7.org/linux/man-pages/man2/prctl.2.html
 func (p PrctlFlagArgument) String() string {
 	var prctlOptions = map[PrctlFlagArgument]string{
-		1:  "PR_SET_PDEATHSIG",
-		2:  "PR_GET_PDEATHSIG",
-		3:  "PR_GET_DUMPABLE",
-		4:  "PR_SET_DUMPABLE",
-		5:  "PR_GET_UNALIGN",
-		6:  "PR_SET_UNALIGN",
-		7:  "PR_GET_KEEPCAPS",
-		8:  "PR_SET_KEEPCAPS",
-		9:  "PR_GET_FPEMU",
-		10: "PR_SET_FPEMU",
-		11: "PR_GET_FPEXC",
-		12: "PR_SET_FPEXC",
-		13: "PR_GET_TIMING",
-		14: "PR_SET_TIMING",
-		15: "PR_SET_NAME",
-		16: "PR_GET_NAME",
-		19: "PR_GET_ENDIAN",
-		20: "PR_SET_ENDIAN",
-		21: "PR_GET_SECCOMP",
-		22: "PR_SET_SECCOMP",
-		23: "PR_CAPBSET_READ",
-		24: "PR_CAPBSET_DROP",
-		25: "PR_GET_TSC",
-		26: "PR_SET_TSC",
-		27: "PR_GET_SECUREBITS",
-		28: "PR_SET_SECUREBITS",
-		29: "PR_SET_TIMERSLACK",
-		30: "PR_GET_TIMERSLACK",
-		31: "PR_TASK_PERF_EVENTS_DISABLE",
-		32: "PR_TASK_PERF_EVENTS_ENABLE",
-		33: "PR_MCE_KILL",
-		34: "PR_MCE_KILL_GET",
-		35: "PR_SET_MM",
-		36: "PR_SET_CHILD_SUBREAPER",
-		37: "PR_GET_CHILD_SUBREAPER",
-		38: "PR_SET_NO_NEW_PRIVS",
-		39: "PR_GET_NO_NEW_PRIVS",
-		40: "PR_GET_TID_ADDRESS",
-		41: "PR_SET_THP_DISABLE",
-		42: "PR_GET_THP_DISABLE",
-		43: "PR_MPX_ENABLE_MANAGEMENT",
-		44: "PR_MPX_DISABLE_MANAGEMENT",
-		45: "PR_SET_FP_MODE",
-		46: "PR_GET_FP_MODE",
-		47: "PR_CAP_AMBIENT",
-		50: "PR_SVE_SET_VL",
-		51: "PR_SVE_GET_VL",
-		52: "PR_GET_SPECULATION_CTRL",
-		53: "PR_SET_SPECULATION_CTRL",
-		54: "PR_PAC_RESET_KEYS",
-		55: "PR_SET_TAGGED_ADDR_CTRL",
-		56: "PR_GET_TAGGED_ADDR_CTRL",
+		PR_SET_PDEATHSIG:            "PR_SET_PDEATHSIG",
+		PR_GET_PDEATHSIG:            "PR_GET_PDEATHSIG",
+		PR_GET_DUMPABLE:             "PR_GET_DUMPABLE",
+		PR_SET_DUMPABLE:             "PR_SET_DUMPABLE",
+		PR_GET_UNALIGN:              "PR_GET_UNALIGN",
+		PR_SET_UNALIGN:              "PR_SET_UNALIGN",
+		PR_GET_KEEPCAPS:             "PR_GET_KEEPCAPS",
+		PR_SET_KEEPCAPS:             "PR_SET_KEEPCAPS",
+		PR_GET_FPEMU:                "PR_GET_FPEMU",
+		PR_SET_FPEMU:                "PR_SET_FPEMU",
+		PR_GET_FPEXC:                "PR_GET_FPEXC",
+		PR_SET_FPEXC:                "PR_SET_FPEXC",
+		PR_GET_TIMING:               "PR_GET_TIMING",
+		PR_SET_TIMING:               "PR_SET_TIMING",
+		PR_SET_NAME:                 "PR_SET_NAME",
+		PR_GET_NAME:                 "PR_GET_NAME",
+		PR_GET_ENDIAN:               "PR_GET_ENDIAN",
+		PR_SET_ENDIAN:               "PR_SET_ENDIAN",
+		PR_GET_SECCOMP:              "PR_GET_SECCOMP",
+		PR_SET_SECCOMP:              "PR_SET_SECCOMP",
+		PR_CAPBSET_READ:             "PR_CAPBSET_READ",
+		PR_CAPBSET_DROP:             "PR_CAPBSET_DROP",
+		PR_GET_TSC:                  "PR_GET_TSC",
+		PR_SET_TSC:                  "PR_SET_TSC",
+		PR_GET_SECUREBITS:           "PR_GET_SECUREBITS",
+		PR_SET_SECUREBITS:           "PR_SET_SECUREBITS",
+		PR_SET_TIMERSLACK:           "PR_SET_TIMERSLACK",
+		PR_GET_TIMERSLACK:           "PR_GET_TIMERSLACK",
+		PR_TASK_PERF_EVENTS_DISABLE: "PR_TASK_PERF_EVENTS_DISABLE",
+		PR_TASK_PERF_EVENTS_ENABLE:  "PR_TASK_PERF_EVENTS_ENABLE",
+		PR_MCE_KILL:                 "PR_MCE_KILL",
+		PR_MCE_KILL_GET:             "PR_MCE_KILL_GET",
+		PR_SET_MM:                   "PR_SET_MM",
+		PR_SET_CHILD_SUBREAPER:      "PR_SET_CHILD_SUBREAPER",
+		PR_GET_CHILD_SUBREAPER:      "PR_GET_CHILD_SUBREAPER",
+		PR_SET_NO_NEW_PRIVS:         "PR_SET_NO_NEW_PRIVS",
+		PR_GET_NO_NEW_PRIVS:         "PR_GET_NO_NEW_PRIVS",
+		PR_GET_TID_ADDRESS:          "PR_GET_TID_ADDRESS",
+		PR_SET_THP_DISABLE:          "PR_SET_THP_DISABLE",
+		PR_GET_THP_DISABLE:          "PR_GET_THP_DISABLE",
+		PR_MPX_ENABLE_MANAGEMENT:    "PR_MPX_ENABLE_MANAGEMENT",
+		PR_MPX_DISABLE_MANAGEMENT:   "PR_MPX_DISABLE_MANAGEMENT",
+		PR_SET_FP_MODE:              "PR_SET_FP_MODE",
+		PR_GET_FP_MODE:              "PR_GET_FP_MODE",
+		PR_CAP_AMBIENT:              "PR_CAP_AMBIENT",
+		PR_SVE_SET_VL:               "PR_SVE_SET_VL",
+		PR_SVE_GET_VL:               "PR_SVE_GET_VL",
+		PR_GET_SPECULATION_CTRL:     "PR_GET_SPECULATION_CTRL",
+		PR_SET_SPECULATION_CTRL:     "PR_SET_SPECULATION_CTRL",
+		PR_PAC_RESET_KEYS:           "PR_PAC_RESET_KEYS",
+		PR_SET_TAGGED_ADDR_CTRL:     "PR_SET_TAGGED_ADDR_CTRL",
+		PR_GET_TAGGED_ADDR_CTRL:     "PR_GET_TAGGED_ADDR_CTRL",
 	}
 
 	var res string
@@ -946,41 +939,84 @@ type PtraceRequestArgument uint64
 
 func (p PtraceRequestArgument) Value() uint64 { return uint64(p) }
 
+func ParsePtraceRequestArgument(rawValue uint64) (PtraceRequestArgument, error) {
+	var ptraceRequest = map[uint64]PtraceRequestArgument{
+		PTRACE_TRACEME.Value():              PTRACE_TRACEME,
+		PTRACE_PEEKTEXT.Value():             PTRACE_PEEKTEXT,
+		PTRACE_PEEKDATA.Value():             PTRACE_PEEKDATA,
+		PTRACE_PEEKUSER.Value():             PTRACE_PEEKUSER,
+		PTRACE_POKETEXT.Value():             PTRACE_POKETEXT,
+		PTRACE_POKEDATA.Value():             PTRACE_POKEDATA,
+		PTRACE_POKEUSER.Value():             PTRACE_POKEUSER,
+		PTRACE_CONT.Value():                 PTRACE_CONT,
+		PTRACE_KILL.Value():                 PTRACE_KILL,
+		PTRACE_SINGLESTEP.Value():           PTRACE_SINGLESTEP,
+		PTRACE_GETREGS.Value():              PTRACE_GETREGS,
+		PTRACE_SETREGS.Value():              PTRACE_SETREGS,
+		PTRACE_GETFPREGS.Value():            PTRACE_GETFPREGS,
+		PTRACE_SETFPREGS.Value():            PTRACE_SETFPREGS,
+		PTRACE_ATTACH.Value():               PTRACE_ATTACH,
+		PTRACE_DETACH.Value():               PTRACE_DETACH,
+		PTRACE_GETFPXREGS.Value():           PTRACE_GETFPXREGS,
+		PTRACE_SETFPXREGS.Value():           PTRACE_SETFPXREGS,
+		PTRACE_SYSCALL.Value():              PTRACE_SYSCALL,
+		PTRACE_SETOPTIONS.Value():           PTRACE_SETOPTIONS,
+		PTRACE_GETEVENTMSG.Value():          PTRACE_GETEVENTMSG,
+		PTRACE_GETSIGINFO.Value():           PTRACE_GETSIGINFO,
+		PTRACE_SETSIGINFO.Value():           PTRACE_SETSIGINFO,
+		PTRACE_GETREGSET.Value():            PTRACE_GETREGSET,
+		PTRACE_SETREGSET.Value():            PTRACE_SETREGSET,
+		PTRACE_SEIZE.Value():                PTRACE_SEIZE,
+		PTRACE_INTERRUPT.Value():            PTRACE_INTERRUPT,
+		PTRACE_LISTEN.Value():               PTRACE_LISTEN,
+		PTRACE_PEEKSIGINFO.Value():          PTRACE_PEEKSIGINFO,
+		PTRACE_GETSIGMASK.Value():           PTRACE_GETSIGMASK,
+		PTRACE_SETSIGMASK.Value():           PTRACE_SETSIGMASK,
+		PTRACE_SECCOMP_GET_FILTER.Value():   PTRACE_SECCOMP_GET_FILTER,
+		PTRACE_SECCOMP_GET_METADATA.Value(): PTRACE_SECCOMP_GET_METADATA,
+	}
+
+	if reqName, ok := ptraceRequest[rawValue]; ok {
+		return reqName, nil
+	}
+	return 0, fmt.Errorf("not a valid ptrace request value: %d", rawValue)
+}
+
 func (p PtraceRequestArgument) String() string {
 	var ptraceRequest = map[PtraceRequestArgument]string{
-		0:      "PTRACE_TRACEME",
-		1:      "PTRACE_PEEKTEXT",
-		2:      "PTRACE_PEEKDATA",
-		3:      "PTRACE_PEEKUSER",
-		4:      "PTRACE_POKETEXT",
-		5:      "PTRACE_POKEDATA",
-		6:      "PTRACE_POKEUSER",
-		7:      "PTRACE_CONT",
-		8:      "PTRACE_KILL",
-		9:      "PTRACE_SINGLESTEP",
-		12:     "PTRACE_GETREGS",
-		13:     "PTRACE_SETREGS",
-		14:     "PTRACE_GETFPREGS",
-		15:     "PTRACE_SETFPREGS",
-		16:     "PTRACE_ATTACH",
-		17:     "PTRACE_DETACH",
-		18:     "PTRACE_GETFPXREGS",
-		19:     "PTRACE_SETFPXREGS",
-		24:     "PTRACE_SYSCALL",
-		0x4200: "PTRACE_SETOPTIONS",
-		0x4201: "PTRACE_GETEVENTMSG",
-		0x4202: "PTRACE_GETSIGINFO",
-		0x4203: "PTRACE_SETSIGINFO",
-		0x4204: "PTRACE_GETREGSET",
-		0x4205: "PTRACE_SETREGSET",
-		0x4206: "PTRACE_SEIZE",
-		0x4207: "PTRACE_INTERRUPT",
-		0x4208: "PTRACE_LISTEN",
-		0x4209: "PTRACE_PEEKSIGINFO",
-		0x420a: "PTRACE_GETSIGMASK",
-		0x420b: "PTRACE_SETSIGMASK",
-		0x420c: "PTRACE_SECCOMP_GET_FILTER",
-		0x420d: "PTRACE_SECCOMP_GET_METADATA",
+		PTRACE_TRACEME:              "PTRACE_TRACEME",
+		PTRACE_PEEKTEXT:             "PTRACE_PEEKTEXT",
+		PTRACE_PEEKDATA:             "PTRACE_PEEKDATA",
+		PTRACE_PEEKUSER:             "PTRACE_PEEKUSER",
+		PTRACE_POKETEXT:             "PTRACE_POKETEXT",
+		PTRACE_POKEDATA:             "PTRACE_POKEDATA",
+		PTRACE_POKEUSER:             "PTRACE_POKEUSER",
+		PTRACE_CONT:                 "PTRACE_CONT",
+		PTRACE_KILL:                 "PTRACE_KILL",
+		PTRACE_SINGLESTEP:           "PTRACE_SINGLESTEP",
+		PTRACE_GETREGS:              "PTRACE_GETREGS",
+		PTRACE_SETREGS:              "PTRACE_SETREGS",
+		PTRACE_GETFPREGS:            "PTRACE_GETFPREGS",
+		PTRACE_SETFPREGS:            "PTRACE_SETFPREGS",
+		PTRACE_ATTACH:               "PTRACE_ATTACH",
+		PTRACE_DETACH:               "PTRACE_DETACH",
+		PTRACE_GETFPXREGS:           "PTRACE_GETFPXREGS",
+		PTRACE_SETFPXREGS:           "PTRACE_SETFPXREGS",
+		PTRACE_SYSCALL:              "PTRACE_SYSCALL",
+		PTRACE_SETOPTIONS:           "PTRACE_SETOPTIONS",
+		PTRACE_GETEVENTMSG:          "PTRACE_GETEVENTMSG",
+		PTRACE_GETSIGINFO:           "PTRACE_GETSIGINFO",
+		PTRACE_SETSIGINFO:           "PTRACE_SETSIGINFO",
+		PTRACE_GETREGSET:            "PTRACE_GETREGSET",
+		PTRACE_SETREGSET:            "PTRACE_SETREGSET",
+		PTRACE_SEIZE:                "PTRACE_SEIZE",
+		PTRACE_INTERRUPT:            "PTRACE_INTERRUPT",
+		PTRACE_LISTEN:               "PTRACE_LISTEN",
+		PTRACE_PEEKSIGINFO:          "PTRACE_PEEKSIGINFO",
+		PTRACE_GETSIGMASK:           "PTRACE_GETSIGMASK",
+		PTRACE_SETSIGMASK:           "PTRACE_SETSIGMASK",
+		PTRACE_SECCOMP_GET_FILTER:   "PTRACE_SECCOMP_GET_FILTER",
+		PTRACE_SECCOMP_GET_METADATA: "PTRACE_SECCOMP_GET_METADATA",
 	}
 
 	var res string
@@ -1001,51 +1037,51 @@ func (s SocketDomainArgument) Value() uint64 { return uint64(s) }
 // http://man7.org/linux/man-pages/man2/socket.2.html
 func (s SocketDomainArgument) String() string {
 	var socketDomains = map[SocketDomainArgument]string{
-		0:  "AF_UNSPEC",
-		1:  "AF_UNIX",
-		2:  "AF_INET",
-		3:  "AF_AX25",
-		4:  "AF_IPX",
-		5:  "AF_APPLETALK",
-		6:  "AF_NETROM",
-		7:  "AF_BRIDGE",
-		8:  "AF_ATMPVC",
-		9:  "AF_X25",
-		10: "AF_INET6",
-		11: "AF_ROSE",
-		12: "AF_DECnet",
-		13: "AF_NETBEUI",
-		14: "AF_SECURITY",
-		15: "AF_KEY",
-		16: "AF_NETLINK",
-		17: "AF_PACKET",
-		18: "AF_ASH",
-		19: "AF_ECONET",
-		20: "AF_ATMSVC",
-		21: "AF_RDS",
-		22: "AF_SNA",
-		23: "AF_IRDA",
-		24: "AF_PPPOX",
-		25: "AF_WANPIPE",
-		26: "AF_LLC",
-		27: "AF_IB",
-		28: "AF_MPLS",
-		29: "AF_CAN",
-		30: "AF_TIPC",
-		31: "AF_BLUETOOTH",
-		32: "AF_IUCV",
-		33: "AF_RXRPC",
-		34: "AF_ISDN",
-		35: "AF_PHONET",
-		36: "AF_IEEE802154",
-		37: "AF_CAIF",
-		38: "AF_ALG",
-		39: "AF_NFC",
-		40: "AF_VSOCK",
-		41: "AF_KCM",
-		42: "AF_QIPCRTR",
-		43: "AF_SMC",
-		44: "AF_XDP",
+		AF_UNSPEC:     "AF_UNSPEC",
+		AF_UNIX:       "AF_UNIX",
+		AF_INET:       "AF_INET",
+		AF_AX25:       "AF_AX25",
+		AF_IPX:        "AF_IPX",
+		AF_APPLETALK:  "AF_APPLETALK",
+		AF_NETROM:     "AF_NETROM",
+		AF_BRIDGE:     "AF_BRIDGE",
+		AF_ATMPVC:     "AF_ATMPVC",
+		AF_X25:        "AF_X25",
+		AF_INET6:      "AF_INET6",
+		AF_ROSE:       "AF_ROSE",
+		AF_DECnet:     "AF_DECnet",
+		AF_NETBEUI:    "AF_NETBEUI",
+		AF_SECURITY:   "AF_SECURITY",
+		AF_KEY:        "AF_KEY",
+		AF_NETLINK:    "AF_NETLINK",
+		AF_PACKET:     "AF_PACKET",
+		AF_ASH:        "AF_ASH",
+		AF_ECONET:     "AF_ECONET",
+		AF_ATMSVC:     "AF_ATMSVC",
+		AF_RDS:        "AF_RDS",
+		AF_SNA:        "AF_SNA",
+		AF_IRDA:       "AF_IRDA",
+		AF_PPPOX:      "AF_PPPOX",
+		AF_WANPIPE:    "AF_WANPIPE",
+		AF_LLC:        "AF_LLC",
+		AF_IB:         "AF_IB",
+		AF_MPLS:       "AF_MPLS",
+		AF_CAN:        "AF_CAN",
+		AF_TIPC:       "AF_TIPC",
+		AF_BLUETOOTH:  "AF_BLUETOOTH",
+		AF_IUCV:       "AF_IUCV",
+		AF_RXRPC:      "AF_RXRPC",
+		AF_ISDN:       "AF_ISDN",
+		AF_PHONET:     "AF_PHONET",
+		AF_IEEE802154: "AF_IEEE802154",
+		AF_CAIF:       "AF_CAIF",
+		AF_ALG:        "AF_ALG",
+		AF_NFC:        "AF_NFC",
+		AF_VSOCK:      "AF_VSOCK",
+		AF_KCM:        "AF_KCM",
+		AF_QIPCRTR:    "AF_QIPCRTR",
+		AF_SMC:        "AF_SMC",
+		AF_XDP:        "AF_XDP",
 	}
 
 	var res string
@@ -1059,106 +1095,161 @@ func (s SocketDomainArgument) String() string {
 	return res
 }
 
-func ParsePrctlOption(op int32) (string, error) {
-	var prctlOptions = map[int32]PrctlFlagArgument{
-		1:  PR_SET_PDEATHSIG,
-		2:  PR_GET_PDEATHSIG,
-		3:  PR_GET_DUMPABLE,
-		4:  PR_SET_DUMPABLE,
-		5:  PR_GET_UNALIGN,
-		6:  PR_SET_UNALIGN,
-		7:  PR_GET_KEEPCAPS,
-		8:  PR_SET_KEEPCAPS,
-		9:  PR_GET_FPEMU,
-		10: PR_SET_FPEMU,
-		11: PR_GET_FPEXC,
-		12: PR_SET_FPEXC,
-		13: PR_GET_TIMING,
-		14: PR_SET_TIMING,
-		15: PR_SET_NAME,
-		16: PR_GET_NAME,
-		19: PR_GET_ENDIAN,
-		20: PR_SET_ENDIAN,
-		21: PR_GET_SECCOMP,
-		22: PR_SET_SECCOMP,
-		23: PR_CAPBSET_READ,
-		24: PR_CAPBSET_DROP,
-		25: PR_GET_TSC,
-		26: PR_SET_TSC,
-		27: PR_GET_SECUREBITS,
-		28: PR_SET_SECUREBITS,
-		29: PR_SET_TIMERSLACK,
-		30: PR_GET_TIMERSLACK,
-		31: PR_TASK_PERF_EVENTS_DISABLE,
-		32: PR_TASK_PERF_EVENTS_ENABLE,
-		33: PR_MCE_KILL,
-		34: PR_MCE_KILL_GET,
-		35: PR_SET_MM,
-		36: PR_SET_CHILD_SUBREAPER,
-		37: PR_GET_CHILD_SUBREAPER,
-		38: PR_SET_NO_NEW_PRIVS,
-		39: PR_GET_NO_NEW_PRIVS,
-		40: PR_GET_TID_ADDRESS,
-		41: PR_SET_THP_DISABLE,
-		42: PR_GET_THP_DISABLE,
-		43: PR_MPX_ENABLE_MANAGEMENT,
-		44: PR_MPX_DISABLE_MANAGEMENT,
-		45: PR_SET_FP_MODE,
-		46: PR_GET_FP_MODE,
-		47: PR_CAP_AMBIENT,
-		50: PR_SVE_SET_VL,
-		51: PR_SVE_GET_VL,
-		52: PR_GET_SPECULATION_CTRL,
-		53: PR_SET_SPECULATION_CTRL,
-		54: PR_PAC_RESET_KEYS,
-		55: PR_SET_TAGGED_ADDR_CTRL,
-		56: PR_GET_TAGGED_ADDR_CTRL,
+func ParseSocketDomainArgument(rawValue uint64) (SocketDomainArgument, error) {
+	var socketDomains = map[uint64]SocketDomainArgument{
+		AF_UNSPEC.Value():     AF_UNSPEC,
+		AF_UNIX.Value():       AF_UNIX,
+		AF_INET.Value():       AF_INET,
+		AF_AX25.Value():       AF_AX25,
+		AF_IPX.Value():        AF_IPX,
+		AF_APPLETALK.Value():  AF_APPLETALK,
+		AF_NETROM.Value():     AF_NETROM,
+		AF_BRIDGE.Value():     AF_BRIDGE,
+		AF_ATMPVC.Value():     AF_ATMPVC,
+		AF_X25.Value():        AF_X25,
+		AF_INET6.Value():      AF_INET6,
+		AF_ROSE.Value():       AF_ROSE,
+		AF_DECnet.Value():     AF_DECnet,
+		AF_NETBEUI.Value():    AF_NETBEUI,
+		AF_SECURITY.Value():   AF_SECURITY,
+		AF_KEY.Value():        AF_KEY,
+		AF_NETLINK.Value():    AF_NETLINK,
+		AF_PACKET.Value():     AF_PACKET,
+		AF_ASH.Value():        AF_ASH,
+		AF_ECONET.Value():     AF_ECONET,
+		AF_ATMSVC.Value():     AF_ATMSVC,
+		AF_RDS.Value():        AF_RDS,
+		AF_SNA.Value():        AF_SNA,
+		AF_IRDA.Value():       AF_IRDA,
+		AF_PPPOX.Value():      AF_PPPOX,
+		AF_WANPIPE.Value():    AF_WANPIPE,
+		AF_LLC.Value():        AF_LLC,
+		AF_IB.Value():         AF_IB,
+		AF_MPLS.Value():       AF_MPLS,
+		AF_CAN.Value():        AF_CAN,
+		AF_TIPC.Value():       AF_TIPC,
+		AF_BLUETOOTH.Value():  AF_BLUETOOTH,
+		AF_IUCV.Value():       AF_IUCV,
+		AF_RXRPC.Value():      AF_RXRPC,
+		AF_ISDN.Value():       AF_ISDN,
+		AF_PHONET.Value():     AF_PHONET,
+		AF_IEEE802154.Value(): AF_IEEE802154,
+		AF_CAIF.Value():       AF_CAIF,
+		AF_ALG.Value():        AF_ALG,
+		AF_NFC.Value():        AF_NFC,
+		AF_VSOCK.Value():      AF_VSOCK,
+		AF_KCM.Value():        AF_KCM,
+		AF_QIPCRTR.Value():    AF_QIPCRTR,
+		AF_SMC.Value():        AF_SMC,
+		AF_XDP.Value():        AF_XDP,
+	}
+	v, ok := socketDomains[rawValue]
+	if !ok {
+		return 0, fmt.Errorf("not a valid argument: %d", rawValue)
+	}
+	return v, nil
+}
+
+func ParsePrctlOption(op uint64) (PrctlFlagArgument, error) {
+	var prctlOptions = map[uint64]PrctlFlagArgument{
+		PR_SET_PDEATHSIG.Value():            PR_SET_PDEATHSIG,
+		PR_GET_PDEATHSIG.Value():            PR_GET_PDEATHSIG,
+		PR_GET_DUMPABLE.Value():             PR_GET_DUMPABLE,
+		PR_SET_DUMPABLE.Value():             PR_SET_DUMPABLE,
+		PR_GET_UNALIGN.Value():              PR_GET_UNALIGN,
+		PR_SET_UNALIGN.Value():              PR_SET_UNALIGN,
+		PR_GET_KEEPCAPS.Value():             PR_GET_KEEPCAPS,
+		PR_SET_KEEPCAPS.Value():             PR_SET_KEEPCAPS,
+		PR_GET_FPEMU.Value():                PR_GET_FPEMU,
+		PR_SET_FPEMU.Value():                PR_SET_FPEMU,
+		PR_GET_FPEXC.Value():                PR_GET_FPEXC,
+		PR_SET_FPEXC.Value():                PR_SET_FPEXC,
+		PR_GET_TIMING.Value():               PR_GET_TIMING,
+		PR_SET_TIMING.Value():               PR_SET_TIMING,
+		PR_SET_NAME.Value():                 PR_SET_NAME,
+		PR_GET_NAME.Value():                 PR_GET_NAME,
+		PR_GET_ENDIAN.Value():               PR_GET_ENDIAN,
+		PR_SET_ENDIAN.Value():               PR_SET_ENDIAN,
+		PR_GET_SECCOMP.Value():              PR_GET_SECCOMP,
+		PR_SET_SECCOMP.Value():              PR_SET_SECCOMP,
+		PR_CAPBSET_READ.Value():             PR_CAPBSET_READ,
+		PR_CAPBSET_DROP.Value():             PR_CAPBSET_DROP,
+		PR_GET_TSC.Value():                  PR_GET_TSC,
+		PR_SET_TSC.Value():                  PR_SET_TSC,
+		PR_GET_SECUREBITS.Value():           PR_GET_SECUREBITS,
+		PR_SET_SECUREBITS.Value():           PR_SET_SECUREBITS,
+		PR_SET_TIMERSLACK.Value():           PR_SET_TIMERSLACK,
+		PR_GET_TIMERSLACK.Value():           PR_GET_TIMERSLACK,
+		PR_TASK_PERF_EVENTS_DISABLE.Value(): PR_TASK_PERF_EVENTS_DISABLE,
+		PR_TASK_PERF_EVENTS_ENABLE.Value():  PR_TASK_PERF_EVENTS_ENABLE,
+		PR_MCE_KILL.Value():                 PR_MCE_KILL,
+		PR_MCE_KILL_GET.Value():             PR_MCE_KILL_GET,
+		PR_SET_MM.Value():                   PR_SET_MM,
+		PR_SET_CHILD_SUBREAPER.Value():      PR_SET_CHILD_SUBREAPER,
+		PR_GET_CHILD_SUBREAPER.Value():      PR_GET_CHILD_SUBREAPER,
+		PR_SET_NO_NEW_PRIVS.Value():         PR_SET_NO_NEW_PRIVS,
+		PR_GET_NO_NEW_PRIVS.Value():         PR_GET_NO_NEW_PRIVS,
+		PR_GET_TID_ADDRESS.Value():          PR_GET_TID_ADDRESS,
+		PR_SET_THP_DISABLE.Value():          PR_SET_THP_DISABLE,
+		PR_GET_THP_DISABLE.Value():          PR_GET_THP_DISABLE,
+		PR_MPX_ENABLE_MANAGEMENT.Value():    PR_MPX_ENABLE_MANAGEMENT,
+		PR_MPX_DISABLE_MANAGEMENT.Value():   PR_MPX_DISABLE_MANAGEMENT,
+		PR_SET_FP_MODE.Value():              PR_SET_FP_MODE,
+		PR_GET_FP_MODE.Value():              PR_GET_FP_MODE,
+		PR_CAP_AMBIENT.Value():              PR_CAP_AMBIENT,
+		PR_SVE_SET_VL.Value():               PR_SVE_SET_VL,
+		PR_SVE_GET_VL.Value():               PR_SVE_GET_VL,
+		PR_GET_SPECULATION_CTRL.Value():     PR_GET_SPECULATION_CTRL,
+		PR_SET_SPECULATION_CTRL.Value():     PR_SET_SPECULATION_CTRL,
+		PR_PAC_RESET_KEYS.Value():           PR_PAC_RESET_KEYS,
+		PR_SET_TAGGED_ADDR_CTRL.Value():     PR_SET_TAGGED_ADDR_CTRL,
+		PR_GET_TAGGED_ADDR_CTRL.Value():     PR_GET_TAGGED_ADDR_CTRL,
 	}
 
 	v, ok := prctlOptions[op]
 	if !ok {
-		return "", fmt.Errorf("not a valid argument: %d", op)
+		return 0, fmt.Errorf("not a valid argument: %d", op)
 	}
-	return v.String(), nil
+	return v, nil
 }
 
 // ParsePtraceRequest parses the `request` argument of the `ptrace` syscall
 // http://man7.org/linux/man-pages/man2/ptrace.2.html
-func ParsePtraceRequest(req int64) (string, error) {
-	var ptraceRequest = map[int64]PtraceRequestArgument{
-		0:      PTRACE_TRACEME,
-		1:      PTRACE_PEEKTEXT,
-		2:      PTRACE_PEEKDATA,
-		3:      PTRACE_PEEKUSER,
-		4:      PTRACE_POKETEXT,
-		5:      PTRACE_POKEDATA,
-		6:      PTRACE_POKEUSER,
-		7:      PTRACE_CONT,
-		8:      PTRACE_KILL,
-		9:      PTRACE_SINGLESTEP,
-		12:     PTRACE_GETREGS,
-		13:     PTRACE_SETREGS,
-		14:     PTRACE_GETFPREGS,
-		15:     PTRACE_SETFPREGS,
-		16:     PTRACE_ATTACH,
-		17:     PTRACE_DETACH,
-		18:     PTRACE_GETFPXREGS,
-		19:     PTRACE_SETFPXREGS,
-		24:     PTRACE_SYSCALL,
-		0x4200: PTRACE_SETOPTIONS,
-		0x4201: PTRACE_GETEVENTMSG,
-		0x4202: PTRACE_GETSIGINFO,
-		0x4203: PTRACE_SETSIGINFO,
-		0x4204: PTRACE_GETREGSET,
-		0x4205: PTRACE_SETREGSET,
-		0x4206: PTRACE_SEIZE,
-		0x4207: PTRACE_INTERRUPT,
-		0x4208: PTRACE_LISTEN,
-		0x4209: PTRACE_PEEKSIGINFO,
-		0x420a: PTRACE_GETSIGMASK,
-		0x420b: PTRACE_SETSIGMASK,
-		0x420c: PTRACE_SECCOMP_GET_FILTER,
-		0x420d: PTRACE_SECCOMP_GET_METADATA,
+func ParsePtraceRequest(req uint64) (string, error) {
+	var ptraceRequest = map[uint64]PtraceRequestArgument{
+		PTRACE_TRACEME.Value():              PTRACE_TRACEME,
+		PTRACE_PEEKTEXT.Value():             PTRACE_PEEKTEXT,
+		PTRACE_PEEKDATA.Value():             PTRACE_PEEKDATA,
+		PTRACE_PEEKUSER.Value():             PTRACE_PEEKUSER,
+		PTRACE_POKETEXT.Value():             PTRACE_POKETEXT,
+		PTRACE_POKEDATA.Value():             PTRACE_POKEDATA,
+		PTRACE_POKEUSER.Value():             PTRACE_POKEUSER,
+		PTRACE_CONT.Value():                 PTRACE_CONT,
+		PTRACE_KILL.Value():                 PTRACE_KILL,
+		PTRACE_SINGLESTEP.Value():           PTRACE_SINGLESTEP,
+		PTRACE_GETREGS.Value():              PTRACE_GETREGS,
+		PTRACE_SETREGS.Value():              PTRACE_SETREGS,
+		PTRACE_GETFPREGS.Value():            PTRACE_GETFPREGS,
+		PTRACE_SETFPREGS.Value():            PTRACE_SETFPREGS,
+		PTRACE_ATTACH.Value():               PTRACE_ATTACH,
+		PTRACE_DETACH.Value():               PTRACE_DETACH,
+		PTRACE_GETFPXREGS.Value():           PTRACE_GETFPXREGS,
+		PTRACE_SETFPXREGS.Value():           PTRACE_SETFPXREGS,
+		PTRACE_SYSCALL.Value():              PTRACE_SYSCALL,
+		PTRACE_SETOPTIONS.Value():           PTRACE_SETOPTIONS,
+		PTRACE_GETEVENTMSG.Value():          PTRACE_GETEVENTMSG,
+		PTRACE_GETSIGINFO.Value():           PTRACE_GETSIGINFO,
+		PTRACE_SETSIGINFO.Value():           PTRACE_SETSIGINFO,
+		PTRACE_GETREGSET.Value():            PTRACE_GETREGSET,
+		PTRACE_SETREGSET.Value():            PTRACE_SETREGSET,
+		PTRACE_SEIZE.Value():                PTRACE_SEIZE,
+		PTRACE_INTERRUPT.Value():            PTRACE_INTERRUPT,
+		PTRACE_LISTEN.Value():               PTRACE_LISTEN,
+		PTRACE_PEEKSIGINFO.Value():          PTRACE_PEEKSIGINFO,
+		PTRACE_GETSIGMASK.Value():           PTRACE_GETSIGMASK,
+		PTRACE_SETSIGMASK.Value():           PTRACE_SETSIGMASK,
+		PTRACE_SECCOMP_GET_FILTER.Value():   PTRACE_SECCOMP_GET_FILTER,
+		PTRACE_SECCOMP_GET_METADATA.Value(): PTRACE_SECCOMP_GET_METADATA,
 	}
 
 	v, ok := ptraceRequest[req]
@@ -1168,145 +1259,160 @@ func ParsePtraceRequest(req int64) (string, error) {
 	return v.String(), nil
 }
 
-type SocketTypeArgument uint64
+type SocketTypeArgument struct {
+	rawValue    uint64
+	stringValue string
+}
 
-func (s SocketTypeArgument) Value() uint64 { return uint64(s) }
+func (s SocketTypeArgument) Value() uint64  { return s.rawValue }
+func (s SocketTypeArgument) String() string { return s.stringValue }
 
-// String parses the `type` bitmask argument of the `socket` syscall
+// ParseSocketType parses the `type` bitmask argument of the `socket` syscall
 // http://man7.org/linux/man-pages/man2/socket.2.html
-func (s SocketTypeArgument) String() string {
-	var socketTypes = map[SocketTypeArgument]string{
-		1:  "SOCK_STREAM",
-		2:  "SOCK_DGRAM",
-		3:  "SOCK_RAW",
-		4:  "SOCK_RDM",
-		5:  "SOCK_SEQPACKET",
-		6:  "SOCK_DCCP",
-		10: "SOCK_PACKET",
+func ParseSocketType(rawValue uint64) (SocketTypeArgument, error) {
+	var socketTypes = map[uint64]SocketTypeArgument{
+		SOCK_STREAM.Value():    SOCK_STREAM,
+		SOCK_DGRAM.Value():     SOCK_DGRAM,
+		SOCK_RAW.Value():       SOCK_RAW,
+		SOCK_RDM.Value():       SOCK_RDM,
+		SOCK_SEQPACKET.Value(): SOCK_SEQPACKET,
+		SOCK_DCCP.Value():      SOCK_DCCP,
+		SOCK_PACKET.Value():    SOCK_PACKET,
 	}
 
 	var f []string
 
-	if stName, ok := socketTypes[s&0xf]; ok {
-		f = append(f, stName)
+	if stName, ok := socketTypes[rawValue&0xf]; ok {
+		f = append(f, stName.String())
 	} else {
-		f = append(f, strconv.Itoa(int(s)))
+		f = append(f, strconv.Itoa(int(rawValue)))
 	}
-	if OptionAreContainedInArgument(s.Value(), SOCK_NONBLOCK) {
+
+	fmt.Println(f)
+
+	if OptionAreContainedInArgument(rawValue, SOCK_NONBLOCK) {
 		f = append(f, "SOCK_NONBLOCK")
 	}
-	if OptionAreContainedInArgument(s.Value(), SOCK_CLOEXEC) {
+	if OptionAreContainedInArgument(rawValue, SOCK_CLOEXEC) {
 		f = append(f, "SOCK_CLOEXEC")
 	}
 
-	return strings.Join(f, "|")
+	return SocketTypeArgument{stringValue: strings.Join(f, "|"), rawValue: rawValue}, nil
 }
 
-type InodeModeArgument uint64
+type InodeModeArgument struct {
+	rawValue    uint64
+	stringValue string
+}
 
-func (mode InodeModeArgument) Value() uint64 { return uint64(mode) }
+func (mode InodeModeArgument) Value() uint64  { return mode.rawValue }
+func (mode InodeModeArgument) String() string { return mode.stringValue }
 
-func (mode InodeModeArgument) String() string {
+func ParseInodeMode(rawValue uint64) (InodeModeArgument, error) {
 	var f []string
 
 	// File Type
 	switch {
-	case OptionAreContainedInArgument(mode.Value(), S_IFSOCK):
-		f = append(f, "S_IFSOCK")
-	case OptionAreContainedInArgument(mode.Value(), S_IFLNK):
-		f = append(f, "S_IFLNK")
-	case OptionAreContainedInArgument(mode.Value(), S_IFREG):
-		f = append(f, "S_IFREG")
-	case OptionAreContainedInArgument(mode.Value(), S_IFBLK):
-		f = append(f, "S_IFBLK")
-	case OptionAreContainedInArgument(mode.Value(), S_IFDIR):
-		f = append(f, "S_IFDIR")
-	case OptionAreContainedInArgument(mode.Value(), S_IFCHR):
-		f = append(f, "S_IFCHR")
-	case OptionAreContainedInArgument(mode.Value(), S_IFIFO):
-		f = append(f, "S_IFIFO")
+	case OptionAreContainedInArgument(rawValue, S_IFSOCK):
+		f = append(f, S_IFSOCK.String())
+	case OptionAreContainedInArgument(rawValue, S_IFLNK):
+		f = append(f, S_IFLNK.String())
+	case OptionAreContainedInArgument(rawValue, S_IFREG):
+		f = append(f, S_IFREG.String())
+	case OptionAreContainedInArgument(rawValue, S_IFBLK):
+		f = append(f, S_IFBLK.String())
+	case OptionAreContainedInArgument(rawValue, S_IFDIR):
+		f = append(f, S_IFDIR.String())
+	case OptionAreContainedInArgument(rawValue, S_IFCHR):
+		f = append(f, S_IFCHR.String())
+	case OptionAreContainedInArgument(rawValue, S_IFIFO):
+		f = append(f, S_IFIFO.String())
 	}
 
 	// File Mode
 	// Owner
-	if OptionAreContainedInArgument(mode.Value(), S_IRWXU) {
-		f = append(f, "S_IRWXU")
+	if OptionAreContainedInArgument(rawValue, S_IRWXU) {
+		f = append(f, S_IRWXU.String())
 	} else {
-		if OptionAreContainedInArgument(mode.Value(), S_IRUSR) {
-			f = append(f, "S_IRUSR")
+		if OptionAreContainedInArgument(rawValue, S_IRUSR) {
+			f = append(f, S_IRUSR.String())
 		}
-		if OptionAreContainedInArgument(mode.Value(), S_IWUSR) {
-			f = append(f, "S_IWUSR")
+		if OptionAreContainedInArgument(rawValue, S_IWUSR) {
+			f = append(f, S_IWUSR.String())
 		}
-		if OptionAreContainedInArgument(mode.Value(), S_IXUSR) {
-			f = append(f, "S_IXUSR")
+		if OptionAreContainedInArgument(rawValue, S_IXUSR) {
+			f = append(f, S_IXUSR.String())
 		}
 	}
 	// Group
-	if OptionAreContainedInArgument(mode.Value(), S_IRWXG) {
-		f = append(f, "S_IRWXG")
+	if OptionAreContainedInArgument(rawValue, S_IRWXG) {
+		f = append(f, S_IRWXG.String())
 	} else {
-		if OptionAreContainedInArgument(mode.Value(), S_IRGRP) {
-			f = append(f, "S_IRGRP")
+		if OptionAreContainedInArgument(rawValue, S_IRGRP) {
+			f = append(f, S_IRGRP.String())
 		}
-		if OptionAreContainedInArgument(mode.Value(), S_IWGRP) {
-			f = append(f, "S_IWGRP")
+		if OptionAreContainedInArgument(rawValue, S_IWGRP) {
+			f = append(f, S_IWGRP.String())
 		}
-		if OptionAreContainedInArgument(mode.Value(), S_IXGRP) {
-			f = append(f, "S_IXGRP")
+		if OptionAreContainedInArgument(rawValue, S_IXGRP) {
+			f = append(f, S_IXGRP.String())
 		}
 	}
 	// Others
-	if OptionAreContainedInArgument(mode.Value(), S_IRWXO) {
-		f = append(f, "S_IRWXO")
+	if OptionAreContainedInArgument(rawValue, S_IRWXO) {
+		f = append(f, S_IRWXO.String())
 	} else {
-		if OptionAreContainedInArgument(mode.Value(), S_IROTH) {
-			f = append(f, "S_IROTH")
+		if OptionAreContainedInArgument(rawValue, S_IROTH) {
+			f = append(f, S_IROTH.String())
 		}
-		if OptionAreContainedInArgument(mode.Value(), S_IWOTH) {
-			f = append(f, "S_IWOTH")
+		if OptionAreContainedInArgument(rawValue, S_IWOTH) {
+			f = append(f, S_IWOTH.String())
 		}
-		if OptionAreContainedInArgument(mode.Value(), S_IXOTH) {
-			f = append(f, "S_IXOTH")
+		if OptionAreContainedInArgument(rawValue, S_IXOTH) {
+			f = append(f, S_IXOTH.String())
 		}
 	}
 
-	return strings.Join(f, "|")
+	return InodeModeArgument{stringValue: strings.Join(f, "|"), rawValue: rawValue}, nil
 }
 
-type MmapProtArgument uint64
+type MmapProtArgument struct {
+	rawValue    uint64
+	stringValue string
+}
 
-func (p MmapProtArgument) Value() uint64 { return uint64(p) }
+func (p MmapProtArgument) Value() uint64  { return p.rawValue }
+func (p MmapProtArgument) String() string { return p.stringValue }
 
-// String parses the `prot` bitmask argument of the `mmap` syscall
+// ParseMmapProt parses the `prot` bitmask argument of the `mmap` syscall
 // http://man7.org/linux/man-pages/man2/mmap.2.html
 // https://elixir.bootlin.com/linux/v5.5.3/source/include/uapi/asm-generic/mman-common.h#L10
-func (p MmapProtArgument) String() string {
+func ParseMmapProt(rawValue uint64) MmapProtArgument {
 	var f []string
-	if p == PROT_NONE {
-		f = append(f, "PROT_NONE")
+	if rawValue == PROT_NONE.Value() {
+		f = append(f, PROT_NONE.String())
 	} else {
-		if OptionAreContainedInArgument(p.Value(), PROT_READ) {
-			f = append(f, "PROT_READ")
+		if OptionAreContainedInArgument(rawValue, PROT_READ) {
+			f = append(f, PROT_READ.String())
 		}
-		if OptionAreContainedInArgument(p.Value(), PROT_WRITE) {
-			f = append(f, "PROT_WRITE")
+		if OptionAreContainedInArgument(rawValue, PROT_WRITE) {
+			f = append(f, PROT_WRITE.String())
 		}
-		if OptionAreContainedInArgument(p.Value(), PROT_EXEC) {
-			f = append(f, "PROT_EXEC")
+		if OptionAreContainedInArgument(rawValue, PROT_EXEC) {
+			f = append(f, PROT_EXEC.String())
 		}
-		if OptionAreContainedInArgument(p.Value(), PROT_SEM) {
-			f = append(f, "PROT_SEM")
+		if OptionAreContainedInArgument(rawValue, PROT_SEM) {
+			f = append(f, PROT_SEM.String())
 		}
-		if OptionAreContainedInArgument(p.Value(), PROT_GROWSDOWN) {
-			f = append(f, "PROT_GROWSDOWN")
+		if OptionAreContainedInArgument(rawValue, PROT_GROWSDOWN) {
+			f = append(f, PROT_GROWSDOWN.String())
 		}
-		if OptionAreContainedInArgument(p.Value(), PROT_GROWSUP) {
-			f = append(f, "PROT_GROWSUP")
+		if OptionAreContainedInArgument(rawValue, PROT_GROWSUP) {
+			f = append(f, PROT_GROWSUP.String())
 		}
 	}
 
-	return strings.Join(f, "|")
+	return MmapProtArgument{stringValue: strings.Join(f, "|"), rawValue: rawValue}
 }
 
 // ParseUint32IP parses the IP address encoded as a uint32
