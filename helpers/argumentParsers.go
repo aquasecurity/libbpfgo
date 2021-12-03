@@ -195,7 +195,7 @@ const (
 )
 
 const (
-	PR_SET_PDEATHSIG PrctlFlagArgument = iota + 1
+	PR_SET_PDEATHSIG PrctlOptionArgument = iota + 1
 	PR_GET_PDEATHSIG
 	PR_GET_DUMPABLE
 	PR_SET_DUMPABLE
@@ -553,64 +553,6 @@ func ParseAccessMode(rawValue uint64) (AccessModeArgument, error) {
 	return AccessModeArgument{stringValue: strings.Join(f, "|"), rawValue: rawValue}, nil
 }
 
-// ParseSocketDomain parses the `domain` bitmask argument of the `socket` syscall
-// http://man7.org/linux/man-pages/man2/socket.2.html
-func ParseSocketDomain(sd uint32) (string, error) {
-	var socketDomains = map[uint32]SocketDomainArgument{
-		0:  AF_UNSPEC,
-		1:  AF_UNIX,
-		2:  AF_INET,
-		3:  AF_AX25,
-		4:  AF_IPX,
-		5:  AF_APPLETALK,
-		6:  AF_NETROM,
-		7:  AF_BRIDGE,
-		8:  AF_ATMPVC,
-		9:  AF_X25,
-		10: AF_INET6,
-		11: AF_ROSE,
-		12: AF_DECnet,
-		13: AF_NETBEUI,
-		14: AF_SECURITY,
-		15: AF_KEY,
-		16: AF_NETLINK,
-		17: AF_PACKET,
-		18: AF_ASH,
-		19: AF_ECONET,
-		20: AF_ATMSVC,
-		21: AF_RDS,
-		22: AF_SNA,
-		23: AF_IRDA,
-		24: AF_PPPOX,
-		25: AF_WANPIPE,
-		26: AF_LLC,
-		27: AF_IB,
-		28: AF_MPLS,
-		29: AF_CAN,
-		30: AF_TIPC,
-		31: AF_BLUETOOTH,
-		32: AF_IUCV,
-		33: AF_RXRPC,
-		34: AF_ISDN,
-		35: AF_PHONET,
-		36: AF_IEEE802154,
-		37: AF_CAIF,
-		38: AF_ALG,
-		39: AF_NFC,
-		40: AF_VSOCK,
-		41: AF_KCM,
-		42: AF_QIPCRTR,
-		43: AF_SMC,
-		44: AF_XDP,
-	}
-
-	v, ok := socketDomains[sd]
-	if !ok {
-		return "", fmt.Errorf("not a valid argument: %d", sd)
-	}
-	return v.String(), nil
-}
-
 type ExecFlagArgument struct {
 	rawValue    uint64
 	stringValue string
@@ -622,31 +564,31 @@ func (e ExecFlagArgument) String() string { return e.stringValue }
 func (e ExecFlagArgument) ParseExecFlag(rawValue uint64) (ExecFlagArgument, error) {
 	var f []string
 	if OptionAreContainedInArgument(rawValue, AT_EMPTY_PATH) {
-		f = append(f, "AT_EMPTY_PATH")
+		f = append(f, AT_EMPTY_PATH.String())
 	}
 	if OptionAreContainedInArgument(rawValue, AT_SYMLINK_NOFOLLOW) {
-		f = append(f, "AT_SYMLINK_NOFOLLOW")
+		f = append(f, AT_SYMLINK_NOFOLLOW.String())
 	}
 	if OptionAreContainedInArgument(rawValue, AT_EACCESS) {
-		f = append(f, "AT_EACCESS")
+		f = append(f, AT_EACCESS.String())
 	}
 	if OptionAreContainedInArgument(rawValue, AT_REMOVEDIR) {
-		f = append(f, "AT_REMOVEDIR")
+		f = append(f, AT_REMOVEDIR.String())
 	}
 	if OptionAreContainedInArgument(rawValue, AT_NO_AUTOMOUNT) {
-		f = append(f, "AT_NO_AUTOMOUNT")
+		f = append(f, AT_NO_AUTOMOUNT.String())
 	}
 	if OptionAreContainedInArgument(rawValue, AT_STATX_SYNC_TYPE) {
-		f = append(f, "AT_STATX_SYNC_TYPE")
+		f = append(f, AT_STATX_SYNC_TYPE.String())
 	}
 	if OptionAreContainedInArgument(rawValue, AT_STATX_FORCE_SYNC) {
-		f = append(f, "AT_STATX_FORCE_SYNC")
+		f = append(f, AT_STATX_FORCE_SYNC.String())
 	}
 	if OptionAreContainedInArgument(rawValue, AT_STATX_DONT_SYNC) {
-		f = append(f, "AT_STATX_DONT_SYNC")
+		f = append(f, AT_STATX_DONT_SYNC.String())
 	}
 	if OptionAreContainedInArgument(rawValue, AT_RECURSIVE) {
-		f = append(f, "AT_RECURSIVE")
+		f = append(f, AT_RECURSIVE.String())
 	}
 	if len(f) == 0 {
 		return ExecFlagArgument{}, fmt.Errorf("no valid exec flag values present in raw value: 0x%x", rawValue)
@@ -711,63 +653,60 @@ func (c CapabilityFlagArgument) String() string {
 	}
 	return res
 }
-func ParseCapability(c int32) (string, error) {
-	var capabilities = map[int32]CapabilityFlagArgument{
-		0:  CAP_CHOWN,
-		1:  CAP_DAC_OVERRIDE,
-		2:  CAP_DAC_READ_SEARCH,
-		3:  CAP_FOWNER,
-		4:  CAP_FSETID,
-		5:  CAP_KILL,
-		6:  CAP_SETGID,
-		7:  CAP_SETUID,
-		8:  CAP_SETPCAP,
-		9:  CAP_LINUX_IMMUTABLE,
-		10: CAP_NET_BIND_SERVICE,
-		11: CAP_NET_BROADCAST,
-		12: CAP_NET_ADMIN,
-		13: CAP_NET_RAW,
-		14: CAP_IPC_LOCK,
-		15: CAP_IPC_OWNER,
-		16: CAP_SYS_MODULE,
-		17: CAP_SYS_RAWIO,
-		18: CAP_SYS_CHROOT,
-		19: CAP_SYS_PTRACE,
-		20: CAP_SYS_PACCT,
-		21: CAP_SYS_ADMIN,
-		22: CAP_SYS_BOOT,
-		23: CAP_SYS_NICE,
-		24: CAP_SYS_RESOURCE,
-		25: CAP_SYS_TIME,
-		26: CAP_SYS_TTY_CONFIG,
-		27: CAP_MKNOD,
-		28: CAP_LEASE,
-		29: CAP_AUDIT_WRITE,
-		30: CAP_AUDIT_CONTROL,
-		31: CAP_SETFCAP,
-		32: CAP_MAC_OVERRIDE,
-		33: CAP_MAC_ADMIN,
-		34: CAP_SYSLOG,
-		35: CAP_WAKE_ALARM,
-		36: CAP_BLOCK_SUSPEND,
-		37: CAP_AUDIT_READ,
+func ParseCapability(rawValue uint64) (CapabilityFlagArgument, error) {
+	var capabilities = map[uint64]CapabilityFlagArgument{
+		CAP_CHOWN.Value():            CAP_CHOWN,
+		CAP_DAC_OVERRIDE.Value():     CAP_DAC_OVERRIDE,
+		CAP_DAC_READ_SEARCH.Value():  CAP_DAC_READ_SEARCH,
+		CAP_FOWNER.Value():           CAP_FOWNER,
+		CAP_FSETID.Value():           CAP_FSETID,
+		CAP_KILL.Value():             CAP_KILL,
+		CAP_SETGID.Value():           CAP_SETGID,
+		CAP_SETUID.Value():           CAP_SETUID,
+		CAP_SETPCAP.Value():          CAP_SETPCAP,
+		CAP_LINUX_IMMUTABLE.Value():  CAP_LINUX_IMMUTABLE,
+		CAP_NET_BIND_SERVICE.Value(): CAP_NET_BIND_SERVICE,
+		CAP_NET_BROADCAST.Value():    CAP_NET_BROADCAST,
+		CAP_NET_ADMIN.Value():        CAP_NET_ADMIN,
+		CAP_NET_RAW.Value():          CAP_NET_RAW,
+		CAP_IPC_LOCK.Value():         CAP_IPC_LOCK,
+		CAP_IPC_OWNER.Value():        CAP_IPC_OWNER,
+		CAP_SYS_MODULE.Value():       CAP_SYS_MODULE,
+		CAP_SYS_RAWIO.Value():        CAP_SYS_RAWIO,
+		CAP_SYS_CHROOT.Value():       CAP_SYS_CHROOT,
+		CAP_SYS_PTRACE.Value():       CAP_SYS_PTRACE,
+		CAP_SYS_PACCT.Value():        CAP_SYS_PACCT,
+		CAP_SYS_ADMIN.Value():        CAP_SYS_ADMIN,
+		CAP_SYS_BOOT.Value():         CAP_SYS_BOOT,
+		CAP_SYS_NICE.Value():         CAP_SYS_NICE,
+		CAP_SYS_RESOURCE.Value():     CAP_SYS_RESOURCE,
+		CAP_SYS_TIME.Value():         CAP_SYS_TIME,
+		CAP_SYS_TTY_CONFIG.Value():   CAP_SYS_TTY_CONFIG,
+		CAP_MKNOD.Value():            CAP_MKNOD,
+		CAP_LEASE.Value():            CAP_LEASE,
+		CAP_AUDIT_WRITE.Value():      CAP_AUDIT_WRITE,
+		CAP_AUDIT_CONTROL.Value():    CAP_AUDIT_CONTROL,
+		CAP_SETFCAP.Value():          CAP_SETFCAP,
+		CAP_MAC_OVERRIDE.Value():     CAP_MAC_OVERRIDE,
+		CAP_MAC_ADMIN.Value():        CAP_MAC_ADMIN,
+		CAP_SYSLOG.Value():           CAP_SYSLOG,
+		CAP_WAKE_ALARM.Value():       CAP_WAKE_ALARM,
+		CAP_BLOCK_SUSPEND.Value():    CAP_BLOCK_SUSPEND,
+		CAP_AUDIT_READ.Value():       CAP_AUDIT_READ,
 	}
-	v, ok := capabilities[c]
+	v, ok := capabilities[rawValue]
 	if !ok {
-		return "", fmt.Errorf("not a valid argument: %d", c)
+		return 0, fmt.Errorf("not a valid capability value: %d", rawValue)
 	}
-	return v.String(), nil
-
+	return v, nil
 }
 
-type PrctlFlagArgument uint64
+type PrctlOptionArgument uint64
 
-func (p PrctlFlagArgument) Value() uint64 { return uint64(p) }
+func (p PrctlOptionArgument) Value() uint64 { return uint64(p) }
 
-// String parses the `option` argument of the `prctl` syscall
-// http://man7.org/linux/man-pages/man2/prctl.2.html
-func (p PrctlFlagArgument) String() string {
-	var prctlOptions = map[PrctlFlagArgument]string{
+func (p PrctlOptionArgument) String() string {
+	var prctlOptions = map[PrctlOptionArgument]string{
 		PR_SET_PDEATHSIG:            "PR_SET_PDEATHSIG",
 		PR_GET_PDEATHSIG:            "PR_GET_PDEATHSIG",
 		PR_GET_DUMPABLE:             "PR_GET_DUMPABLE",
@@ -832,6 +771,71 @@ func (p PrctlFlagArgument) String() string {
 	return res
 }
 
+// ParsePrctlOption parses the `option` argument of the `prctl` syscall
+// http://man7.org/linux/man-pages/man2/prctl.2.html
+func ParsePrctlOption(rawValue uint64) (PrctlOptionArgument, error) {
+	var prctlOptions = map[uint64]PrctlOptionArgument{
+		PR_SET_PDEATHSIG.Value():            PR_SET_PDEATHSIG,
+		PR_GET_PDEATHSIG.Value():            PR_GET_PDEATHSIG,
+		PR_GET_DUMPABLE.Value():             PR_GET_DUMPABLE,
+		PR_SET_DUMPABLE.Value():             PR_SET_DUMPABLE,
+		PR_GET_UNALIGN.Value():              PR_GET_UNALIGN,
+		PR_SET_UNALIGN.Value():              PR_SET_UNALIGN,
+		PR_GET_KEEPCAPS.Value():             PR_GET_KEEPCAPS,
+		PR_SET_KEEPCAPS.Value():             PR_SET_KEEPCAPS,
+		PR_GET_FPEMU.Value():                PR_GET_FPEMU,
+		PR_SET_FPEMU.Value():                PR_SET_FPEMU,
+		PR_GET_FPEXC.Value():                PR_GET_FPEXC,
+		PR_SET_FPEXC.Value():                PR_SET_FPEXC,
+		PR_GET_TIMING.Value():               PR_GET_TIMING,
+		PR_SET_TIMING.Value():               PR_SET_TIMING,
+		PR_SET_NAME.Value():                 PR_SET_NAME,
+		PR_GET_NAME.Value():                 PR_GET_NAME,
+		PR_GET_ENDIAN.Value():               PR_GET_ENDIAN,
+		PR_SET_ENDIAN.Value():               PR_SET_ENDIAN,
+		PR_GET_SECCOMP.Value():              PR_GET_SECCOMP,
+		PR_SET_SECCOMP.Value():              PR_SET_SECCOMP,
+		PR_CAPBSET_READ.Value():             PR_CAPBSET_READ,
+		PR_CAPBSET_DROP.Value():             PR_CAPBSET_DROP,
+		PR_GET_TSC.Value():                  PR_GET_TSC,
+		PR_SET_TSC.Value():                  PR_SET_TSC,
+		PR_GET_SECUREBITS.Value():           PR_GET_SECUREBITS,
+		PR_SET_SECUREBITS.Value():           PR_SET_SECUREBITS,
+		PR_SET_TIMERSLACK.Value():           PR_SET_TIMERSLACK,
+		PR_GET_TIMERSLACK.Value():           PR_GET_TIMERSLACK,
+		PR_TASK_PERF_EVENTS_DISABLE.Value(): PR_TASK_PERF_EVENTS_DISABLE,
+		PR_TASK_PERF_EVENTS_ENABLE.Value():  PR_TASK_PERF_EVENTS_ENABLE,
+		PR_MCE_KILL.Value():                 PR_MCE_KILL,
+		PR_MCE_KILL_GET.Value():             PR_MCE_KILL_GET,
+		PR_SET_MM.Value():                   PR_SET_MM,
+		PR_SET_CHILD_SUBREAPER.Value():      PR_SET_CHILD_SUBREAPER,
+		PR_GET_CHILD_SUBREAPER.Value():      PR_GET_CHILD_SUBREAPER,
+		PR_SET_NO_NEW_PRIVS.Value():         PR_SET_NO_NEW_PRIVS,
+		PR_GET_NO_NEW_PRIVS.Value():         PR_GET_NO_NEW_PRIVS,
+		PR_GET_TID_ADDRESS.Value():          PR_GET_TID_ADDRESS,
+		PR_SET_THP_DISABLE.Value():          PR_SET_THP_DISABLE,
+		PR_GET_THP_DISABLE.Value():          PR_GET_THP_DISABLE,
+		PR_MPX_ENABLE_MANAGEMENT.Value():    PR_MPX_ENABLE_MANAGEMENT,
+		PR_MPX_DISABLE_MANAGEMENT.Value():   PR_MPX_DISABLE_MANAGEMENT,
+		PR_SET_FP_MODE.Value():              PR_SET_FP_MODE,
+		PR_GET_FP_MODE.Value():              PR_GET_FP_MODE,
+		PR_CAP_AMBIENT.Value():              PR_CAP_AMBIENT,
+		PR_SVE_SET_VL.Value():               PR_SVE_SET_VL,
+		PR_SVE_GET_VL.Value():               PR_SVE_GET_VL,
+		PR_GET_SPECULATION_CTRL.Value():     PR_GET_SPECULATION_CTRL,
+		PR_SET_SPECULATION_CTRL.Value():     PR_SET_SPECULATION_CTRL,
+		PR_PAC_RESET_KEYS.Value():           PR_PAC_RESET_KEYS,
+		PR_SET_TAGGED_ADDR_CTRL.Value():     PR_SET_TAGGED_ADDR_CTRL,
+		PR_GET_TAGGED_ADDR_CTRL.Value():     PR_GET_TAGGED_ADDR_CTRL,
+	}
+
+	v, ok := prctlOptions[rawValue]
+	if !ok {
+		return 0, fmt.Errorf("not a valid prctl option value: %d", rawValue)
+	}
+	return v, nil
+}
+
 type BPFCommandArgument uint64
 
 func (b BPFCommandArgument) Value() uint64 { return uint64(b) }
@@ -840,41 +844,41 @@ func (b BPFCommandArgument) Value() uint64 { return uint64(b) }
 // https://man7.org/linux/man-pages/man2/bpf.2.html
 func (b BPFCommandArgument) String() string {
 	var bpfCmd = map[BPFCommandArgument]string{
-		0:  "BPF_MAP_CREATE",
-		1:  "BPF_MAP_LOOKUP_ELEM",
-		2:  "BPF_MAP_UPDATE_ELEM",
-		3:  "BPF_MAP_DELETE_ELEM",
-		4:  "BPF_MAP_GET_NEXT_KEY",
-		5:  "BPF_PROG_LOAD",
-		6:  "BPF_OBJ_PIN",
-		7:  "BPF_OBJ_GET",
-		8:  "BPF_PROG_ATTACH",
-		9:  "BPF_PROG_DETACH",
-		10: "BPF_PROG_TEST_RUN",
-		11: "BPF_PROG_GET_NEXT_ID",
-		12: "BPF_MAP_GET_NEXT_ID",
-		13: "BPF_PROG_GET_FD_BY_ID",
-		14: "BPF_MAP_GET_FD_BY_ID",
-		15: "BPF_OBJ_GET_INFO_BY_FD",
-		16: "BPF_PROG_QUERY",
-		17: "BPF_RAW_TRACEPOINT_OPEN",
-		18: "BPF_BTF_LOAD",
-		19: "BPF_BTF_GET_FD_BY_ID",
-		20: "BPF_TASK_FD_QUERY",
-		21: "BPF_MAP_LOOKUP_AND_DELETE_ELEM",
-		22: "BPF_MAP_FREEZE",
-		23: "BPF_BTF_GET_NEXT_ID",
-		24: "BPF_MAP_LOOKUP_BATCH",
-		25: "BPF_MAP_LOOKUP_AND_DELETE_BATCH",
-		26: "BPF_MAP_UPDATE_BATCH",
-		27: "BPF_MAP_DELETE_BATCH",
-		28: "BPF_LINK_CREATE",
-		29: "BPF_LINK_UPDATE",
-		30: "BPF_LINK_GET_FD_BY_ID",
-		31: "BPF_LINK_GET_NEXT_ID",
-		32: "BPF_ENABLE_STATS",
-		33: "BPF_ITER_CREATE",
-		34: "BPF_LINK_DETACH",
+		BPF_MAP_CREATE:                  "BPF_MAP_CREATE",
+		BPF_MAP_LOOKUP_ELEM:             "BPF_MAP_LOOKUP_ELEM",
+		BPF_MAP_UPDATE_ELEM:             "BPF_MAP_UPDATE_ELEM",
+		BPF_MAP_DELETE_ELEM:             "BPF_MAP_DELETE_ELEM",
+		BPF_MAP_GET_NEXT_KEY:            "BPF_MAP_GET_NEXT_KEY",
+		BPF_PROG_LOAD:                   "BPF_PROG_LOAD",
+		BPF_OBJ_PIN:                     "BPF_OBJ_PIN",
+		BPF_OBJ_GET:                     "BPF_OBJ_GET",
+		BPF_PROG_ATTACH:                 "BPF_PROG_ATTACH",
+		BPF_PROG_DETACH:                 "BPF_PROG_DETACH",
+		BPF_PROG_TEST_RUN:               "BPF_PROG_TEST_RUN",
+		BPF_PROG_GET_NEXT_ID:            "BPF_PROG_GET_NEXT_ID",
+		BPF_MAP_GET_NEXT_ID:             "BPF_MAP_GET_NEXT_ID",
+		BPF_PROG_GET_FD_BY_ID:           "BPF_PROG_GET_FD_BY_ID",
+		BPF_MAP_GET_FD_BY_ID:            "BPF_MAP_GET_FD_BY_ID",
+		BPF_OBJ_GET_INFO_BY_FD:          "BPF_OBJ_GET_INFO_BY_FD",
+		BPF_PROG_QUERY:                  "BPF_PROG_QUERY",
+		BPF_RAW_TRACEPOINT_OPEN:         "BPF_RAW_TRACEPOINT_OPEN",
+		BPF_BTF_LOAD:                    "BPF_BTF_LOAD",
+		BPF_BTF_GET_FD_BY_ID:            "BPF_BTF_GET_FD_BY_ID",
+		BPF_TASK_FD_QUERY:               "BPF_TASK_FD_QUERY",
+		BPF_MAP_LOOKUP_AND_DELETE_ELEM:  "BPF_MAP_LOOKUP_AND_DELETE_ELEM",
+		BPF_MAP_FREEZE:                  "BPF_MAP_FREEZE",
+		BPF_BTF_GET_NEXT_ID:             "BPF_BTF_GET_NEXT_ID",
+		BPF_MAP_LOOKUP_BATCH:            "BPF_MAP_LOOKUP_BATCH",
+		BPF_MAP_LOOKUP_AND_DELETE_BATCH: "BPF_MAP_LOOKUP_AND_DELETE_BATCH",
+		BPF_MAP_UPDATE_BATCH:            "BPF_MAP_UPDATE_BATCH",
+		BPF_MAP_DELETE_BATCH:            "BPF_MAP_DELETE_BATCH",
+		BPF_LINK_CREATE:                 "BPF_LINK_CREATE",
+		BPF_LINK_UPDATE:                 "BPF_LINK_UPDATE",
+		BPF_LINK_GET_FD_BY_ID:           "BPF_LINK_GET_FD_BY_ID",
+		BPF_LINK_GET_NEXT_ID:            "BPF_LINK_GET_NEXT_ID",
+		BPF_ENABLE_STATS:                "BPF_ENABLE_STATS",
+		BPF_ITER_CREATE:                 "BPF_ITER_CREATE",
+		BPF_LINK_DETACH:                 "BPF_LINK_DETACH",
 	}
 
 	var res string
@@ -889,48 +893,48 @@ func (b BPFCommandArgument) String() string {
 
 // ParseBPFCmd parses the raw value of the `cmd` argument of the `bpf` syscall
 // https://man7.org/linux/man-pages/man2/bpf.2.html
-func ParseBPFCmd(cmd int64) (BPFCommandArgument, error) {
-	var bpfCmd = map[int64]BPFCommandArgument{
-		0:  BPF_MAP_CREATE,
-		1:  BPF_MAP_LOOKUP_ELEM,
-		2:  BPF_MAP_UPDATE_ELEM,
-		3:  BPF_MAP_DELETE_ELEM,
-		4:  BPF_MAP_GET_NEXT_KEY,
-		5:  BPF_PROG_LOAD,
-		6:  BPF_OBJ_PIN,
-		7:  BPF_OBJ_GET,
-		8:  BPF_PROG_ATTACH,
-		9:  BPF_PROG_DETACH,
-		10: BPF_PROG_TEST_RUN,
-		11: BPF_PROG_GET_NEXT_ID,
-		12: BPF_MAP_GET_NEXT_ID,
-		13: BPF_PROG_GET_FD_BY_ID,
-		14: BPF_MAP_GET_FD_BY_ID,
-		15: BPF_OBJ_GET_INFO_BY_FD,
-		16: BPF_PROG_QUERY,
-		17: BPF_RAW_TRACEPOINT_OPEN,
-		18: BPF_BTF_LOAD,
-		19: BPF_BTF_GET_FD_BY_ID,
-		20: BPF_TASK_FD_QUERY,
-		21: BPF_MAP_LOOKUP_AND_DELETE_ELEM,
-		22: BPF_MAP_FREEZE,
-		23: BPF_BTF_GET_NEXT_ID,
-		24: BPF_MAP_LOOKUP_BATCH,
-		25: BPF_MAP_LOOKUP_AND_DELETE_BATCH,
-		26: BPF_MAP_UPDATE_BATCH,
-		27: BPF_MAP_DELETE_BATCH,
-		28: BPF_LINK_CREATE,
-		29: BPF_LINK_UPDATE,
-		30: BPF_LINK_GET_FD_BY_ID,
-		31: BPF_LINK_GET_NEXT_ID,
-		32: BPF_ENABLE_STATS,
-		33: BPF_ITER_CREATE,
-		34: BPF_LINK_DETACH,
+func ParseBPFCmd(cmd uint64) (BPFCommandArgument, error) {
+	var bpfCmd = map[uint64]BPFCommandArgument{
+		BPF_MAP_CREATE.Value():                  BPF_MAP_CREATE,
+		BPF_MAP_LOOKUP_ELEM.Value():             BPF_MAP_LOOKUP_ELEM,
+		BPF_MAP_UPDATE_ELEM.Value():             BPF_MAP_UPDATE_ELEM,
+		BPF_MAP_DELETE_ELEM.Value():             BPF_MAP_DELETE_ELEM,
+		BPF_MAP_GET_NEXT_KEY.Value():            BPF_MAP_GET_NEXT_KEY,
+		BPF_PROG_LOAD.Value():                   BPF_PROG_LOAD,
+		BPF_OBJ_PIN.Value():                     BPF_OBJ_PIN,
+		BPF_OBJ_GET.Value():                     BPF_OBJ_GET,
+		BPF_PROG_ATTACH.Value():                 BPF_PROG_ATTACH,
+		BPF_PROG_DETACH.Value():                 BPF_PROG_DETACH,
+		BPF_PROG_TEST_RUN.Value():               BPF_PROG_TEST_RUN,
+		BPF_PROG_GET_NEXT_ID.Value():            BPF_PROG_GET_NEXT_ID,
+		BPF_MAP_GET_NEXT_ID.Value():             BPF_MAP_GET_NEXT_ID,
+		BPF_PROG_GET_FD_BY_ID.Value():           BPF_PROG_GET_FD_BY_ID,
+		BPF_MAP_GET_FD_BY_ID.Value():            BPF_MAP_GET_FD_BY_ID,
+		BPF_OBJ_GET_INFO_BY_FD.Value():          BPF_OBJ_GET_INFO_BY_FD,
+		BPF_PROG_QUERY.Value():                  BPF_PROG_QUERY,
+		BPF_RAW_TRACEPOINT_OPEN.Value():         BPF_RAW_TRACEPOINT_OPEN,
+		BPF_BTF_LOAD.Value():                    BPF_BTF_LOAD,
+		BPF_BTF_GET_FD_BY_ID.Value():            BPF_BTF_GET_FD_BY_ID,
+		BPF_TASK_FD_QUERY.Value():               BPF_TASK_FD_QUERY,
+		BPF_MAP_LOOKUP_AND_DELETE_ELEM.Value():  BPF_MAP_LOOKUP_AND_DELETE_ELEM,
+		BPF_MAP_FREEZE.Value():                  BPF_MAP_FREEZE,
+		BPF_BTF_GET_NEXT_ID.Value():             BPF_BTF_GET_NEXT_ID,
+		BPF_MAP_LOOKUP_BATCH.Value():            BPF_MAP_LOOKUP_BATCH,
+		BPF_MAP_LOOKUP_AND_DELETE_BATCH.Value(): BPF_MAP_LOOKUP_AND_DELETE_BATCH,
+		BPF_MAP_UPDATE_BATCH.Value():            BPF_MAP_UPDATE_BATCH,
+		BPF_MAP_DELETE_BATCH.Value():            BPF_MAP_DELETE_BATCH,
+		BPF_LINK_CREATE.Value():                 BPF_LINK_CREATE,
+		BPF_LINK_UPDATE.Value():                 BPF_LINK_UPDATE,
+		BPF_LINK_GET_FD_BY_ID.Value():           BPF_LINK_GET_FD_BY_ID,
+		BPF_LINK_GET_NEXT_ID.Value():            BPF_LINK_GET_NEXT_ID,
+		BPF_ENABLE_STATS.Value():                BPF_ENABLE_STATS,
+		BPF_ITER_CREATE.Value():                 BPF_ITER_CREATE,
+		BPF_LINK_DETACH.Value():                 BPF_LINK_DETACH,
 	}
 
 	v, ok := bpfCmd[cmd]
 	if !ok {
-		return 0, fmt.Errorf("not a valid argument: %d", cmd)
+		return 0, fmt.Errorf("not a valid  BPF command argument: %d", cmd)
 	}
 	return v, nil
 }
@@ -938,49 +942,6 @@ func ParseBPFCmd(cmd int64) (BPFCommandArgument, error) {
 type PtraceRequestArgument uint64
 
 func (p PtraceRequestArgument) Value() uint64 { return uint64(p) }
-
-func ParsePtraceRequestArgument(rawValue uint64) (PtraceRequestArgument, error) {
-	var ptraceRequest = map[uint64]PtraceRequestArgument{
-		PTRACE_TRACEME.Value():              PTRACE_TRACEME,
-		PTRACE_PEEKTEXT.Value():             PTRACE_PEEKTEXT,
-		PTRACE_PEEKDATA.Value():             PTRACE_PEEKDATA,
-		PTRACE_PEEKUSER.Value():             PTRACE_PEEKUSER,
-		PTRACE_POKETEXT.Value():             PTRACE_POKETEXT,
-		PTRACE_POKEDATA.Value():             PTRACE_POKEDATA,
-		PTRACE_POKEUSER.Value():             PTRACE_POKEUSER,
-		PTRACE_CONT.Value():                 PTRACE_CONT,
-		PTRACE_KILL.Value():                 PTRACE_KILL,
-		PTRACE_SINGLESTEP.Value():           PTRACE_SINGLESTEP,
-		PTRACE_GETREGS.Value():              PTRACE_GETREGS,
-		PTRACE_SETREGS.Value():              PTRACE_SETREGS,
-		PTRACE_GETFPREGS.Value():            PTRACE_GETFPREGS,
-		PTRACE_SETFPREGS.Value():            PTRACE_SETFPREGS,
-		PTRACE_ATTACH.Value():               PTRACE_ATTACH,
-		PTRACE_DETACH.Value():               PTRACE_DETACH,
-		PTRACE_GETFPXREGS.Value():           PTRACE_GETFPXREGS,
-		PTRACE_SETFPXREGS.Value():           PTRACE_SETFPXREGS,
-		PTRACE_SYSCALL.Value():              PTRACE_SYSCALL,
-		PTRACE_SETOPTIONS.Value():           PTRACE_SETOPTIONS,
-		PTRACE_GETEVENTMSG.Value():          PTRACE_GETEVENTMSG,
-		PTRACE_GETSIGINFO.Value():           PTRACE_GETSIGINFO,
-		PTRACE_SETSIGINFO.Value():           PTRACE_SETSIGINFO,
-		PTRACE_GETREGSET.Value():            PTRACE_GETREGSET,
-		PTRACE_SETREGSET.Value():            PTRACE_SETREGSET,
-		PTRACE_SEIZE.Value():                PTRACE_SEIZE,
-		PTRACE_INTERRUPT.Value():            PTRACE_INTERRUPT,
-		PTRACE_LISTEN.Value():               PTRACE_LISTEN,
-		PTRACE_PEEKSIGINFO.Value():          PTRACE_PEEKSIGINFO,
-		PTRACE_GETSIGMASK.Value():           PTRACE_GETSIGMASK,
-		PTRACE_SETSIGMASK.Value():           PTRACE_SETSIGMASK,
-		PTRACE_SECCOMP_GET_FILTER.Value():   PTRACE_SECCOMP_GET_FILTER,
-		PTRACE_SECCOMP_GET_METADATA.Value(): PTRACE_SECCOMP_GET_METADATA,
-	}
-
-	if reqName, ok := ptraceRequest[rawValue]; ok {
-		return reqName, nil
-	}
-	return 0, fmt.Errorf("not a valid ptrace request value: %d", rawValue)
-}
 
 func (p PtraceRequestArgument) String() string {
 	var ptraceRequest = map[PtraceRequestArgument]string{
@@ -1027,6 +988,49 @@ func (p PtraceRequestArgument) String() string {
 	}
 
 	return res
+}
+
+func ParsePtraceRequestArgument(rawValue uint64) (PtraceRequestArgument, error) {
+	var ptraceRequest = map[uint64]PtraceRequestArgument{
+		PTRACE_TRACEME.Value():              PTRACE_TRACEME,
+		PTRACE_PEEKTEXT.Value():             PTRACE_PEEKTEXT,
+		PTRACE_PEEKDATA.Value():             PTRACE_PEEKDATA,
+		PTRACE_PEEKUSER.Value():             PTRACE_PEEKUSER,
+		PTRACE_POKETEXT.Value():             PTRACE_POKETEXT,
+		PTRACE_POKEDATA.Value():             PTRACE_POKEDATA,
+		PTRACE_POKEUSER.Value():             PTRACE_POKEUSER,
+		PTRACE_CONT.Value():                 PTRACE_CONT,
+		PTRACE_KILL.Value():                 PTRACE_KILL,
+		PTRACE_SINGLESTEP.Value():           PTRACE_SINGLESTEP,
+		PTRACE_GETREGS.Value():              PTRACE_GETREGS,
+		PTRACE_SETREGS.Value():              PTRACE_SETREGS,
+		PTRACE_GETFPREGS.Value():            PTRACE_GETFPREGS,
+		PTRACE_SETFPREGS.Value():            PTRACE_SETFPREGS,
+		PTRACE_ATTACH.Value():               PTRACE_ATTACH,
+		PTRACE_DETACH.Value():               PTRACE_DETACH,
+		PTRACE_GETFPXREGS.Value():           PTRACE_GETFPXREGS,
+		PTRACE_SETFPXREGS.Value():           PTRACE_SETFPXREGS,
+		PTRACE_SYSCALL.Value():              PTRACE_SYSCALL,
+		PTRACE_SETOPTIONS.Value():           PTRACE_SETOPTIONS,
+		PTRACE_GETEVENTMSG.Value():          PTRACE_GETEVENTMSG,
+		PTRACE_GETSIGINFO.Value():           PTRACE_GETSIGINFO,
+		PTRACE_SETSIGINFO.Value():           PTRACE_SETSIGINFO,
+		PTRACE_GETREGSET.Value():            PTRACE_GETREGSET,
+		PTRACE_SETREGSET.Value():            PTRACE_SETREGSET,
+		PTRACE_SEIZE.Value():                PTRACE_SEIZE,
+		PTRACE_INTERRUPT.Value():            PTRACE_INTERRUPT,
+		PTRACE_LISTEN.Value():               PTRACE_LISTEN,
+		PTRACE_PEEKSIGINFO.Value():          PTRACE_PEEKSIGINFO,
+		PTRACE_GETSIGMASK.Value():           PTRACE_GETSIGMASK,
+		PTRACE_SETSIGMASK.Value():           PTRACE_SETSIGMASK,
+		PTRACE_SECCOMP_GET_FILTER.Value():   PTRACE_SECCOMP_GET_FILTER,
+		PTRACE_SECCOMP_GET_METADATA.Value(): PTRACE_SECCOMP_GET_METADATA,
+	}
+
+	if reqName, ok := ptraceRequest[rawValue]; ok {
+		return reqName, nil
+	}
+	return 0, fmt.Errorf("not a valid ptrace request value: %d", rawValue)
 }
 
 type SocketDomainArgument uint64
@@ -1146,69 +1150,6 @@ func ParseSocketDomainArgument(rawValue uint64) (SocketDomainArgument, error) {
 	v, ok := socketDomains[rawValue]
 	if !ok {
 		return 0, fmt.Errorf("not a valid argument: %d", rawValue)
-	}
-	return v, nil
-}
-
-func ParsePrctlOption(op uint64) (PrctlFlagArgument, error) {
-	var prctlOptions = map[uint64]PrctlFlagArgument{
-		PR_SET_PDEATHSIG.Value():            PR_SET_PDEATHSIG,
-		PR_GET_PDEATHSIG.Value():            PR_GET_PDEATHSIG,
-		PR_GET_DUMPABLE.Value():             PR_GET_DUMPABLE,
-		PR_SET_DUMPABLE.Value():             PR_SET_DUMPABLE,
-		PR_GET_UNALIGN.Value():              PR_GET_UNALIGN,
-		PR_SET_UNALIGN.Value():              PR_SET_UNALIGN,
-		PR_GET_KEEPCAPS.Value():             PR_GET_KEEPCAPS,
-		PR_SET_KEEPCAPS.Value():             PR_SET_KEEPCAPS,
-		PR_GET_FPEMU.Value():                PR_GET_FPEMU,
-		PR_SET_FPEMU.Value():                PR_SET_FPEMU,
-		PR_GET_FPEXC.Value():                PR_GET_FPEXC,
-		PR_SET_FPEXC.Value():                PR_SET_FPEXC,
-		PR_GET_TIMING.Value():               PR_GET_TIMING,
-		PR_SET_TIMING.Value():               PR_SET_TIMING,
-		PR_SET_NAME.Value():                 PR_SET_NAME,
-		PR_GET_NAME.Value():                 PR_GET_NAME,
-		PR_GET_ENDIAN.Value():               PR_GET_ENDIAN,
-		PR_SET_ENDIAN.Value():               PR_SET_ENDIAN,
-		PR_GET_SECCOMP.Value():              PR_GET_SECCOMP,
-		PR_SET_SECCOMP.Value():              PR_SET_SECCOMP,
-		PR_CAPBSET_READ.Value():             PR_CAPBSET_READ,
-		PR_CAPBSET_DROP.Value():             PR_CAPBSET_DROP,
-		PR_GET_TSC.Value():                  PR_GET_TSC,
-		PR_SET_TSC.Value():                  PR_SET_TSC,
-		PR_GET_SECUREBITS.Value():           PR_GET_SECUREBITS,
-		PR_SET_SECUREBITS.Value():           PR_SET_SECUREBITS,
-		PR_SET_TIMERSLACK.Value():           PR_SET_TIMERSLACK,
-		PR_GET_TIMERSLACK.Value():           PR_GET_TIMERSLACK,
-		PR_TASK_PERF_EVENTS_DISABLE.Value(): PR_TASK_PERF_EVENTS_DISABLE,
-		PR_TASK_PERF_EVENTS_ENABLE.Value():  PR_TASK_PERF_EVENTS_ENABLE,
-		PR_MCE_KILL.Value():                 PR_MCE_KILL,
-		PR_MCE_KILL_GET.Value():             PR_MCE_KILL_GET,
-		PR_SET_MM.Value():                   PR_SET_MM,
-		PR_SET_CHILD_SUBREAPER.Value():      PR_SET_CHILD_SUBREAPER,
-		PR_GET_CHILD_SUBREAPER.Value():      PR_GET_CHILD_SUBREAPER,
-		PR_SET_NO_NEW_PRIVS.Value():         PR_SET_NO_NEW_PRIVS,
-		PR_GET_NO_NEW_PRIVS.Value():         PR_GET_NO_NEW_PRIVS,
-		PR_GET_TID_ADDRESS.Value():          PR_GET_TID_ADDRESS,
-		PR_SET_THP_DISABLE.Value():          PR_SET_THP_DISABLE,
-		PR_GET_THP_DISABLE.Value():          PR_GET_THP_DISABLE,
-		PR_MPX_ENABLE_MANAGEMENT.Value():    PR_MPX_ENABLE_MANAGEMENT,
-		PR_MPX_DISABLE_MANAGEMENT.Value():   PR_MPX_DISABLE_MANAGEMENT,
-		PR_SET_FP_MODE.Value():              PR_SET_FP_MODE,
-		PR_GET_FP_MODE.Value():              PR_GET_FP_MODE,
-		PR_CAP_AMBIENT.Value():              PR_CAP_AMBIENT,
-		PR_SVE_SET_VL.Value():               PR_SVE_SET_VL,
-		PR_SVE_GET_VL.Value():               PR_SVE_GET_VL,
-		PR_GET_SPECULATION_CTRL.Value():     PR_GET_SPECULATION_CTRL,
-		PR_SET_SPECULATION_CTRL.Value():     PR_SET_SPECULATION_CTRL,
-		PR_PAC_RESET_KEYS.Value():           PR_PAC_RESET_KEYS,
-		PR_SET_TAGGED_ADDR_CTRL.Value():     PR_SET_TAGGED_ADDR_CTRL,
-		PR_GET_TAGGED_ADDR_CTRL.Value():     PR_GET_TAGGED_ADDR_CTRL,
-	}
-
-	v, ok := prctlOptions[op]
-	if !ok {
-		return 0, fmt.Errorf("not a valid argument: %d", op)
 	}
 	return v, nil
 }
