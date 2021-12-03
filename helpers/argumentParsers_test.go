@@ -40,6 +40,24 @@ func TestOptionsContainedInArgument(t *testing.T) {
 			options:           []SystemFunctionArgument{PTRACE_TRACEME},
 			expectedContained: true,
 		},
+		{
+			testName:          "present1",
+			rawArgument:       PTRACE_TRACEME.Value() | PTRACE_GETSIGMASK.Value(),
+			options:           []SystemFunctionArgument{PTRACE_TRACEME, PTRACE_GETSIGMASK},
+			expectedContained: true,
+		},
+		{
+			testName:          "present2",
+			rawArgument:       BPF_MAP_CREATE.Value(),
+			options:           []SystemFunctionArgument{BPF_MAP_CREATE},
+			expectedContained: true,
+		},
+		{
+			testName:          "present3",
+			rawArgument:       CAP_CHOWN.Value(),
+			options:           []SystemFunctionArgument{CAP_CHOWN},
+			expectedContained: true,
+		},
 	}
 
 	for _, ts := range attachTests {
