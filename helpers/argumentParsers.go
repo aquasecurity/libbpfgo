@@ -1154,52 +1154,6 @@ func ParseSocketDomainArgument(rawValue uint64) (SocketDomainArgument, error) {
 	return v, nil
 }
 
-// ParsePtraceRequest parses the `request` argument of the `ptrace` syscall
-// http://man7.org/linux/man-pages/man2/ptrace.2.html
-func ParsePtraceRequest(req uint64) (string, error) {
-	var ptraceRequest = map[uint64]PtraceRequestArgument{
-		PTRACE_TRACEME.Value():              PTRACE_TRACEME,
-		PTRACE_PEEKTEXT.Value():             PTRACE_PEEKTEXT,
-		PTRACE_PEEKDATA.Value():             PTRACE_PEEKDATA,
-		PTRACE_PEEKUSER.Value():             PTRACE_PEEKUSER,
-		PTRACE_POKETEXT.Value():             PTRACE_POKETEXT,
-		PTRACE_POKEDATA.Value():             PTRACE_POKEDATA,
-		PTRACE_POKEUSER.Value():             PTRACE_POKEUSER,
-		PTRACE_CONT.Value():                 PTRACE_CONT,
-		PTRACE_KILL.Value():                 PTRACE_KILL,
-		PTRACE_SINGLESTEP.Value():           PTRACE_SINGLESTEP,
-		PTRACE_GETREGS.Value():              PTRACE_GETREGS,
-		PTRACE_SETREGS.Value():              PTRACE_SETREGS,
-		PTRACE_GETFPREGS.Value():            PTRACE_GETFPREGS,
-		PTRACE_SETFPREGS.Value():            PTRACE_SETFPREGS,
-		PTRACE_ATTACH.Value():               PTRACE_ATTACH,
-		PTRACE_DETACH.Value():               PTRACE_DETACH,
-		PTRACE_GETFPXREGS.Value():           PTRACE_GETFPXREGS,
-		PTRACE_SETFPXREGS.Value():           PTRACE_SETFPXREGS,
-		PTRACE_SYSCALL.Value():              PTRACE_SYSCALL,
-		PTRACE_SETOPTIONS.Value():           PTRACE_SETOPTIONS,
-		PTRACE_GETEVENTMSG.Value():          PTRACE_GETEVENTMSG,
-		PTRACE_GETSIGINFO.Value():           PTRACE_GETSIGINFO,
-		PTRACE_SETSIGINFO.Value():           PTRACE_SETSIGINFO,
-		PTRACE_GETREGSET.Value():            PTRACE_GETREGSET,
-		PTRACE_SETREGSET.Value():            PTRACE_SETREGSET,
-		PTRACE_SEIZE.Value():                PTRACE_SEIZE,
-		PTRACE_INTERRUPT.Value():            PTRACE_INTERRUPT,
-		PTRACE_LISTEN.Value():               PTRACE_LISTEN,
-		PTRACE_PEEKSIGINFO.Value():          PTRACE_PEEKSIGINFO,
-		PTRACE_GETSIGMASK.Value():           PTRACE_GETSIGMASK,
-		PTRACE_SETSIGMASK.Value():           PTRACE_SETSIGMASK,
-		PTRACE_SECCOMP_GET_FILTER.Value():   PTRACE_SECCOMP_GET_FILTER,
-		PTRACE_SECCOMP_GET_METADATA.Value(): PTRACE_SECCOMP_GET_METADATA,
-	}
-
-	v, ok := ptraceRequest[req]
-	if !ok {
-		return "", fmt.Errorf("not a valid argument: %d", req)
-	}
-	return v.String(), nil
-}
-
 type SocketTypeArgument struct {
 	rawValue    uint64
 	stringValue string
