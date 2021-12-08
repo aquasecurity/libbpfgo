@@ -13,6 +13,25 @@ type SystemFunctionArgument interface {
 	Value() uint64
 }
 
+// OptionAreContainedInArgument checks whether the argument (rawArgument)
+// contains all of the 'options' such as with flags passed to the clone flag.
+// This function takes an arbitrary number of SystemCallArguments.It will
+// only return true if each and every option is present in rawArgument.
+// Typically linux syscalls have multiple options specified in a single
+// argument via bitmasks = which this function checks for.
+func OptionAreContainedInArgument(rawArgument uint64, options ...SystemFunctionArgument) bool {
+	var isPresent = true
+	for _, option := range options {
+		isPresent = isPresent && (option.Value()&rawArgument == option.Value())
+	}
+	return isPresent
+}
+
+type CloneFlagArgument struct {
+	rawValue    uint64
+	stringValue string
+}
+
 var (
 	// These values are copied from uapi/linux/sched.h
 	CLONE_VM             CloneFlagArgument = CloneFlagArgument{rawValue: 0x00000100, stringValue: "CLONE_VM"}
@@ -39,320 +58,7 @@ var (
 	CLONE_NEWPID         CloneFlagArgument = CloneFlagArgument{rawValue: 0x20000000, stringValue: "CLONE_NEWPID"}
 	CLONE_NEWNET         CloneFlagArgument = CloneFlagArgument{rawValue: 0x40000000, stringValue: "CLONE_NEWNET"}
 	CLONE_IO             CloneFlagArgument = CloneFlagArgument{rawValue: 0x80000000, stringValue: "CLONE_IO"}
-
-	// These values are copied from uapi/asm-generic/fcntl.h
-	O_ACCMODE   OpenFlagArgument = OpenFlagArgument{rawValue: 00000003, stringValue: "O_ACCMODE"}
-	O_RDONLY    OpenFlagArgument = OpenFlagArgument{rawValue: 00000000, stringValue: "O_RDONLY"}
-	O_WRONLY    OpenFlagArgument = OpenFlagArgument{rawValue: 00000001, stringValue: "O_WRONLY"}
-	O_RDWR      OpenFlagArgument = OpenFlagArgument{rawValue: 00000002, stringValue: "O_RDWR"}
-	O_CREAT     OpenFlagArgument = OpenFlagArgument{rawValue: 00000100, stringValue: "O_CREAT"}
-	O_EXCL      OpenFlagArgument = OpenFlagArgument{rawValue: 00000200, stringValue: "O_EXCL"}
-	O_NOCTTY    OpenFlagArgument = OpenFlagArgument{rawValue: 00000400, stringValue: "O_NOCTTY"}
-	O_TRUNC     OpenFlagArgument = OpenFlagArgument{rawValue: 00001000, stringValue: "O_TRUNC"}
-	O_APPEND    OpenFlagArgument = OpenFlagArgument{rawValue: 00002000, stringValue: "O_APPEND"}
-	O_NONBLOCK  OpenFlagArgument = OpenFlagArgument{rawValue: 00004000, stringValue: "O_NONBLOCK"}
-	O_DSYNC     OpenFlagArgument = OpenFlagArgument{rawValue: 00010000, stringValue: "O_DSYNC"}
-	O_SYNC      OpenFlagArgument = OpenFlagArgument{rawValue: 04010000, stringValue: "O_SYNC"}
-	FASYNC      OpenFlagArgument = OpenFlagArgument{rawValue: 00020000, stringValue: "FASYNC"}
-	O_DIRECT    OpenFlagArgument = OpenFlagArgument{rawValue: 00040000, stringValue: "O_DIRECT"}
-	O_LARGEFILE OpenFlagArgument = OpenFlagArgument{rawValue: 00100000, stringValue: "O_LARGEFILE"}
-	O_DIRECTORY OpenFlagArgument = OpenFlagArgument{rawValue: 00200000, stringValue: "O_DIRECTORY"}
-	O_NOFOLLOW  OpenFlagArgument = OpenFlagArgument{rawValue: 00400000, stringValue: "O_NOFOLLOW"}
-	O_NOATIME   OpenFlagArgument = OpenFlagArgument{rawValue: 01000000, stringValue: "O_NOATIME"}
-	O_CLOEXEC   OpenFlagArgument = OpenFlagArgument{rawValue: 02000000, stringValue: "O_CLOEXEC"}
-	O_PATH      OpenFlagArgument = OpenFlagArgument{rawValue: 040000000, stringValue: "O_PATH"}
-	O_TMPFILE   OpenFlagArgument = OpenFlagArgument{rawValue: 020000000, stringValue: "O_TMPFILE"}
-
-	F_OK AccessModeArgument = AccessModeArgument{rawValue: 0, stringValue: "F_OK"}
-	X_OK AccessModeArgument = AccessModeArgument{rawValue: 1, stringValue: "X_OK"}
-	W_OK AccessModeArgument = AccessModeArgument{rawValue: 2, stringValue: "W_OK"}
-	R_OK AccessModeArgument = AccessModeArgument{rawValue: 4, stringValue: "R_OK"}
-
-	AT_SYMLINK_NOFOLLOW   ExecFlagArgument = ExecFlagArgument{stringValue: "AT_SYMLINK_NOFOLLOW", rawValue: 0x100}
-	AT_EACCESS            ExecFlagArgument = ExecFlagArgument{stringValue: "AT_EACCESS", rawValue: 0x200}
-	AT_REMOVEDIR          ExecFlagArgument = ExecFlagArgument{stringValue: "AT_REMOVEDIR", rawValue: 0x200}
-	AT_SYMLINK_FOLLOW     ExecFlagArgument = ExecFlagArgument{stringValue: "AT_SYMLINK_FOLLOW", rawValue: 0x400}
-	AT_NO_AUTOMOUNT       ExecFlagArgument = ExecFlagArgument{stringValue: "AT_NO_AUTOMOUNT", rawValue: 0x800}
-	AT_EMPTY_PATH         ExecFlagArgument = ExecFlagArgument{stringValue: "AT_EMPTY_PATH", rawValue: 0x1000}
-	AT_STATX_SYNC_TYPE    ExecFlagArgument = ExecFlagArgument{stringValue: "AT_STATX_SYNC_TYPE", rawValue: 0x6000}
-	AT_STATX_SYNC_AS_STAT ExecFlagArgument = ExecFlagArgument{stringValue: "AT_STATX_SYNC_AS_STAT", rawValue: 0x0000}
-	AT_STATX_FORCE_SYNC   ExecFlagArgument = ExecFlagArgument{stringValue: "AT_STATX_FORCE_SYNC", rawValue: 0x2000}
-	AT_STATX_DONT_SYNC    ExecFlagArgument = ExecFlagArgument{stringValue: "AT_STATX_DONT_SYNC", rawValue: 0x4000}
-	AT_RECURSIVE          ExecFlagArgument = ExecFlagArgument{stringValue: "AT_RECURSIVE", rawValue: 0x8000}
-
-	PTRACE_TRACEME              PtraceRequestArgument = 0
-	PTRACE_PEEKTEXT             PtraceRequestArgument = 1
-	PTRACE_PEEKDATA             PtraceRequestArgument = 2
-	PTRACE_PEEKUSER             PtraceRequestArgument = 3
-	PTRACE_POKETEXT             PtraceRequestArgument = 4
-	PTRACE_POKEDATA             PtraceRequestArgument = 5
-	PTRACE_POKEUSER             PtraceRequestArgument = 6
-	PTRACE_CONT                 PtraceRequestArgument = 7
-	PTRACE_KILL                 PtraceRequestArgument = 8
-	PTRACE_SINGLESTEP           PtraceRequestArgument = 9
-	PTRACE_GETREGS              PtraceRequestArgument = 12
-	PTRACE_SETREGS              PtraceRequestArgument = 13
-	PTRACE_GETFPREGS            PtraceRequestArgument = 14
-	PTRACE_SETFPREGS            PtraceRequestArgument = 15
-	PTRACE_ATTACH               PtraceRequestArgument = 16
-	PTRACE_DETACH               PtraceRequestArgument = 17
-	PTRACE_GETFPXREGS           PtraceRequestArgument = 18
-	PTRACE_SETFPXREGS           PtraceRequestArgument = 19
-	PTRACE_SYSCALL              PtraceRequestArgument = 24
-	PTRACE_SETOPTIONS           PtraceRequestArgument = 0x4200
-	PTRACE_GETEVENTMSG          PtraceRequestArgument = 0x4201
-	PTRACE_GETSIGINFO           PtraceRequestArgument = 0x4202
-	PTRACE_SETSIGINFO           PtraceRequestArgument = 0x4203
-	PTRACE_GETREGSET            PtraceRequestArgument = 0x4204
-	PTRACE_SETREGSET            PtraceRequestArgument = 0x4205
-	PTRACE_SEIZE                PtraceRequestArgument = 0x4206
-	PTRACE_INTERRUPT            PtraceRequestArgument = 0x4207
-	PTRACE_LISTEN               PtraceRequestArgument = 0x4208
-	PTRACE_PEEKSIGINFO          PtraceRequestArgument = 0x4209
-	PTRACE_GETSIGMASK           PtraceRequestArgument = 0x420a
-	PTRACE_SETSIGMASK           PtraceRequestArgument = 0x420b
-	PTRACE_SECCOMP_GET_FILTER   PtraceRequestArgument = 0x420c
-	PTRACE_SECCOMP_GET_METADATA PtraceRequestArgument = 0x420d
-
-	SOCK_STREAM    SocketTypeArgument = SocketTypeArgument{rawValue: 1, stringValue: "SOCK_STREAM"}
-	SOCK_DGRAM     SocketTypeArgument = SocketTypeArgument{rawValue: 2, stringValue: "SOCK_DGRAM"}
-	SOCK_RAW       SocketTypeArgument = SocketTypeArgument{rawValue: 3, stringValue: "SOCK_RAW"}
-	SOCK_RDM       SocketTypeArgument = SocketTypeArgument{rawValue: 4, stringValue: "SOCK_RDM"}
-	SOCK_SEQPACKET SocketTypeArgument = SocketTypeArgument{rawValue: 5, stringValue: "SOCK_SEQPACKET"}
-	SOCK_DCCP      SocketTypeArgument = SocketTypeArgument{rawValue: 6, stringValue: "SOCK_DCCP"}
-	SOCK_PACKET    SocketTypeArgument = SocketTypeArgument{rawValue: 10, stringValue: "SOCK_PACKET"}
-	SOCK_NONBLOCK  SocketTypeArgument = SocketTypeArgument{rawValue: 000004000, stringValue: "SOCK_NONBLOCK"}
-	SOCK_CLOEXEC   SocketTypeArgument = SocketTypeArgument{rawValue: 002000000, stringValue: "SOCK_CLOEXEC"}
-
-	S_IFSOCK InodeModeArgument = InodeModeArgument{stringValue: "S_IFSOCK", rawValue: 0140000}
-	S_IFLNK  InodeModeArgument = InodeModeArgument{stringValue: "S_IFLNK", rawValue: 0120000}
-	S_IFREG  InodeModeArgument = InodeModeArgument{stringValue: "S_IFREG", rawValue: 0100000}
-	S_IFBLK  InodeModeArgument = InodeModeArgument{stringValue: "S_IFBLK", rawValue: 060000}
-	S_IFDIR  InodeModeArgument = InodeModeArgument{stringValue: "S_IFDIR", rawValue: 040000}
-	S_IFCHR  InodeModeArgument = InodeModeArgument{stringValue: "S_IFCHR", rawValue: 020000}
-	S_IFIFO  InodeModeArgument = InodeModeArgument{stringValue: "S_IFIFO", rawValue: 010000}
-	S_IRWXU  InodeModeArgument = InodeModeArgument{stringValue: "S_IRWXU", rawValue: 00700}
-	S_IRUSR  InodeModeArgument = InodeModeArgument{stringValue: "S_IRUSR", rawValue: 00400}
-	S_IWUSR  InodeModeArgument = InodeModeArgument{stringValue: "S_IWUSR", rawValue: 00200}
-	S_IXUSR  InodeModeArgument = InodeModeArgument{stringValue: "S_IXUSR", rawValue: 00100}
-	S_IRWXG  InodeModeArgument = InodeModeArgument{stringValue: "S_IRWXG", rawValue: 00070}
-	S_IRGRP  InodeModeArgument = InodeModeArgument{stringValue: "S_IRGRP", rawValue: 00040}
-	S_IWGRP  InodeModeArgument = InodeModeArgument{stringValue: "S_IWGRP", rawValue: 00020}
-	S_IXGRP  InodeModeArgument = InodeModeArgument{stringValue: "S_IXGRP", rawValue: 00010}
-	S_IRWXO  InodeModeArgument = InodeModeArgument{stringValue: "S_IRWXO", rawValue: 00007}
-	S_IROTH  InodeModeArgument = InodeModeArgument{stringValue: "S_IROTH", rawValue: 00004}
-	S_IWOTH  InodeModeArgument = InodeModeArgument{stringValue: "S_IWOTH", rawValue: 00002}
-	S_IXOTH  InodeModeArgument = InodeModeArgument{stringValue: "S_IXOTH", rawValue: 00001}
-
-	PROT_READ      MmapProtArgument = MmapProtArgument{stringValue: "PROT_READ", rawValue: 0x1}
-	PROT_WRITE     MmapProtArgument = MmapProtArgument{stringValue: "PROT_WRITE", rawValue: 0x2}
-	PROT_EXEC      MmapProtArgument = MmapProtArgument{stringValue: "PROT_EXEC", rawValue: 0x4}
-	PROT_SEM       MmapProtArgument = MmapProtArgument{stringValue: "PROT_SEM", rawValue: 0x8}
-	PROT_NONE      MmapProtArgument = MmapProtArgument{stringValue: "PROT_NONE", rawValue: 0x0}
-	PROT_GROWSDOWN MmapProtArgument = MmapProtArgument{stringValue: "PROT_GROWSDOWN", rawValue: 0x01000000}
-	PROT_GROWSUP   MmapProtArgument = MmapProtArgument{stringValue: "PROT_GROWSUP", rawValue: 0x02000000}
 )
-
-const (
-	CAP_CHOWN CapabilityFlagArgument = iota
-	CAP_DAC_OVERRIDE
-	CAP_DAC_READ_SEARCH
-	CAP_FOWNER
-	CAP_FSETID
-	CAP_KILL
-	CAP_SETGID
-	CAP_SETUID
-	CAP_SETPCAP
-	CAP_LINUX_IMMUTABLE
-	CAP_NET_BIND_SERVICE
-	CAP_NET_BROADCAST
-	CAP_NET_ADMIN
-	CAP_NET_RAW
-	CAP_IPC_LOCK
-	CAP_IPC_OWNER
-	CAP_SYS_MODULE
-	CAP_SYS_RAWIO
-	CAP_SYS_CHROOT
-	CAP_SYS_PTRACE
-	CAP_SYS_PACCT
-	CAP_SYS_ADMIN
-	CAP_SYS_BOOT
-	CAP_SYS_NICE
-	CAP_SYS_RESOURCE
-	CAP_SYS_TIME
-	CAP_SYS_TTY_CONFIG
-	CAP_MKNOD
-	CAP_LEASE
-	CAP_AUDIT_WRITE
-	CAP_AUDIT_CONTROL
-	CAP_SETFCAP
-	CAP_MAC_OVERRIDE
-	CAP_MAC_ADMIN
-	CAP_SYSLOG
-	CAP_WAKE_ALARM
-	CAP_BLOCK_SUSPEND
-	CAP_AUDIT_READ
-)
-
-const (
-	PR_SET_PDEATHSIG PrctlOptionArgument = iota + 1
-	PR_GET_PDEATHSIG
-	PR_GET_DUMPABLE
-	PR_SET_DUMPABLE
-	PR_GET_UNALIGN
-	PR_SET_UNALIGN
-	PR_GET_KEEPCAPS
-	PR_SET_KEEPCAPS
-	PR_GET_FPEMU
-	PR_SET_FPEMU
-	PR_GET_FPEXC
-	PR_SET_FPEXC
-	PR_GET_TIMING
-	PR_SET_TIMING
-	PR_SET_NAME
-	PR_GET_NAME
-	PR_GET_ENDIAN
-	PR_SET_ENDIAN
-	PR_GET_SECCOMP
-	PR_SET_SECCOMP
-	PR_CAPBSET_READ
-	PR_CAPBSET_DROP
-	PR_GET_TSC
-	PR_SET_TSC
-	PR_GET_SECUREBITS
-	PR_SET_SECUREBITS
-	PR_SET_TIMERSLACK
-	PR_GET_TIMERSLACK
-	PR_TASK_PERF_EVENTS_DISABLE
-	PR_TASK_PERF_EVENTS_ENABLE
-	PR_MCE_KILL
-	PR_MCE_KILL_GET
-	PR_SET_MM
-	PR_SET_CHILD_SUBREAPER
-	PR_GET_CHILD_SUBREAPER
-	PR_SET_NO_NEW_PRIVS
-	PR_GET_NO_NEW_PRIVS
-	PR_GET_TID_ADDRESS
-	PR_SET_THP_DISABLE
-	PR_GET_THP_DISABLE
-	PR_MPX_ENABLE_MANAGEMENT
-	PR_MPX_DISABLE_MANAGEMENT
-	PR_SET_FP_MODE
-	PR_GET_FP_MODE
-	PR_CAP_AMBIENT
-	PR_SVE_SET_VL
-	PR_SVE_GET_VL
-	PR_GET_SPECULATION_CTRL
-	PR_SET_SPECULATION_CTRL
-	PR_PAC_RESET_KEYS
-	PR_SET_TAGGED_ADDR_CTRL
-	PR_GET_TAGGED_ADDR_CTRL
-)
-
-const (
-	BPF_MAP_CREATE BPFCommandArgument = iota
-	BPF_MAP_LOOKUP_ELEM
-	BPF_MAP_UPDATE_ELEM
-	BPF_MAP_DELETE_ELEM
-	BPF_MAP_GET_NEXT_KEY
-	BPF_PROG_LOAD
-	BPF_OBJ_PIN
-	BPF_OBJ_GET
-	BPF_PROG_ATTACH
-	BPF_PROG_DETACH
-	BPF_PROG_TEST_RUN
-	BPF_PROG_GET_NEXT_ID
-	BPF_MAP_GET_NEXT_ID
-	BPF_PROG_GET_FD_BY_ID
-	BPF_MAP_GET_FD_BY_ID
-	BPF_OBJ_GET_INFO_BY_FD
-	BPF_PROG_QUERY
-	BPF_RAW_TRACEPOINT_OPEN
-	BPF_BTF_LOAD
-	BPF_BTF_GET_FD_BY_ID
-	BPF_TASK_FD_QUERY
-	BPF_MAP_LOOKUP_AND_DELETE_ELEM
-	BPF_MAP_FREEZE
-	BPF_BTF_GET_NEXT_ID
-	BPF_MAP_LOOKUP_BATCH
-	BPF_MAP_LOOKUP_AND_DELETE_BATCH
-	BPF_MAP_UPDATE_BATCH
-	BPF_MAP_DELETE_BATCH
-	BPF_LINK_CREATE
-	BPF_LINK_UPDATE
-	BPF_LINK_GET_FD_BY_ID
-	BPF_LINK_GET_NEXT_ID
-	BPF_ENABLE_STATS
-	BPF_ITER_CREATE
-	BPF_LINK_DETACH
-)
-
-const (
-	AF_UNSPEC SocketDomainArgument = iota
-	AF_UNIX
-	AF_INET
-	AF_AX25
-	AF_IPX
-	AF_APPLETALK
-	AF_NETROM
-	AF_BRIDGE
-	AF_ATMPVC
-	AF_X25
-	AF_INET6
-	AF_ROSE
-	AF_DECnet
-	AF_NETBEUI
-	AF_SECURITY
-	AF_KEY
-	AF_NETLINK
-	AF_PACKET
-	AF_ASH
-	AF_ECONET
-	AF_ATMSVC
-	AF_RDS
-	AF_SNA
-	AF_IRDA
-	AF_PPPOX
-	AF_WANPIPE
-	AF_LLC
-	AF_IB
-	AF_MPLS
-	AF_CAN
-	AF_TIPC
-	AF_BLUETOOTH
-	AF_IUCV
-	AF_RXRPC
-	AF_ISDN
-	AF_PHONET
-	AF_IEEE802154
-	AF_CAIF
-	AF_ALG
-	AF_NFC
-	AF_VSOCK
-	AF_KCM
-	AF_QIPCRTR
-	AF_SMC
-	AF_XDP
-)
-
-// OptionAreContainedInArgument checks whether the argument (rawArgument)
-// contains all of the 'options' such as with flags passed to the clone flag.
-// This function takes an arbitrary number of SystemCallArguments.It will
-// only return true if each and every option is present in rawArgument.
-// Typically linux syscalls have multiple options specified in a single
-// argument via bitmasks = which this function checks for.
-func OptionAreContainedInArgument(rawArgument uint64, options ...SystemFunctionArgument) bool {
-	var isPresent = true
-	for _, option := range options {
-		isPresent = isPresent && (option.Value()&rawArgument == option.Value())
-	}
-	return isPresent
-}
-
-type CloneFlagArgument struct {
-	rawValue    uint64
-	stringValue string
-}
 
 func (c CloneFlagArgument) Value() uint64  { return c.rawValue }
 func (c CloneFlagArgument) String() string { return c.stringValue }
@@ -443,6 +149,31 @@ type OpenFlagArgument struct {
 	stringValue string
 }
 
+var (
+	// These values are copied from uapi/asm-generic/fcntl.h
+	O_ACCMODE   OpenFlagArgument = OpenFlagArgument{rawValue: 00000003, stringValue: "O_ACCMODE"}
+	O_RDONLY    OpenFlagArgument = OpenFlagArgument{rawValue: 00000000, stringValue: "O_RDONLY"}
+	O_WRONLY    OpenFlagArgument = OpenFlagArgument{rawValue: 00000001, stringValue: "O_WRONLY"}
+	O_RDWR      OpenFlagArgument = OpenFlagArgument{rawValue: 00000002, stringValue: "O_RDWR"}
+	O_CREAT     OpenFlagArgument = OpenFlagArgument{rawValue: 00000100, stringValue: "O_CREAT"}
+	O_EXCL      OpenFlagArgument = OpenFlagArgument{rawValue: 00000200, stringValue: "O_EXCL"}
+	O_NOCTTY    OpenFlagArgument = OpenFlagArgument{rawValue: 00000400, stringValue: "O_NOCTTY"}
+	O_TRUNC     OpenFlagArgument = OpenFlagArgument{rawValue: 00001000, stringValue: "O_TRUNC"}
+	O_APPEND    OpenFlagArgument = OpenFlagArgument{rawValue: 00002000, stringValue: "O_APPEND"}
+	O_NONBLOCK  OpenFlagArgument = OpenFlagArgument{rawValue: 00004000, stringValue: "O_NONBLOCK"}
+	O_DSYNC     OpenFlagArgument = OpenFlagArgument{rawValue: 00010000, stringValue: "O_DSYNC"}
+	O_SYNC      OpenFlagArgument = OpenFlagArgument{rawValue: 04010000, stringValue: "O_SYNC"}
+	FASYNC      OpenFlagArgument = OpenFlagArgument{rawValue: 00020000, stringValue: "FASYNC"}
+	O_DIRECT    OpenFlagArgument = OpenFlagArgument{rawValue: 00040000, stringValue: "O_DIRECT"}
+	O_LARGEFILE OpenFlagArgument = OpenFlagArgument{rawValue: 00100000, stringValue: "O_LARGEFILE"}
+	O_DIRECTORY OpenFlagArgument = OpenFlagArgument{rawValue: 00200000, stringValue: "O_DIRECTORY"}
+	O_NOFOLLOW  OpenFlagArgument = OpenFlagArgument{rawValue: 00400000, stringValue: "O_NOFOLLOW"}
+	O_NOATIME   OpenFlagArgument = OpenFlagArgument{rawValue: 01000000, stringValue: "O_NOATIME"}
+	O_CLOEXEC   OpenFlagArgument = OpenFlagArgument{rawValue: 02000000, stringValue: "O_CLOEXEC"}
+	O_PATH      OpenFlagArgument = OpenFlagArgument{rawValue: 040000000, stringValue: "O_PATH"}
+	O_TMPFILE   OpenFlagArgument = OpenFlagArgument{rawValue: 020000000, stringValue: "O_TMPFILE"}
+)
+
 func (o OpenFlagArgument) Value() uint64  { return o.rawValue }
 func (o OpenFlagArgument) String() string { return o.stringValue }
 
@@ -524,6 +255,13 @@ type AccessModeArgument struct {
 	stringValue string
 }
 
+var (
+	F_OK AccessModeArgument = AccessModeArgument{rawValue: 0, stringValue: "F_OK"}
+	X_OK AccessModeArgument = AccessModeArgument{rawValue: 1, stringValue: "X_OK"}
+	W_OK AccessModeArgument = AccessModeArgument{rawValue: 2, stringValue: "W_OK"}
+	R_OK AccessModeArgument = AccessModeArgument{rawValue: 4, stringValue: "R_OK"}
+)
+
 func (a AccessModeArgument) Value() uint64 { return a.rawValue }
 
 func (a AccessModeArgument) String() string { return a.stringValue }
@@ -557,6 +295,20 @@ type ExecFlagArgument struct {
 	rawValue    uint64
 	stringValue string
 }
+
+var (
+	AT_SYMLINK_NOFOLLOW   ExecFlagArgument = ExecFlagArgument{stringValue: "AT_SYMLINK_NOFOLLOW", rawValue: 0x100}
+	AT_EACCESS            ExecFlagArgument = ExecFlagArgument{stringValue: "AT_EACCESS", rawValue: 0x200}
+	AT_REMOVEDIR          ExecFlagArgument = ExecFlagArgument{stringValue: "AT_REMOVEDIR", rawValue: 0x200}
+	AT_SYMLINK_FOLLOW     ExecFlagArgument = ExecFlagArgument{stringValue: "AT_SYMLINK_FOLLOW", rawValue: 0x400}
+	AT_NO_AUTOMOUNT       ExecFlagArgument = ExecFlagArgument{stringValue: "AT_NO_AUTOMOUNT", rawValue: 0x800}
+	AT_EMPTY_PATH         ExecFlagArgument = ExecFlagArgument{stringValue: "AT_EMPTY_PATH", rawValue: 0x1000}
+	AT_STATX_SYNC_TYPE    ExecFlagArgument = ExecFlagArgument{stringValue: "AT_STATX_SYNC_TYPE", rawValue: 0x6000}
+	AT_STATX_SYNC_AS_STAT ExecFlagArgument = ExecFlagArgument{stringValue: "AT_STATX_SYNC_AS_STAT", rawValue: 0x0000}
+	AT_STATX_FORCE_SYNC   ExecFlagArgument = ExecFlagArgument{stringValue: "AT_STATX_FORCE_SYNC", rawValue: 0x2000}
+	AT_STATX_DONT_SYNC    ExecFlagArgument = ExecFlagArgument{stringValue: "AT_STATX_DONT_SYNC", rawValue: 0x4000}
+	AT_RECURSIVE          ExecFlagArgument = ExecFlagArgument{stringValue: "AT_RECURSIVE", rawValue: 0x8000}
+)
 
 func (e ExecFlagArgument) Value() uint64  { return e.rawValue }
 func (e ExecFlagArgument) String() string { return e.stringValue }
@@ -597,6 +349,47 @@ func (e ExecFlagArgument) ParseExecFlag(rawValue uint64) (ExecFlagArgument, erro
 }
 
 type CapabilityFlagArgument uint64
+
+const (
+	CAP_CHOWN CapabilityFlagArgument = iota
+	CAP_DAC_OVERRIDE
+	CAP_DAC_READ_SEARCH
+	CAP_FOWNER
+	CAP_FSETID
+	CAP_KILL
+	CAP_SETGID
+	CAP_SETUID
+	CAP_SETPCAP
+	CAP_LINUX_IMMUTABLE
+	CAP_NET_BIND_SERVICE
+	CAP_NET_BROADCAST
+	CAP_NET_ADMIN
+	CAP_NET_RAW
+	CAP_IPC_LOCK
+	CAP_IPC_OWNER
+	CAP_SYS_MODULE
+	CAP_SYS_RAWIO
+	CAP_SYS_CHROOT
+	CAP_SYS_PTRACE
+	CAP_SYS_PACCT
+	CAP_SYS_ADMIN
+	CAP_SYS_BOOT
+	CAP_SYS_NICE
+	CAP_SYS_RESOURCE
+	CAP_SYS_TIME
+	CAP_SYS_TTY_CONFIG
+	CAP_MKNOD
+	CAP_LEASE
+	CAP_AUDIT_WRITE
+	CAP_AUDIT_CONTROL
+	CAP_SETFCAP
+	CAP_MAC_OVERRIDE
+	CAP_MAC_ADMIN
+	CAP_SYSLOG
+	CAP_WAKE_ALARM
+	CAP_BLOCK_SUSPEND
+	CAP_AUDIT_READ
+)
 
 func (c CapabilityFlagArgument) Value() uint64 { return uint64(c) }
 
@@ -702,6 +495,61 @@ func ParseCapability(rawValue uint64) (CapabilityFlagArgument, error) {
 }
 
 type PrctlOptionArgument uint64
+
+const (
+	PR_SET_PDEATHSIG PrctlOptionArgument = iota + 1
+	PR_GET_PDEATHSIG
+	PR_GET_DUMPABLE
+	PR_SET_DUMPABLE
+	PR_GET_UNALIGN
+	PR_SET_UNALIGN
+	PR_GET_KEEPCAPS
+	PR_SET_KEEPCAPS
+	PR_GET_FPEMU
+	PR_SET_FPEMU
+	PR_GET_FPEXC
+	PR_SET_FPEXC
+	PR_GET_TIMING
+	PR_SET_TIMING
+	PR_SET_NAME
+	PR_GET_NAME
+	PR_GET_ENDIAN
+	PR_SET_ENDIAN
+	PR_GET_SECCOMP
+	PR_SET_SECCOMP
+	PR_CAPBSET_READ
+	PR_CAPBSET_DROP
+	PR_GET_TSC
+	PR_SET_TSC
+	PR_GET_SECUREBITS
+	PR_SET_SECUREBITS
+	PR_SET_TIMERSLACK
+	PR_GET_TIMERSLACK
+	PR_TASK_PERF_EVENTS_DISABLE
+	PR_TASK_PERF_EVENTS_ENABLE
+	PR_MCE_KILL
+	PR_MCE_KILL_GET
+	PR_SET_MM
+	PR_SET_CHILD_SUBREAPER
+	PR_GET_CHILD_SUBREAPER
+	PR_SET_NO_NEW_PRIVS
+	PR_GET_NO_NEW_PRIVS
+	PR_GET_TID_ADDRESS
+	PR_SET_THP_DISABLE
+	PR_GET_THP_DISABLE
+	PR_MPX_ENABLE_MANAGEMENT
+	PR_MPX_DISABLE_MANAGEMENT
+	PR_SET_FP_MODE
+	PR_GET_FP_MODE
+	PR_CAP_AMBIENT
+	PR_SVE_SET_VL
+	PR_SVE_GET_VL
+	PR_GET_SPECULATION_CTRL
+	PR_SET_SPECULATION_CTRL
+	PR_PAC_RESET_KEYS
+	PR_SET_TAGGED_ADDR_CTRL
+	PR_GET_TAGGED_ADDR_CTRL
+)
 
 func (p PrctlOptionArgument) Value() uint64 { return uint64(p) }
 
@@ -838,6 +686,44 @@ func ParsePrctlOption(rawValue uint64) (PrctlOptionArgument, error) {
 
 type BPFCommandArgument uint64
 
+const (
+	BPF_MAP_CREATE BPFCommandArgument = iota
+	BPF_MAP_LOOKUP_ELEM
+	BPF_MAP_UPDATE_ELEM
+	BPF_MAP_DELETE_ELEM
+	BPF_MAP_GET_NEXT_KEY
+	BPF_PROG_LOAD
+	BPF_OBJ_PIN
+	BPF_OBJ_GET
+	BPF_PROG_ATTACH
+	BPF_PROG_DETACH
+	BPF_PROG_TEST_RUN
+	BPF_PROG_GET_NEXT_ID
+	BPF_MAP_GET_NEXT_ID
+	BPF_PROG_GET_FD_BY_ID
+	BPF_MAP_GET_FD_BY_ID
+	BPF_OBJ_GET_INFO_BY_FD
+	BPF_PROG_QUERY
+	BPF_RAW_TRACEPOINT_OPEN
+	BPF_BTF_LOAD
+	BPF_BTF_GET_FD_BY_ID
+	BPF_TASK_FD_QUERY
+	BPF_MAP_LOOKUP_AND_DELETE_ELEM
+	BPF_MAP_FREEZE
+	BPF_BTF_GET_NEXT_ID
+	BPF_MAP_LOOKUP_BATCH
+	BPF_MAP_LOOKUP_AND_DELETE_BATCH
+	BPF_MAP_UPDATE_BATCH
+	BPF_MAP_DELETE_BATCH
+	BPF_LINK_CREATE
+	BPF_LINK_UPDATE
+	BPF_LINK_GET_FD_BY_ID
+	BPF_LINK_GET_NEXT_ID
+	BPF_ENABLE_STATS
+	BPF_ITER_CREATE
+	BPF_LINK_DETACH
+)
+
 func (b BPFCommandArgument) Value() uint64 { return uint64(b) }
 
 // String parses the `cmd` argument of the `bpf` syscall
@@ -941,6 +827,42 @@ func ParseBPFCmd(cmd uint64) (BPFCommandArgument, error) {
 
 type PtraceRequestArgument uint64
 
+var (
+	PTRACE_TRACEME              PtraceRequestArgument = 0
+	PTRACE_PEEKTEXT             PtraceRequestArgument = 1
+	PTRACE_PEEKDATA             PtraceRequestArgument = 2
+	PTRACE_PEEKUSER             PtraceRequestArgument = 3
+	PTRACE_POKETEXT             PtraceRequestArgument = 4
+	PTRACE_POKEDATA             PtraceRequestArgument = 5
+	PTRACE_POKEUSER             PtraceRequestArgument = 6
+	PTRACE_CONT                 PtraceRequestArgument = 7
+	PTRACE_KILL                 PtraceRequestArgument = 8
+	PTRACE_SINGLESTEP           PtraceRequestArgument = 9
+	PTRACE_GETREGS              PtraceRequestArgument = 12
+	PTRACE_SETREGS              PtraceRequestArgument = 13
+	PTRACE_GETFPREGS            PtraceRequestArgument = 14
+	PTRACE_SETFPREGS            PtraceRequestArgument = 15
+	PTRACE_ATTACH               PtraceRequestArgument = 16
+	PTRACE_DETACH               PtraceRequestArgument = 17
+	PTRACE_GETFPXREGS           PtraceRequestArgument = 18
+	PTRACE_SETFPXREGS           PtraceRequestArgument = 19
+	PTRACE_SYSCALL              PtraceRequestArgument = 24
+	PTRACE_SETOPTIONS           PtraceRequestArgument = 0x4200
+	PTRACE_GETEVENTMSG          PtraceRequestArgument = 0x4201
+	PTRACE_GETSIGINFO           PtraceRequestArgument = 0x4202
+	PTRACE_SETSIGINFO           PtraceRequestArgument = 0x4203
+	PTRACE_GETREGSET            PtraceRequestArgument = 0x4204
+	PTRACE_SETREGSET            PtraceRequestArgument = 0x4205
+	PTRACE_SEIZE                PtraceRequestArgument = 0x4206
+	PTRACE_INTERRUPT            PtraceRequestArgument = 0x4207
+	PTRACE_LISTEN               PtraceRequestArgument = 0x4208
+	PTRACE_PEEKSIGINFO          PtraceRequestArgument = 0x4209
+	PTRACE_GETSIGMASK           PtraceRequestArgument = 0x420a
+	PTRACE_SETSIGMASK           PtraceRequestArgument = 0x420b
+	PTRACE_SECCOMP_GET_FILTER   PtraceRequestArgument = 0x420c
+	PTRACE_SECCOMP_GET_METADATA PtraceRequestArgument = 0x420d
+)
+
 func (p PtraceRequestArgument) Value() uint64 { return uint64(p) }
 
 func (p PtraceRequestArgument) String() string {
@@ -1034,6 +956,54 @@ func ParsePtraceRequestArgument(rawValue uint64) (PtraceRequestArgument, error) 
 }
 
 type SocketDomainArgument uint64
+
+const (
+	AF_UNSPEC SocketDomainArgument = iota
+	AF_UNIX
+	AF_INET
+	AF_AX25
+	AF_IPX
+	AF_APPLETALK
+	AF_NETROM
+	AF_BRIDGE
+	AF_ATMPVC
+	AF_X25
+	AF_INET6
+	AF_ROSE
+	AF_DECnet
+	AF_NETBEUI
+	AF_SECURITY
+	AF_KEY
+	AF_NETLINK
+	AF_PACKET
+	AF_ASH
+	AF_ECONET
+	AF_ATMSVC
+	AF_RDS
+	AF_SNA
+	AF_IRDA
+	AF_PPPOX
+	AF_WANPIPE
+	AF_LLC
+	AF_IB
+	AF_MPLS
+	AF_CAN
+	AF_TIPC
+	AF_BLUETOOTH
+	AF_IUCV
+	AF_RXRPC
+	AF_ISDN
+	AF_PHONET
+	AF_IEEE802154
+	AF_CAIF
+	AF_ALG
+	AF_NFC
+	AF_VSOCK
+	AF_KCM
+	AF_QIPCRTR
+	AF_SMC
+	AF_XDP
+)
 
 func (s SocketDomainArgument) Value() uint64 { return uint64(s) }
 
@@ -1159,6 +1129,18 @@ type SocketTypeArgument struct {
 	stringValue string
 }
 
+var (
+	SOCK_STREAM    SocketTypeArgument = SocketTypeArgument{rawValue: 1, stringValue: "SOCK_STREAM"}
+	SOCK_DGRAM     SocketTypeArgument = SocketTypeArgument{rawValue: 2, stringValue: "SOCK_DGRAM"}
+	SOCK_RAW       SocketTypeArgument = SocketTypeArgument{rawValue: 3, stringValue: "SOCK_RAW"}
+	SOCK_RDM       SocketTypeArgument = SocketTypeArgument{rawValue: 4, stringValue: "SOCK_RDM"}
+	SOCK_SEQPACKET SocketTypeArgument = SocketTypeArgument{rawValue: 5, stringValue: "SOCK_SEQPACKET"}
+	SOCK_DCCP      SocketTypeArgument = SocketTypeArgument{rawValue: 6, stringValue: "SOCK_DCCP"}
+	SOCK_PACKET    SocketTypeArgument = SocketTypeArgument{rawValue: 10, stringValue: "SOCK_PACKET"}
+	SOCK_NONBLOCK  SocketTypeArgument = SocketTypeArgument{rawValue: 000004000, stringValue: "SOCK_NONBLOCK"}
+	SOCK_CLOEXEC   SocketTypeArgument = SocketTypeArgument{rawValue: 002000000, stringValue: "SOCK_CLOEXEC"}
+)
+
 func (s SocketTypeArgument) Value() uint64  { return s.rawValue }
 func (s SocketTypeArgument) String() string { return s.stringValue }
 
@@ -1199,6 +1181,28 @@ type InodeModeArgument struct {
 	rawValue    uint64
 	stringValue string
 }
+
+var (
+	S_IFSOCK InodeModeArgument = InodeModeArgument{stringValue: "S_IFSOCK", rawValue: 0140000}
+	S_IFLNK  InodeModeArgument = InodeModeArgument{stringValue: "S_IFLNK", rawValue: 0120000}
+	S_IFREG  InodeModeArgument = InodeModeArgument{stringValue: "S_IFREG", rawValue: 0100000}
+	S_IFBLK  InodeModeArgument = InodeModeArgument{stringValue: "S_IFBLK", rawValue: 060000}
+	S_IFDIR  InodeModeArgument = InodeModeArgument{stringValue: "S_IFDIR", rawValue: 040000}
+	S_IFCHR  InodeModeArgument = InodeModeArgument{stringValue: "S_IFCHR", rawValue: 020000}
+	S_IFIFO  InodeModeArgument = InodeModeArgument{stringValue: "S_IFIFO", rawValue: 010000}
+	S_IRWXU  InodeModeArgument = InodeModeArgument{stringValue: "S_IRWXU", rawValue: 00700}
+	S_IRUSR  InodeModeArgument = InodeModeArgument{stringValue: "S_IRUSR", rawValue: 00400}
+	S_IWUSR  InodeModeArgument = InodeModeArgument{stringValue: "S_IWUSR", rawValue: 00200}
+	S_IXUSR  InodeModeArgument = InodeModeArgument{stringValue: "S_IXUSR", rawValue: 00100}
+	S_IRWXG  InodeModeArgument = InodeModeArgument{stringValue: "S_IRWXG", rawValue: 00070}
+	S_IRGRP  InodeModeArgument = InodeModeArgument{stringValue: "S_IRGRP", rawValue: 00040}
+	S_IWGRP  InodeModeArgument = InodeModeArgument{stringValue: "S_IWGRP", rawValue: 00020}
+	S_IXGRP  InodeModeArgument = InodeModeArgument{stringValue: "S_IXGRP", rawValue: 00010}
+	S_IRWXO  InodeModeArgument = InodeModeArgument{stringValue: "S_IRWXO", rawValue: 00007}
+	S_IROTH  InodeModeArgument = InodeModeArgument{stringValue: "S_IROTH", rawValue: 00004}
+	S_IWOTH  InodeModeArgument = InodeModeArgument{stringValue: "S_IWOTH", rawValue: 00002}
+	S_IXOTH  InodeModeArgument = InodeModeArgument{stringValue: "S_IXOTH", rawValue: 00001}
+)
 
 func (mode InodeModeArgument) Value() uint64  { return mode.rawValue }
 func (mode InodeModeArgument) String() string { return mode.stringValue }
@@ -1275,6 +1279,16 @@ type MmapProtArgument struct {
 	rawValue    uint64
 	stringValue string
 }
+
+var (
+	PROT_READ      MmapProtArgument = MmapProtArgument{stringValue: "PROT_READ", rawValue: 0x1}
+	PROT_WRITE     MmapProtArgument = MmapProtArgument{stringValue: "PROT_WRITE", rawValue: 0x2}
+	PROT_EXEC      MmapProtArgument = MmapProtArgument{stringValue: "PROT_EXEC", rawValue: 0x4}
+	PROT_SEM       MmapProtArgument = MmapProtArgument{stringValue: "PROT_SEM", rawValue: 0x8}
+	PROT_NONE      MmapProtArgument = MmapProtArgument{stringValue: "PROT_NONE", rawValue: 0x0}
+	PROT_GROWSDOWN MmapProtArgument = MmapProtArgument{stringValue: "PROT_GROWSDOWN", rawValue: 0x01000000}
+	PROT_GROWSUP   MmapProtArgument = MmapProtArgument{stringValue: "PROT_GROWSUP", rawValue: 0x02000000}
+)
 
 func (p MmapProtArgument) Value() uint64  { return p.rawValue }
 func (p MmapProtArgument) String() string { return p.stringValue }
