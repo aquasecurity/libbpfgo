@@ -64,6 +64,11 @@ func (c CloneFlagArgument) Value() uint64  { return c.rawValue }
 func (c CloneFlagArgument) String() string { return c.stringValue }
 
 func ParseCloneFlags(rawValue uint64) (CloneFlagArgument, error) {
+
+	if rawValue == 0 {
+		return CloneFlagArgument{}, nil
+	}
+
 	var f []string
 	if OptionAreContainedInArgument(rawValue, CLONE_VM) {
 		f = append(f, CLONE_VM.String())
@@ -181,6 +186,9 @@ func (o OpenFlagArgument) String() string { return o.stringValue }
 // http://man7.org/linux/man-pages/man2/open.2.html
 // https://elixir.bootlin.com/linux/v5.5.3/source/include/uapi/asm-generic/fcntl.h
 func (o OpenFlagArgument) ParseOpenFlagArgument(rawValue uint64) (OpenFlagArgument, error) {
+	if rawValue == 0 {
+		return OpenFlagArgument{}, nil
+	}
 	var f []string
 
 	// access mode
@@ -269,6 +277,9 @@ func (a AccessModeArgument) String() string { return a.stringValue }
 // ParseAccessMode parses the mode from the `access` system call
 // http://man7.org/linux/man-pages/man2/access.2.html
 func ParseAccessMode(rawValue uint64) (AccessModeArgument, error) {
+	if rawValue == 0 {
+		return AccessModeArgument{}, nil
+	}
 	var f []string
 	if rawValue == 0x0 {
 		f = append(f, F_OK.String())
@@ -314,6 +325,11 @@ func (e ExecFlagArgument) Value() uint64  { return e.rawValue }
 func (e ExecFlagArgument) String() string { return e.stringValue }
 
 func (e ExecFlagArgument) ParseExecFlag(rawValue uint64) (ExecFlagArgument, error) {
+
+	if rawValue == 0 {
+		return ExecFlagArgument{}, nil
+	}
+
 	var f []string
 	if OptionAreContainedInArgument(rawValue, AT_EMPTY_PATH) {
 		f = append(f, AT_EMPTY_PATH.String())
