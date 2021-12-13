@@ -1,12 +1,9 @@
 package libbpfgo
 
 import (
-	"encoding/binary"
 	"fmt"
-	"log"
 	"strings"
 	"testing"
-	"unsafe"
 )
 
 func Test_LoadAndAttach(t *testing.T) {
@@ -111,104 +108,5 @@ func Test_LoadAndAttach(t *testing.T) {
 		if _, err = test.attachFn(prog, test.attachArg); err != nil {
 			t.Errorf("test %v: attach failed: %v", i, err)
 		}
-	}
-}
-
-func Test_MapBatchOperations(t *testing.T) {
-	module, err := NewModuleFromFile("selftest/build/libbpfgo_test.bpf.o")
-	if err != nil {
-		t.Fatalf("NewModuleFromFile failed: %v", err)
-	}
-	defer module.Close()
-	module.BPFLoadObject()
-
-	testerMap, err := module.GetMap("tester")
-	if err != nil {
-		t.Fatalf("module.GetMap failed: %v", err)
-	}
-
-	keys := []uint32{1, 2, 3, 4, 5, 6, 8}
-	values := []uint32{2, 3, 4, 5, 6, 7, 9}
-
-	// Test batch update.
-	if err := testerMap.UpdateBatch(unsafe.Pointer(&keys[0]), unsafe.Pointer(&values[0]), uint32(len(keys))); err != nil {
-		t.Fatalf("testerMap.UpdateBatch failed: %v", err)
-	}
-	val, err := testerMap.GetValue(unsafe.Pointer(&keys[0]))
-	if err != nil {
-		t.Fatalf("testerMap.GetValue failed: %v", err)
-	}
-	if binary.LittleEndian.Uint32(val) != values[0] {
-		t.Fatalf("testerMap.GetValue returned %v, expected %v", val, values[0])
-	}
-
-	// Test batch lookup in steps.
-	batchKeys := make([]uint32, 3)
-	nextKey := uint32(0)
-	prevKey := unsafe.Pointer(nil)
-	step := len(batchKeys)
-	for i := 0; i < 2; i++ {
-		if i > 0 {
-			// We're on step 2, so test the batch lookup by specifying the
-			// key to start from.
-			prevKey = unsafe.Pointer(&nextKey)
-			log.Printf("prevKey: %v", prevKey)
-		}
-		vals, err := testerMap.GetValueBatch(unsafe.Pointer(&batchKeys[0]), prevKey, unsafe.Pointer(&nextKey), uint32(step))
-		if err != nil {
-			t.Fatalf("step %d testerMap.LookupBatch failed: %v", i, err)
-		}
-		for i, val := range vals {
-			actual := binary.LittleEndian.Uint32(val)
-			expected := batchKeys[i] + 1
-			if actual != expected {
-				t.Fatalf("testerMap.LookupBatch returned %v, expected %v", actual, expected)
-			}
-		}
-	}
-
-	// Test batch lookup and delete.
-	deleteKeys := make([]uint32, 3)
-	nextKey = uint32(0)
-	vals, err := testerMap.GetValueAndDeleteBatch(unsafe.Pointer(&deleteKeys[0]), nil, unsafe.Pointer(&nextKey), uint32(len(deleteKeys)))
-	if err != nil {
-		t.Fatalf("testerMap.LookupBatch failed: %v", err)
-	}
-	for i, val := range vals {
-		actual := binary.LittleEndian.Uint32(val)
-		expected := deleteKeys[i] + 1
-		if actual != expected {
-			t.Fatalf("testerMap.LookupBatch returned %v, expected %v", actual, expected)
-		}
-	}
-
-}
-func Test_MapBatchDeleteOperations(t *testing.T) {
-	module, err := NewModuleFromFile("selftest/build/libbpfgo_test.bpf.o")
-	if err != nil {
-		t.Fatalf("NewModuleFromFile failed: %v", err)
-	}
-	defer module.Close()
-	module.BPFLoadObject()
-
-	testerMap, err := module.GetMap("tester")
-	if err != nil {
-		t.Fatalf("module.GetMap failed: %v", err)
-	}
-
-	keys := []uint32{1, 2, 3, 4, 5, 6, 8}
-	values := []uint32{2, 3, 4, 5, 6, 7, 9}
-
-	// Test batch update.
-	if err := testerMap.UpdateBatch(unsafe.Pointer(&keys[0]), unsafe.Pointer(&values[0]), uint32(len(keys))); err != nil {
-		t.Fatalf("testerMap.UpdateBatch failed: %v", err)
-	}
-	// Test batch delete.
-	testerMap.DeleteKeyBatch(unsafe.Pointer(&keys[0]), uint32(len(keys)))
-
-	// Ensure value is no longer there.
-	_, err = testerMap.GetValue(unsafe.Pointer(&keys[0]))
-	if err == nil {
-		t.Fatalf("testerMap.GetValue was expected to fail, but succeeded")
 	}
 }

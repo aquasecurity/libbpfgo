@@ -81,7 +81,7 @@ libbpfgo-static-test: libbpfgo-test-bpf-static
 		CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
 		GOOS=linux GOARCH=$(ARCH) \
 		go test \
-		-tags netgo -ldflags $(CGO_EXTLDFLAGS_STATIC) \
+		-v -tags netgo -ldflags $(CGO_EXTLDFLAGS_STATIC) \
 		.
 
 # vmlinux header file

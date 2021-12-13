@@ -598,7 +598,7 @@ func bpfMapBatchOptsToC(batchOpts *BPFMapBatchOpts) *C.struct_bpf_map_batch_opts
 }
 
 // GetValueBatch allows for batch lookups of multiple keys.
-// The first argument is a pointer to an array of keys which will be populated with the keys returned from this operation.
+// The first argument is a pointer to an array or slice of keys which will be populated with the keys returned from this operation.
 // It returns the associated values as a slice of slices of bytes.
 func (b *BPFMap) GetValueBatch(keys unsafe.Pointer, startKey, nextKey unsafe.Pointer, count uint32) ([][]byte, error) {
 	var (
