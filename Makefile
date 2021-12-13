@@ -76,13 +76,13 @@ libbpfgo-static: $(VMLINUXH) | $(LIBBPF_OBJ)
 
 libbpfgo-static-test: libbpfgo-test-bpf-static
 	sudo env PATH=$(PATH) \
-	CC=$(CLANG) \
-	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
-	CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
-	GOOS=linux GOARCH=$(ARCH) \
-	go test \
-	-tags netgo -ldflags $(CGO_EXTLDFLAGS_STATIC) \
-	.
+		CC=$(CLANG) \
+		CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
+		CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
+		GOOS=linux GOARCH=$(ARCH) \
+		go test \
+		-tags netgo -ldflags $(CGO_EXTLDFLAGS_STATIC) \
+		.
 
 # vmlinux header file
 
