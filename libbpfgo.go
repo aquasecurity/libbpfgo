@@ -224,9 +224,10 @@ type BPFMap struct {
 }
 
 type BPFProg struct {
-	name   string
-	prog   *C.struct_bpf_program
-	module *Module
+	name       string
+	prog       *C.struct_bpf_program
+	module     *Module
+	pinnedPath string
 }
 
 type LinkType int
@@ -690,12 +691,44 @@ func (p *BPFProg) GetFd() int {
 	return int(C.bpf_program__fd(p.prog))
 }
 
+func (p *BPFProg) Pin(path string) error {
+
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return fmt.Errorf("invalid path: %s: %v", path, err)
+	}
+
+	cs := C.CString(absPath)
+	cErr := C.bpf_program__pin(p.prog, cs)
+	C.free(unsafe.Pointer(cs))
+	if cErr != 0 {
+		return fmt.Errorf("failed to pin program %s to %s", p.name, path)
+	}
+	p.pinnedPath = absPath
+	return nil
+}
+
+func (p *BPFProg) Unpin(path string) error {
+	cs := C.CString(path)
+	err := C.bpf_program__unpin(p.prog, cs)
+	C.free(unsafe.Pointer(cs))
+	if err != 0 {
+		return fmt.Errorf("failed to unpin program %s to %s", p.name, path)
+	}
+	p.pinnedPath = ""
+	return nil
+}
+
 func (p *BPFProg) GetModule() *Module {
 	return p.module
 }
 
 func (p *BPFProg) GetName() string {
 	return p.name
+}
+
+func (p *BPFProg) GetPinPath() string {
+	return p.pinnedPath
 }
 
 // BPFProgType is an enum as defined in https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/bpf.h
