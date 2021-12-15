@@ -5,6 +5,13 @@
 
 char LICENSE[] SEC("license") = "Dual BSD/GPL";
 
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __type(key, u32);
+    __type(value, u32);
+    __uint(max_entries, 1<<24);
+} tester SEC(".maps");
+
 SEC("tp/syscalls/sys_enter_dup")
 int tracepoint__sys_enter_dup(struct trace_event_raw_sys_enter *args) {
 	return 0;
