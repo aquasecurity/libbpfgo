@@ -255,7 +255,7 @@ type BPFLink struct {
 func (l *BPFLink) Destroy() error {
 	ret := C.bpf_link__destroy(l.link)
 	if ret < 0 {
-		return syscall.Errno(-ret)
+		return syscall.Errno(ret)
 	}
 	return nil
 }
@@ -419,7 +419,7 @@ func (m *Module) Close() {
 func (m *Module) BPFLoadObject() error {
 	cErr := C.bpf_object__load(m.obj)
 	if cErr != 0 {
-		return fmt.Errorf("failed to load BPF object", syscall.Errno(int(-cErr)))
+		return fmt.Errorf("failed to load BPF object: %s", syscall.Errno(int(cErr)))
 	}
 
 	return nil
@@ -803,7 +803,7 @@ func (p *BPFProg) Pin(path string) error {
 	cErr := C.bpf_program__pin(p.prog, cs)
 	C.free(unsafe.Pointer(cs))
 	if cErr != 0 {
-		return fmt.Errorf("failed to pin program %s to %s: %s", p.name, path, syscall.Errno(int(-cErr)))
+		return fmt.Errorf("failed to pin program %s to %s: %s", p.name, path, syscall.Errno(int(cErr)))
 	}
 	p.pinnedPath = absPath
 	return nil
@@ -814,7 +814,7 @@ func (p *BPFProg) Unpin(path string) error {
 	cErr := C.bpf_program__unpin(p.prog, cs)
 	C.free(unsafe.Pointer(cs))
 	if cErr != 0 {
-		return fmt.Errorf("failed to unpin program %s to %s: %s", p.name, path, syscall.Errno(int(-cErr)))
+		return fmt.Errorf("failed to unpin program %s to %s: %s", p.name, path, syscall.Errno(int(cErr)))
 	}
 	p.pinnedPath = ""
 	return nil
@@ -877,7 +877,7 @@ func (p *BPFProg) SetAutoload(autoload bool) error {
 	cbool := C.bool(autoload)
 	cErr := C.bpf_program__set_autoload(p.prog, cbool)
 	if cErr != 0 {
-		return fmt.Errorf("failed to set bpf program autoload: %s", syscall.Errno(int(-cErr)))
+		return fmt.Errorf("failed to set bpf program autoload: %s", syscall.Errno(int(cErr)))
 	}
 	return nil
 }
@@ -885,7 +885,7 @@ func (p *BPFProg) SetAutoload(autoload bool) error {
 func (p *BPFProg) SetTracepoint() error {
 	cErr := C.bpf_program__set_tracepoint(p.prog)
 	if cErr != 0 {
-		return fmt.Errorf("failed to set bpf program as tracepoint: %s", syscall.Errno(int(-cErr)))
+		return fmt.Errorf("failed to set bpf program as tracepoint: %s", syscall.Errno(int(cErr)))
 	}
 	return nil
 }
