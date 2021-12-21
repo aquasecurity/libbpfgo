@@ -642,9 +642,12 @@ func (b *BPFMap) GetValueAndDeleteBatch(keys, startKey, nextKey unsafe.Pointer, 
 		Flags:     C.BPF_ANY,
 	}
 
-	errC := C.bpf_map_lookup_and_delete_batch(b.fd, startKey, nextKey, keys, valuesPtr, &countC, bpfMapBatchOptsToC(opts))
+	errC, err := C.bpf_map_lookup_and_delete_batch(b.fd, startKey, nextKey, keys, valuesPtr, &countC, bpfMapBatchOptsToC(opts))
 	if errC != 0 {
-		return nil, fmt.Errorf("failed to batch lookup and delete values %v in map %s", keys, b.name)
+		if errno, ok := err.(syscall.Errno); errC == -1 && ok && errno == C.ENOENT {
+			return nil, err
+		}
+		return nil, fmt.Errorf("failed to batch lookup and delete values %v in map %s: %v", keys, b.name, errC)
 	}
 
 	parsedVals := collectBatchValues(values, count, b.ValueSize())
