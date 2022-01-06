@@ -242,3 +242,47 @@ func FtraceEnabled() (bool, error) {
 	}
 	return b[0] == '1', nil
 }
+
+type LockdownMode int32
+
+func (l LockdownMode) String() string {
+	return lockdownModeToString[l]
+}
+
+const (
+	NOVALUE LockdownMode = iota
+	NONE
+	INTEGRITY
+	CONFIDENTIALITY
+)
+
+var stringToLockdownMode = map[string]LockdownMode{
+	"none":            NONE,
+	"integrity":       INTEGRITY,
+	"confidentiality": CONFIDENTIALITY,
+}
+
+var lockdownModeToString = map[LockdownMode]string{
+	NONE:            "none",
+	INTEGRITY:       "integrity",
+	CONFIDENTIALITY: "confidentiality",
+}
+
+func Lockdown() (LockdownMode, error) {
+	LockdownFile := "/sys/kernel/security/lockdown"
+	data, err := os.ReadFile(LockdownFile)
+	if err != nil {
+		return NOVALUE, err
+	}
+
+	dataString := string(data[:])
+
+	for lockString, lockMode := range stringToLockdownMode {
+		tempString := fmt.Sprintf("[%s]", lockString)
+		if strings.Contains(dataString, tempString) {
+			return lockMode, nil
+		}
+	}
+
+	return NOVALUE, fmt.Errorf("could not get lockdown mode")
+}
