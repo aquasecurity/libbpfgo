@@ -182,10 +182,10 @@ var (
 func (o OpenFlagArgument) Value() uint64  { return o.rawValue }
 func (o OpenFlagArgument) String() string { return o.stringValue }
 
-// String parses the `flags` bitmask argument of the `open` syscall
+// ParseOpenFlagArgument parses the `flags` bitmask argument of the `open` syscall
 // http://man7.org/linux/man-pages/man2/open.2.html
 // https://elixir.bootlin.com/linux/v5.5.3/source/include/uapi/asm-generic/fcntl.h
-func (o OpenFlagArgument) ParseOpenFlagArgument(rawValue uint64) (OpenFlagArgument, error) {
+func ParseOpenFlagArgument(rawValue uint64) (OpenFlagArgument, error) {
 	if rawValue == 0 {
 		return OpenFlagArgument{}, nil
 	}
@@ -193,61 +193,61 @@ func (o OpenFlagArgument) ParseOpenFlagArgument(rawValue uint64) (OpenFlagArgume
 
 	// access mode
 	switch {
-	case OptionAreContainedInArgument(o.Value(), O_WRONLY):
+	case OptionAreContainedInArgument(rawValue, O_WRONLY):
 		f = append(f, O_WRONLY.String())
-	case OptionAreContainedInArgument(o.Value(), O_RDWR):
+	case OptionAreContainedInArgument(rawValue, O_RDWR):
 		f = append(f, O_RDWR.String())
 	default:
 		f = append(f, O_RDONLY.String())
 	}
 
 	// file creation and status flags
-	if OptionAreContainedInArgument(o.Value(), O_CREAT) {
+	if OptionAreContainedInArgument(rawValue, O_CREAT) {
 		f = append(f, O_CREAT.String())
 	}
-	if OptionAreContainedInArgument(o.Value(), O_EXCL) {
+	if OptionAreContainedInArgument(rawValue, O_EXCL) {
 		f = append(f, O_EXCL.String())
 	}
-	if OptionAreContainedInArgument(o.Value(), O_NOCTTY) {
+	if OptionAreContainedInArgument(rawValue, O_NOCTTY) {
 		f = append(f, O_NOCTTY.String())
 	}
-	if OptionAreContainedInArgument(o.Value(), O_TRUNC) {
+	if OptionAreContainedInArgument(rawValue, O_TRUNC) {
 		f = append(f, O_TRUNC.String())
 	}
-	if OptionAreContainedInArgument(o.Value(), O_APPEND) {
+	if OptionAreContainedInArgument(rawValue, O_APPEND) {
 		f = append(f, O_APPEND.String())
 	}
-	if OptionAreContainedInArgument(o.Value(), O_NONBLOCK) {
+	if OptionAreContainedInArgument(rawValue, O_NONBLOCK) {
 		f = append(f, O_NONBLOCK.String())
 	}
-	if OptionAreContainedInArgument(o.Value(), O_SYNC) {
+	if OptionAreContainedInArgument(rawValue, O_SYNC) {
 		f = append(f, O_SYNC.String())
 	}
-	if OptionAreContainedInArgument(o.Value(), FASYNC) {
+	if OptionAreContainedInArgument(rawValue, FASYNC) {
 		f = append(f, FASYNC.String())
 	}
-	if OptionAreContainedInArgument(o.Value(), O_LARGEFILE) {
+	if OptionAreContainedInArgument(rawValue, O_LARGEFILE) {
 		f = append(f, O_LARGEFILE.String())
 	}
-	if OptionAreContainedInArgument(o.Value(), O_DIRECTORY) {
+	if OptionAreContainedInArgument(rawValue, O_DIRECTORY) {
 		f = append(f, O_DIRECTORY.String())
 	}
-	if OptionAreContainedInArgument(o.Value(), O_NOFOLLOW) {
+	if OptionAreContainedInArgument(rawValue, O_NOFOLLOW) {
 		f = append(f, O_NOFOLLOW.String())
 	}
-	if OptionAreContainedInArgument(o.Value(), O_CLOEXEC) {
+	if OptionAreContainedInArgument(rawValue, O_CLOEXEC) {
 		f = append(f, O_CLOEXEC.String())
 	}
-	if OptionAreContainedInArgument(o.Value(), O_DIRECT) {
+	if OptionAreContainedInArgument(rawValue, O_DIRECT) {
 		f = append(f, O_DIRECT.String())
 	}
-	if OptionAreContainedInArgument(o.Value(), O_NOATIME) {
+	if OptionAreContainedInArgument(rawValue, O_NOATIME) {
 		f = append(f, O_NOATIME.String())
 	}
-	if OptionAreContainedInArgument(o.Value(), O_PATH) {
+	if OptionAreContainedInArgument(rawValue, O_PATH) {
 		f = append(f, O_PATH.String())
 	}
-	if OptionAreContainedInArgument(o.Value(), O_TMPFILE) {
+	if OptionAreContainedInArgument(rawValue, O_TMPFILE) {
 		f = append(f, O_TMPFILE.String())
 	}
 
@@ -324,7 +324,7 @@ var (
 func (e ExecFlagArgument) Value() uint64  { return e.rawValue }
 func (e ExecFlagArgument) String() string { return e.stringValue }
 
-func (e ExecFlagArgument) ParseExecFlag(rawValue uint64) (ExecFlagArgument, error) {
+func ParseExecFlag(rawValue uint64) (ExecFlagArgument, error) {
 
 	if rawValue == 0 {
 		return ExecFlagArgument{}, nil
@@ -409,8 +409,6 @@ const (
 
 func (c CapabilityFlagArgument) Value() uint64 { return uint64(c) }
 
-// String parses the `capability` bitmask argument of the
-// `cap_capable` function include/uapi/linux/capability.h
 func (c CapabilityFlagArgument) String() string {
 	var capabilities = map[CapabilityFlagArgument]string{
 		CAP_CHOWN:            "CAP_CHOWN",
@@ -462,6 +460,9 @@ func (c CapabilityFlagArgument) String() string {
 	}
 	return res
 }
+
+// ParseCapability parses the `capability` bitmask argument of the
+// `cap_capable` function
 func ParseCapability(rawValue uint64) (CapabilityFlagArgument, error) {
 	var capabilities = map[uint64]CapabilityFlagArgument{
 		CAP_CHOWN.Value():            CAP_CHOWN,
