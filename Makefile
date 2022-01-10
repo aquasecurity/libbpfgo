@@ -95,6 +95,10 @@ $(VMLINUXH): $(OUTPUT)
 		exit 1; \
 	fi
 	@if [ ! -f $(VMLINUXH) ]; then \
+		if [ ! $(BPFTOOL) ]; then \
+			echo "ERROR: could not find bpftool"; \
+			exit 1; \
+		fi; \
 		echo "INFO: generating $(VMLINUXH) from $(BTFFILE)"; \
 		$(BPFTOOL) btf dump file $(BTFFILE) format c > $(VMLINUXH); \
 	fi
