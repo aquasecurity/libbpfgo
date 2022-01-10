@@ -194,6 +194,7 @@ err_out:
 import "C"
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"path/filepath"
@@ -443,7 +444,7 @@ func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 
 func (b *BPFMap) Pin(pinPath string) error {
 	path := C.CString(pinPath)
-	_, errno := bpf_map__pin(b.bpfMap, path)
+	_, errno := C.bpf_map__pin(b.bpfMap, path)
 	C.free(unsafe.Pointer(path))
 	if errno != nil {
 		return fmt.Errorf("failed to pin map %s to path %s: %w", b.name, pinPath, errno)
@@ -453,7 +454,7 @@ func (b *BPFMap) Pin(pinPath string) error {
 
 func (b *BPFMap) Unpin(pinPath string) error {
 	path := C.CString(pinPath)
-	_, errno := bpf_map__unpin(b.bpfMap, path)
+	_, errno := C.bpf_map__unpin(b.bpfMap, path)
 	C.free(unsafe.Pointer(path))
 	if errno != nil {
 		return fmt.Errorf("failed to unpin map %s from path %s: %w", b.name, pinPath, errno)
@@ -463,7 +464,7 @@ func (b *BPFMap) Unpin(pinPath string) error {
 
 func (b *BPFMap) SetPinPath(pinPath string) error {
 	path := C.CString(pinPath)
-	_, errno := bpf_map__set_pin_path(b.bpfMap, path)
+	_, errno := C.bpf_map__set_pin_path(b.bpfMap, path)
 	C.free(unsafe.Pointer(path))
 	if errno != nil {
 		return fmt.Errorf("failed to set pin for map %s to path %s: %w", b.name, pinPath, errno)
@@ -477,7 +478,7 @@ func (b *BPFMap) SetPinPath(pinPath string) error {
 // Note: for ring buffer and perf buffer, maxEntries is the
 // capacity in bytes.
 func (b *BPFMap) Resize(maxEntries uint32) error {
-	_, errno := bpf_map__set_max_entries(b.bpfMap, C.uint(maxEntries))
+	_, errno := C.bpf_map__set_max_entries(b.bpfMap, C.uint(maxEntries))
 	if errno != nil {
 		return fmt.Errorf("failed to resize map %s to %v: %w", b.name, maxEntries, errno)
 	}
@@ -561,7 +562,7 @@ func (b *BPFMap) GetValue(key unsafe.Pointer) ([]byte, error) {
 	value := make([]byte, b.ValueSize())
 	valuePtr := unsafe.Pointer(&value[0])
 
-	_, errno := bpf_map_lookup_elem(b.fd, key, valuePtr)
+	_, errno := C.bpf_map_lookup_elem(b.fd, key, valuePtr)
 	if errno != nil {
 		return nil, fmt.Errorf("failed to lookup value %v in map %s: %w", key, b.name, errno)
 	}
@@ -607,7 +608,7 @@ func (b *BPFMap) GetValueBatch(keys unsafe.Pointer, startKey, nextKey unsafe.Poi
 		Flags:     C.BPF_ANY,
 	}
 
-	_, errno := bpf_map_lookup_batch(b.fd, startKey, nextKey, keys, valuesPtr, &countC, bpfMapBatchOptsToC(opts))
+	_, errno := C.bpf_map_lookup_batch(b.fd, startKey, nextKey, keys, valuesPtr, &countC, bpfMapBatchOptsToC(opts))
 	if errno != nil {
 		return nil, fmt.Errorf("failed to batch lookup values %v in map %s: %w", keys, b.name, errno)
 	}
@@ -631,7 +632,7 @@ func (b *BPFMap) GetValueAndDeleteBatch(keys, startKey, nextKey unsafe.Pointer, 
 		Flags:     C.BPF_ANY,
 	}
 
-	_, errno := bpf_map_lookup_and_delete_batch(b.fd, startKey, nextKey, keys, valuesPtr, &countC, bpfMapBatchOptsToC(opts))
+	_, errno := C.bpf_map_lookup_and_delete_batch(b.fd, startKey, nextKey, keys, valuesPtr, &countC, bpfMapBatchOptsToC(opts))
 	if errno != nil {
 		return nil, fmt.Errorf("failed to batch lookup and delete values %v in map %s: %w", keys, b.name, errno)
 	}
@@ -660,7 +661,7 @@ func (b *BPFMap) UpdateBatch(keys, values unsafe.Pointer, count uint32) error {
 		Flags:     C.BPF_ANY,
 	}
 	_, errno := C.bpf_map_update_batch(b.fd, keys, values, &countC, bpfMapBatchOptsToC(&opts))
-	if errno != 0 {
+	if errno != nil {
 		return fmt.Errorf("failed to update map %s: %w", b.name, errno)
 	}
 	return nil
@@ -675,7 +676,7 @@ func (b *BPFMap) DeleteKeyBatch(keys unsafe.Pointer, count uint32) error {
 		ElemFlags: C.BPF_ANY,
 		Flags:     C.BPF_ANY,
 	}
-	_, errno := bpf_map_delete_batch(b.fd, keys, &countC, bpfMapBatchOptsToC(opts))
+	_, errno := C.bpf_map_delete_batch(b.fd, keys, &countC, bpfMapBatchOptsToC(opts))
 	if errno != nil {
 		return fmt.Errorf("failed to get lookup key %d from map %s: %w", keys, b.name, errno)
 	}
@@ -691,7 +692,7 @@ func (b *BPFMap) DeleteKeyBatch(keys unsafe.Pointer, count uint32) error {
 // in the slice or array instead of the slice/array itself, as to
 // avoid undefined behavior.
 func (b *BPFMap) DeleteKey(key unsafe.Pointer) error {
-	_, errno := bpf_map_delete_elem(b.fd, key)
+	_, errno := C.bpf_map_delete_elem(b.fd, key)
 	if errno != nil {
 		return fmt.Errorf("failed to get lookup key %d from map %s: %w", key, b.name, errno)
 	}
@@ -714,7 +715,7 @@ func (b *BPFMap) DeleteKey(key unsafe.Pointer) error {
 //  bpfmap.Update(keyPtr, valuePtr)
 //
 func (b *BPFMap) Update(key, value unsafe.Pointer) error {
-	_, errno := bpf_map_update_elem(b.fd, key, value, C.BPF_ANY)
+	_, errno := C.bpf_map_update_elem(b.fd, key, value, C.BPF_ANY)
 	if errno != nil {
 		return fmt.Errorf("failed to update map %s: %w", b.name, errno)
 	}
@@ -749,9 +750,9 @@ func (it *BPFMapIterator) Next() bool {
 	next := make([]byte, it.b.KeySize())
 	nextPtr := unsafe.Pointer(&next[0])
 
-	errC, errno := C.bpf_map_get_next_key(it.b.fd, prevPtr, nextPtr)
-	if errC == -1 {
-		if errno.Is(syscall.ENOENT) {
+	_, errno := C.bpf_map_get_next_key(it.b.fd, prevPtr, nextPtr)
+	if errno != nil {
+		if errors.Is(errno, syscall.ENOENT) {
 			it.err = errno
 		}
 		return false
