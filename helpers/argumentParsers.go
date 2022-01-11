@@ -878,6 +878,7 @@ var (
 	PTRACE_SETSIGMASK           PtraceRequestArgument = 0x420b
 	PTRACE_SECCOMP_GET_FILTER   PtraceRequestArgument = 0x420c
 	PTRACE_SECCOMP_GET_METADATA PtraceRequestArgument = 0x420d
+	PTRACE_GET_SYSCALL_INFO     PtraceRequestArgument = 0x420e
 )
 
 func (p PtraceRequestArgument) Value() uint64 { return uint64(p) }
@@ -917,6 +918,7 @@ func (p PtraceRequestArgument) String() string {
 		PTRACE_SETSIGMASK:           "PTRACE_SETSIGMASK",
 		PTRACE_SECCOMP_GET_FILTER:   "PTRACE_SECCOMP_GET_FILTER",
 		PTRACE_SECCOMP_GET_METADATA: "PTRACE_SECCOMP_GET_METADATA",
+		PTRACE_GET_SYSCALL_INFO:     "PTRACE_GET_SYSCALL_INFO",
 	}
 
 	var res string
@@ -964,6 +966,7 @@ func ParsePtraceRequestArgument(rawValue uint64) (PtraceRequestArgument, error) 
 		PTRACE_SETSIGMASK.Value():           PTRACE_SETSIGMASK,
 		PTRACE_SECCOMP_GET_FILTER.Value():   PTRACE_SECCOMP_GET_FILTER,
 		PTRACE_SECCOMP_GET_METADATA.Value(): PTRACE_SECCOMP_GET_METADATA,
+		PTRACE_GET_SYSCALL_INFO.Value():     PTRACE_GET_SYSCALL_INFO,
 	}
 
 	if reqName, ok := ptraceRequest[rawValue]; ok {
