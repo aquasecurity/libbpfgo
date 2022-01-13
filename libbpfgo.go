@@ -608,14 +608,19 @@ func (b *BPFMap) GetValueBatch(keys unsafe.Pointer, startKey, nextKey unsafe.Poi
 		Flags:     C.BPF_ANY,
 	}
 
-	_, errno := C.bpf_map_lookup_batch(b.fd, startKey, nextKey, keys, valuesPtr, &countC, bpfMapBatchOptsToC(opts))
-	if errno != nil {
-		return nil, fmt.Errorf("failed to batch lookup values %v in map %s: %w", keys, b.name, errno)
+	var reterr error
+	ret, errno := C.bpf_map_lookup_batch(b.fd, startKey, nextKey, keys, valuesPtr, &countC, bpfMapBatchOptsToC(opts))
+	if ret < 0 && errno != nil {
+		if errors.Is(errno, syscall.ENOENT) {
+			reterr = errno
+		} else {
+			return nil, fmt.Errorf("failed to batch lookup values %v in map %s: %w", keys, b.name, errno)
+		}
 	}
 
 	parsedVals := collectBatchValues(values, count, b.ValueSize())
 
-	return parsedVals, nil
+	return parsedVals, reterr
 }
 
 // GetValueAndDeleteBatch allows for batch lookups of multiple keys and deletes those keys.
@@ -632,14 +637,19 @@ func (b *BPFMap) GetValueAndDeleteBatch(keys, startKey, nextKey unsafe.Pointer, 
 		Flags:     C.BPF_ANY,
 	}
 
+	var reterr error
 	ret, errno := C.bpf_map_lookup_and_delete_batch(b.fd, startKey, nextKey, keys, valuesPtr, &countC, bpfMapBatchOptsToC(opts))
 	if ret < 0 && errno != nil {
-		return nil, fmt.Errorf("failed to batch lookup and delete values %v in map %s: %w", keys, b.name, errno)
+		if errors.Is(errno, syscall.ENOENT) {
+			reterr = errno
+		} else {
+			return nil, fmt.Errorf("failed to batch lookup and delete values %v in map %s: %w", keys, b.name, errno)
+		}
 	}
 
 	parsedVals := collectBatchValues(values, count, b.ValueSize())
 
-	return parsedVals, nil
+	return parsedVals, reterr
 }
 
 func collectBatchValues(values []byte, count uint32, valueSize int) [][]byte {
