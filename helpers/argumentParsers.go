@@ -1185,8 +1185,6 @@ func ParseSocketType(rawValue uint64) (SocketTypeArgument, error) {
 		f = append(f, strconv.Itoa(int(rawValue)))
 	}
 
-	fmt.Println(f)
-
 	if OptionAreContainedInArgument(rawValue, SOCK_NONBLOCK) {
 		f = append(f, "SOCK_NONBLOCK")
 	}
