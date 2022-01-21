@@ -254,9 +254,9 @@ type BPFLink struct {
 }
 
 func (l *BPFLink) Destroy() error {
-	_, errno := C.bpf_link__destroy(l.link)
-	if errno != nil {
-		return fmt.Errorf("could not destroy bpf link: %w", errno)
+	ret := C.bpf_link__destroy(l.link)
+	if ret < 0 {
+		return syscall.Errno(ret)
 	}
 	return nil
 }
@@ -339,7 +339,7 @@ func NewModuleFromFileArgs(args NewModuleArgs) (*Module, error) {
 	}
 
 	obj, errno := C.bpf_object__open_file(bpfFile, &opts)
-	if errno != nil {
+	if obj == nil {
 		return nil, fmt.Errorf("failed to open BPF object %s: %w", args.BPFObjPath, errno)
 	}
 
@@ -381,7 +381,7 @@ func NewModuleFromBufferArgs(args NewModuleArgs) (*Module, error) {
 	}
 
 	obj, errno := C.bpf_object__open_mem(bpfBuff, bpfBuffSize, &opts)
-	if errno != nil {
+	if obj == nil {
 		return nil, fmt.Errorf("failed to open BPF object %s: %w: errno", args.BPFObjName, args.BPFObjBuff[:20], errno)
 	}
 
@@ -418,9 +418,9 @@ func (m *Module) Close() {
 }
 
 func (m *Module) BPFLoadObject() error {
-	_, errno := C.bpf_object__load(m.obj)
-	if errno != nil {
-		return fmt.Errorf("failed to load BPF object: %w", errno)
+	cErr := C.bpf_object__load(m.obj)
+	if cErr != 0 {
+		return fmt.Errorf("failed to load BPF object: %w", syscall.Errno(int(cErr)))
 	}
 
 	return nil
@@ -430,7 +430,7 @@ func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 	cs := C.CString(mapName)
 	bpfMap, errno := C.bpf_object__find_map_by_name(m.obj, cs)
 	C.free(unsafe.Pointer(cs))
-	if errno != nil {
+	if bpfMap == nil {
 		return nil, fmt.Errorf("failed to find BPF map %s: %w", mapName, errno)
 	}
 
@@ -778,7 +778,7 @@ func (m *Module) GetProgram(progName string) (*BPFProg, error) {
 	cs := C.CString(progName)
 	prog, errno := C.bpf_object__find_program_by_name(m.obj, cs)
 	C.free(unsafe.Pointer(cs))
-	if errno != nil {
+	if prog == nil {
 		return nil, fmt.Errorf("failed to find BPF program %s: %w", progName, errno)
 	}
 
@@ -801,10 +801,10 @@ func (p *BPFProg) Pin(path string) error {
 	}
 
 	cs := C.CString(absPath)
-	_, errno := C.bpf_program__pin(p.prog, cs)
+	cErr := C.bpf_program__pin(p.prog, cs)
 	C.free(unsafe.Pointer(cs))
-	if errno != nil {
-		return fmt.Errorf("failed to pin program %s to %s: %w", p.name, path, errno)
+	if cErr != 0 {
+		return fmt.Errorf("failed to pin program %s to %s: %w", p.name, path, syscall.Errno(int(cErr)))
 	}
 	p.pinnedPath = absPath
 	return nil
@@ -812,10 +812,10 @@ func (p *BPFProg) Pin(path string) error {
 
 func (p *BPFProg) Unpin(path string) error {
 	cs := C.CString(path)
-	_, errno := C.bpf_program__unpin(p.prog, cs)
+	cErr := C.bpf_program__unpin(p.prog, cs)
 	C.free(unsafe.Pointer(cs))
-	if errno != nil {
-		return fmt.Errorf("failed to unpin program %s to %s: %w", p.name, path, errno)
+	if cErr != 0 {
+		return fmt.Errorf("failed to unpin program %s to %s: %w", p.name, path, syscall.Errno(int(cErr)))
 	}
 	p.pinnedPath = ""
 	return nil
@@ -876,17 +876,17 @@ func (p *BPFProg) GetType() uint32 {
 
 func (p *BPFProg) SetAutoload(autoload bool) error {
 	cbool := C.bool(autoload)
-	_, errno := C.bpf_program__set_autoload(p.prog, cbool)
-	if errno != nil {
-		return fmt.Errorf("failed to set bpf program autoload: %w", errno)
+	cErr := C.bpf_program__set_autoload(p.prog, cbool)
+	if cErr != 0 {
+		return fmt.Errorf("failed to set bpf program autoload: %w", syscall.Errno(int(cErr)))
 	}
 	return nil
 }
 
 func (p *BPFProg) SetTracepoint() error {
-	_, errno := C.bpf_program__set_tracepoint(p.prog)
-	if errno != nil {
-		return fmt.Errorf("failed to set bpf program as tracepoint: %w", errno)
+	cErr := C.bpf_program__set_tracepoint(p.prog)
+	if cErr != 0 {
+		return fmt.Errorf("failed to set bpf program as tracepoint: %w", syscall.Errno(int(cErr)))
 	}
 	return nil
 }
@@ -897,7 +897,7 @@ func (p *BPFProg) AttachTracepoint(category, name string) (*BPFLink, error) {
 	link, errno := C.bpf_program__attach_tracepoint(p.prog, tpCategory, tpName)
 	C.free(unsafe.Pointer(tpCategory))
 	C.free(unsafe.Pointer(tpName))
-	if errno != nil {
+	if link == nil {
 		return nil, fmt.Errorf("failed to attach tracepoint %s to program %s: %w", name, p.name, errno)
 	}
 
@@ -915,7 +915,7 @@ func (p *BPFProg) AttachRawTracepoint(tpEvent string) (*BPFLink, error) {
 	cs := C.CString(tpEvent)
 	link, errno := C.bpf_program__attach_raw_tracepoint(p.prog, cs)
 	C.free(unsafe.Pointer(cs))
-	if errno != nil {
+	if link == nil {
 		return nil, fmt.Errorf("failed to attach raw tracepoint %s to program %s: %w", tpEvent, p.name, errno)
 	}
 
@@ -931,7 +931,7 @@ func (p *BPFProg) AttachRawTracepoint(tpEvent string) (*BPFLink, error) {
 
 func (p *BPFProg) AttachPerfEvent(fd int) (*BPFLink, error) {
 	link, errno := C.bpf_program__attach_perf_event(p.prog, C.int(fd))
-	if errno != nil {
+	if link == nil {
 		return nil, fmt.Errorf("failed to attach perf event to program %s: %w", p.name, errno)
 	}
 
@@ -956,7 +956,7 @@ func (p *BPFProg) AttachKretprobe(kp string) (*BPFLink, error) {
 
 func (p *BPFProg) AttachLSM() (*BPFLink, error) {
 	link, errno := C.bpf_program__attach_lsm(p.prog)
-	if errno != nil {
+	if link == nil {
 		return nil, fmt.Errorf("failed to attach lsm to program %s: %w", p.name, errno)
 	}
 
@@ -974,7 +974,7 @@ func doAttachKprobe(prog *BPFProg, kp string, isKretprobe bool) (*BPFLink, error
 	cbool := C.bool(isKretprobe)
 	link, errno := C.bpf_program__attach_kprobe(prog.prog, cbool, cs)
 	C.free(unsafe.Pointer(cs))
-	if errno != nil {
+	if link == nil {
 		return nil, fmt.Errorf("failed to attach %s k(ret)probe to program %s: %w", kp, prog.name, errno)
 	}
 
@@ -1026,7 +1026,7 @@ func doAttachUprobe(prog *BPFProg, isUretprobe bool, pid int, path string, offse
 
 	link, errno := C.bpf_program__attach_uprobe(prog.prog, retCBool, pidCint, pathCString, offsetCsizet)
 	C.free(unsafe.Pointer(pathCString))
-	if errno != nil {
+	if link == nil {
 		return nil, fmt.Errorf("failed to attach u(ret)probe to program %s:%d with pid %d: %w", path, offset, pid, errno)
 	}
 
@@ -1057,7 +1057,7 @@ func doAttachKprobeLegacy(prog *BPFProg, kp string, isKretprobe bool) (*BPFLink,
 	cbool := C.bool(isKretprobe)
 	link, errno := C.attach_kprobe_legacy(prog.prog, cs, cbool)
 	C.free(unsafe.Pointer(cs))
-	if errno != nil {
+	if link == nil {
 		return nil, fmt.Errorf("failed to attach %s k(ret)probe using legacy debugfs API: %w", kp, errno)
 	}
 
@@ -1094,7 +1094,7 @@ func (m *Module) InitRingBuf(mapName string, eventsChan chan []byte) (*RingBuffe
 	}
 
 	rb, errno := C.init_ring_buf(bpfMap.fd, C.uintptr_t(slot))
-	if errno != nil {
+	if rb == nil {
 		return nil, fmt.Errorf("failed to initialize ring buffer: %w", errno)
 	}
 
@@ -1370,18 +1370,18 @@ func (hook *TcHook) SetParent(a int, b int) {
 }
 
 func (hook *TcHook) Create() error {
-	_, errno := C.bpf_tc_hook_create(hook.hook)
-	if errno != nil {
-		return fmt.Errorf("could not create tc hook: %w", errno)
+	ret := C.bpf_tc_hook_create(hook.hook)
+	if ret != 0 {
+		return syscall.Errno(ret)
 	}
 
 	return nil
 }
 
 func (hook *TcHook) Destroy() error {
-	_, errno := C.bpf_tc_hook_destroy(hook.hook)
-	if errno != nil {
-		return fmt.Errorf("could not destroy tc hook: %w", errno)
+	ret := C.bpf_tc_hook_destroy(hook.hook)
+	if ret != 0 {
+		return syscall.Errno(ret)
 	}
 
 	return nil
@@ -1389,9 +1389,9 @@ func (hook *TcHook) Destroy() error {
 
 func (hook *TcHook) Attach(tcOpts *TcOpts) error {
 	opts := tcOptsToC(tcOpts)
-	_, errno := C.bpf_tc_attach(hook.hook, opts)
-	if errno != nil {
-		return fmt.Errorf("could not attach tc hook: %w", errno)
+	ret := C.bpf_tc_attach(hook.hook, opts)
+	if ret != 0 {
+		return syscall.Errno(ret)
 	}
 	tcOptsFromC(tcOpts, opts)
 
@@ -1400,9 +1400,9 @@ func (hook *TcHook) Attach(tcOpts *TcOpts) error {
 
 func (hook *TcHook) Detach(tcOpts *TcOpts) error {
 	opts := tcOptsToC(tcOpts)
-	_, errno := C.bpf_tc_detach(hook.hook, opts)
-	if errno != nil {
-		return fmt.Errorf("could not detach tc hook: %w", errno)
+	ret := C.bpf_tc_detach(hook.hook, opts)
+	if ret != 0 {
+		return syscall.Errno(ret)
 	}
 	tcOptsFromC(tcOpts, opts)
 
@@ -1411,9 +1411,9 @@ func (hook *TcHook) Detach(tcOpts *TcOpts) error {
 
 func (hook *TcHook) Query(tcOpts *TcOpts) error {
 	opts := tcOptsToC(tcOpts)
-	_, errno := C.bpf_tc_query(hook.hook, opts)
-	if errno != nil {
-		return fmt.Errorf("could not query tc hook: %w", errno)
+	ret := C.bpf_tc_query(hook.hook, opts)
+	if ret != 0 {
+		return syscall.Errno(ret)
 	}
 	tcOptsFromC(tcOpts, opts)
 
