@@ -3,20 +3,12 @@ package libbpfgo
 /*
 #cgo LDFLAGS: -lelf -lz
 
-#include <bpf/bpf.h>
-#include <bpf/libbpf.h>
-#include <stdint.h>
-#include <stdio.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <sys/resource.h>
 
-#include <asm-generic/unistd.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <linux/perf_event.h>
-#include <linux/unistd.h>
-#include <string.h>
-#include <unistd.h>
+#include <bpf/bpf.h>
+#include <bpf/libbpf.h>
 
 #ifndef MAX_ERRNO
 #define MAX_ERRNO       4095
@@ -76,120 +68,6 @@ struct perf_buffer * init_perf_buf(int map_fd, int page_cnt, uintptr_t ctx) {
     }
     return pb;
 }
-
-int poke_kprobe_events(bool add, const char* name, bool ret) {
-    char buf[256];
-    int fd, err;
-    char pr;
-
-    fd = open("/sys/kernel/debug/tracing/kprobe_events", O_WRONLY | O_APPEND, 0);
-    if (fd < 0) {
-        err = -errno;
-        fprintf(stderr, "failed to open kprobe_events file: %d\n", err);
-        return err;
-    }
-
-    pr = ret ? 'r' : 'p';
-
-    if (add)
-        snprintf(buf, sizeof(buf), "%c:kprobes/%c%s %s", pr, pr, name, name);
-    else
-        snprintf(buf, sizeof(buf), "-:kprobes/%c%s", pr, name);
-
-    err = write(fd, buf, strlen(buf));
-    if (err < 0) {
-        err = -errno;
-        fprintf(
-            stderr,
-            "failed to %s kprobe '%s': %d\n",
-            add ? "add" : "remove",
-            buf,
-            err);
-    }
-    close(fd);
-    return err >= 0 ? 0 : err;
-}
-
-int add_kprobe_event(const char* func_name, bool is_kretprobe) {
-    return poke_kprobe_events(true, func_name, is_kretprobe);
-}
-
-int remove_kprobe_event(const char* func_name, bool is_kretprobe) {
-    return poke_kprobe_events(false, func_name, is_kretprobe);
-}
-
-struct bpf_link* attach_kprobe_legacy(
-    struct bpf_program* prog,
-    const char* func_name,
-    bool is_kretprobe) {
-    char fname[256];
-    struct perf_event_attr attr;
-    struct bpf_link* link;
-    int fd = -1, err, id;
-    FILE* f = NULL;
-    char pr;
-
-    err = add_kprobe_event(func_name, is_kretprobe);
-    if (err) {
-        fprintf(stderr, "failed to create kprobe event: %d\n", err);
-        return NULL;
-    }
-
-    pr = is_kretprobe ? 'r' : 'p';
-
-    snprintf(
-        fname,
-        sizeof(fname),
-        "/sys/kernel/debug/tracing/events/kprobes/%c%s/id",
-        pr, func_name);
-    f = fopen(fname, "r");
-    if (!f) {
-        fprintf(stderr, "failed to open kprobe id file '%s': %d\n", fname, -errno);
-        goto err_out;
-    }
-
-    if (fscanf(f, "%d\n", &id) != 1) {
-        fprintf(stderr, "failed to read kprobe id from '%s': %d\n", fname, -errno);
-        goto err_out;
-    }
-
-    fclose(f);
-    f = NULL;
-
-    memset(&attr, 0, sizeof(attr));
-    attr.size = sizeof(attr);
-    attr.config = id;
-    attr.type = PERF_TYPE_TRACEPOINT;
-    attr.sample_period = 1;
-    attr.wakeup_events = 1;
-
-    fd = syscall(__NR_perf_event_open, &attr, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
-    if (fd < 0) {
-        fprintf(
-            stderr,
-            "failed to create perf event for kprobe ID %d: %d\n",
-            id,
-            -errno);
-        goto err_out;
-    }
-
-    link = bpf_program__attach_perf_event(prog, fd);
-    err = libbpf_get_error(link);
-    if (err) {
-        fprintf(stderr, "failed to attach to perf event FD %d: %d\n", fd, err);
-        goto err_out;
-    }
-
-    return link;
-
-err_out:
-    if (f)
-        fclose(f);
-    if (fd >= 0)
-        close(fd);
-    remove_kprobe_event(func_name, is_kretprobe);
-    return NULL;
-}
 */
 import "C"
 
@@ -237,8 +115,6 @@ const (
 	RawTracepoint
 	Kprobe
 	Kretprobe
-	KprobeLegacy
-	KretprobeLegacy
 	LSM
 	PerfEvent
 	Uprobe
@@ -412,17 +288,7 @@ func (m *Module) Close() {
 		rb.Close()
 	}
 	for _, link := range m.links {
-		C.bpf_link__destroy(link.link) // this call will remove non-legacy kprobes
-		if link.linkType == KprobeLegacy {
-			cs := C.CString(link.eventName)
-			C.remove_kprobe_event(cs, false)
-			C.free(unsafe.Pointer(cs))
-		}
-		if link.linkType == KretprobeLegacy {
-			cs := C.CString(link.eventName)
-			C.remove_kprobe_event(cs, true)
-			C.free(unsafe.Pointer(cs))
-		}
+		C.bpf_link__destroy(link.link)
 	}
 	C.bpf_object__close(m.obj)
 }
@@ -1053,38 +919,6 @@ func doAttachUprobe(prog *BPFProg, isUretprobe bool, pid int, path string, offse
 		linkType:  upType,
 		eventName: fmt.Sprintf("%s:%d:%d", path, pid, offset),
 	}
-	return bpfLink, nil
-}
-
-func (p *BPFProg) AttachKprobeLegacy(kp string) (*BPFLink, error) {
-	return doAttachKprobeLegacy(p, kp, false)
-}
-
-func (p *BPFProg) AttachKretprobeLegacy(kp string) (*BPFLink, error) {
-	return doAttachKprobeLegacy(p, kp, true)
-}
-
-func doAttachKprobeLegacy(prog *BPFProg, kp string, isKretprobe bool) (*BPFLink, error) {
-	cs := C.CString(kp)
-	cbool := C.bool(isKretprobe)
-	link := C.attach_kprobe_legacy(prog.prog, cs, cbool)
-	C.free(unsafe.Pointer(cs))
-	if C.IS_ERR_OR_NULL(unsafe.Pointer(link)) {
-		return nil, errptrError(unsafe.Pointer(link), "failed to attach %s k(ret)probe using legacy debugfs API", kp)
-	}
-
-	kpType := KprobeLegacy
-	if isKretprobe {
-		kpType = KretprobeLegacy
-	}
-
-	bpfLink := &BPFLink{
-		link:      link,
-		prog:      prog,
-		linkType:  kpType,
-		eventName: kp,
-	}
-	prog.module.links = append(prog.module.links, bpfLink)
 	return bpfLink, nil
 }
 

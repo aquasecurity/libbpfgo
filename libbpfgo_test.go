@@ -68,21 +68,7 @@ func Test_LoadAndAttach(t *testing.T) {
 			},
 		},
 		{
-			prog:      "kprobe__get_task_pid",
-			attachArg: "get_task_pid",
-			attachFn: func(prog *BPFProg, name string) (*BPFLink, error) {
-				return prog.AttachKprobeLegacy(name)
-			},
-		},
-		{
-			prog:      "kretprobe__get_task_pid",
-			attachArg: "get_task_pid",
-			attachFn: func(prog *BPFProg, name string) (*BPFLink, error) {
-				return prog.AttachKretprobeLegacy(name)
-			},
-		},
-		{
-			prog: "socket_connect",
+			prog:     "socket_connect",
 			attachFn: func(prog *BPFProg, name string) (*BPFLink, error) {
 				if name != "" {
 					// to make the check for attaching with "foo" happy
