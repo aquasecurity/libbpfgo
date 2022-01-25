@@ -11,33 +11,31 @@ package libbpfgo
 #include <bpf/libbpf.h>
 
 #ifndef MAX_ERRNO
-#define MAX_ERRNO       4095
+#define MAX_ERRNO           4095
+#define IS_ERR_VALUE(x)     ((x) >= (unsigned long)-MAX_ERRNO)
 
-#define IS_ERR_VALUE(x) ((x) >= (unsigned long)-MAX_ERRNO)
-
-static inline bool IS_ERR(const void *ptr) {
-	return IS_ERR_VALUE((unsigned long)ptr);
+static inline bool IS_ERR(const void *ptr)
+{
+    return IS_ERR_VALUE((unsigned long)ptr);
 }
 
-static inline bool IS_ERR_OR_NULL(const void *ptr) {
-	return !ptr || IS_ERR_VALUE((unsigned long)ptr);
+static inline bool IS_ERR_OR_NULL(const void *ptr)
+{
+    return !ptr || IS_ERR_VALUE((unsigned long)ptr);
 }
 
-static inline long PTR_ERR(const void *ptr) {
-	return (long) ptr;
+static inline long PTR_ERR(const void *ptr)
+{
+    return (long) ptr;
 }
 #endif
 
-extern void perfCallback(void *ctx, int cpu, void *data, __u32 size);
-extern void perfLostCallback(void *ctx, int cpu, __u64 cnt);
-
-extern int ringbufferCallback(void *ctx, void *data, size_t size);
-
-int libbpf_print_fn(enum libbpf_print_level level,
-               const char *format, va_list args)
+int libbpf_print_fn(enum libbpf_print_level level, const char *format,
+                    va_list args)
 {
     if (level != LIBBPF_WARN)
         return 0;
+
     return vfprintf(stderr, format, args);
 }
 
@@ -45,27 +43,37 @@ void set_print_fn() {
     libbpf_set_print(libbpf_print_fn);
 }
 
-struct ring_buffer * init_ring_buf(int map_fd, uintptr_t ctx) {
+extern void perfCallback(void *ctx, int cpu, void *data, __u32 size);
+extern void perfLostCallback(void *ctx, int cpu, __u64 cnt);
+extern int ringbufferCallback(void *ctx, void *data, size_t size);
+
+struct ring_buffer * init_ring_buf(int map_fd, uintptr_t ctx)
+{
     struct ring_buffer *rb = NULL;
+
     rb = ring_buffer__new(map_fd, ringbufferCallback, (void*)ctx, NULL);
     if (!rb) {
         fprintf(stderr, "Failed to initialize ring buffer\n");
         return NULL;
     }
+
     return rb;
 }
 
-struct perf_buffer * init_perf_buf(int map_fd, int page_cnt, uintptr_t ctx) {
+struct perf_buffer * init_perf_buf(int map_fd, int page_cnt, uintptr_t ctx)
+{
     struct perf_buffer_opts pb_opts = {};
     struct perf_buffer *pb = NULL;
-    pb_opts.sample_cb = perfCallback;
-    pb_opts.lost_cb = perfLostCallback;
-    pb_opts.ctx = (void*)ctx;
-    pb = perf_buffer__new(map_fd, page_cnt, &pb_opts);
+
+    pb_opts.sz = sizeof(struct perf_buffer_opts);
+
+    pb = perf_buffer__new(map_fd, page_cnt, perfCallback, perfLostCallback,
+                          (void *) ctx, &pb_opts);
     if (libbpf_get_error(pb)) {
         fprintf(stderr, "Failed to initialize perf buffer!\n");
         return NULL;
     }
+
     return pb;
 }
 */
