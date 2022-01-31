@@ -162,6 +162,19 @@ selftest-dynamic-run:
 selftest-clean:
 	$(call FOREACH, clean)
 
+# Test against tracee
+TRACEE_SUBMODULE := testing/tracee
+.PHONY: $(TRACEE_SUBMODULE)
+$(TRACEE_SUBMODULE):
+	$(GIT) submodule deinit -f ./testing/tracee
+	$(GIT) submodule init ./testing/tracee
+	$(GIT) submodule update ./testing/tracee
+
+.PHONY: $(run-tracee-compile)
+run-tracee-compile: $(TRACEE_SUBMODULE) $(prep-tracee-test)
+	echo "replace github.com/aquasecurity/libbpfgo => ../../" >> $(realpath $(TRACEE_SUBMODULE)/go.mod)
+	cd $(TRACEE_SUBMODULE) && make -f Makefile.one all
+
 # output
 
 $(OUTPUT):
