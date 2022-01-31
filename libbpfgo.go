@@ -95,6 +95,21 @@ const (
 	maxEventChannels = 512
 )
 
+// MajorVersion returns the major semver version of libbpf.
+func MajorVersion() int {
+	return C.LIBBPF_MAJOR_VERSION
+}
+
+// MinorVersion returns the minor semver version of libbpf.
+func MinorVersion() int {
+	return C.LIBBPF_MINOR_VERSION
+}
+
+// VersionString returns the string representation of the libbpf version.
+func VersionString() string {
+	return fmt.Sprintf("v%d.%d", MajorVersion(), MinorVersion())
+}
+
 type Module struct {
 	obj      *C.struct_bpf_object
 	links    []*BPFLink
