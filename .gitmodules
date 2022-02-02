@@ -1,6 +1,3 @@
 [submodule "libbpf"]
 	path = libbpf
 	url = https://github.com/libbpf/libbpf.git
-[submodule "testing/tracee"]
-	path = testing/tracee
-	url = git@github.com:aquasecurity/tracee.git
