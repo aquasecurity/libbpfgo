@@ -2,7 +2,7 @@
 
 #
 # This script downloads and updates the aquasecurity/tracee repository
-# 
+#
 
 die() {
     echo ${@}
@@ -43,7 +43,7 @@ fi
 echo "replace github.com/aquasecurity/libbpfgo => ../../" >> ${TRACEE_DIR}/go.mod
 cd ${TRACEE_DIR}
 
-make -f Makefile.one
+make
 if [ $? -ne 0 ]; then
 	echo "failed to build tracee with location version of libbpfgo"
     RETURN_CODE=-1
