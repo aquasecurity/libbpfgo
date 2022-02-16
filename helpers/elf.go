@@ -55,5 +55,5 @@ func SymbolToOffset(path, symbol string) (uint32, error) {
 		}
 	}
 
-	return 0, errors.New("symbol not found")
+	return 0, fmt.Errorf("symbol %s not found in %s", symbol, path)
 }
