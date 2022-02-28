@@ -24,3 +24,6 @@ jobs:
       - name: selftest
         run: |
           sudo ./selftest/run.sh
+      - name: compile against tracee
+        run: |
+          ./testing/compile-tracee.sh
