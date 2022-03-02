@@ -242,11 +242,10 @@ int main(int argc, char **argv)
 	if ((err = main_bpf__attach(main)))
 		exiterr("failed to attach\n");
 
-	pb_opts.sample_cb = handle_event;
-	pb_opts.lost_cb = handle_lost_events;
+	pb_opts.sz = sizeof(struct perf_buffer_opts);
 
 	// start perf event polling (call handle_event & handle_lost_events on fd activity)
-	pb = perf_buffer__new(bpf_map__fd(main->maps.events), 16 /* BUFFER PAGES */, &pb_opts);
+	pb = perf_buffer__new(bpf_map__fd(main->maps.events), 16, handle_event, handle_lost_events,0, &pb_opts);
 
 	err = libbpf_get_error(pb);
 	if (err) {
