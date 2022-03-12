@@ -124,6 +124,42 @@ type BPFMap struct {
 	module *Module
 }
 
+type MapType uint32
+
+const (
+	MapTypeUnspec MapType = iota
+	MapTypeHash
+	MapTypeArray
+	MapTypeProgArray
+	MapTypePerfEventArray
+	MapTypePerCPUHash
+	MapTypePerCPUArray
+	MapTypeStackTrace
+	MapTypeCgroupArray
+	MapTypeLRUHash
+	MapTypeLRUPerCPUHash
+	MapTypeLPMTrie
+	MapTypeArrayOfMaps
+	MapTypeHashOfMaps
+	MapTypeDevMap
+	MapTypeSockMap
+	MapTypeCPUMap
+	MapTypeXSKMap
+	MapTypeSockHash
+	MapTypeCgroupStorage
+	MapTypeReusePortSockArray
+	MapTypePerCPUCgroupStorage
+	MapTypeQueue
+	MapTypeStack
+	MapTypeSKStorage
+	MapTypeDevmapHash
+	MapTypeStructOps
+	MapTypeRingbuf
+	MapTypeInodeStorage
+	MapTypeTaskStorage
+	MapTypeBloomFilter
+)
+
 type BPFProg struct {
 	name       string
 	prog       *C.struct_bpf_program
@@ -323,6 +359,62 @@ func (m *Module) BPFLoadObject() error {
 	}
 
 	return nil
+}
+
+// BPFMapCreateOpts mirrors the C structure bpf_map_create_opts
+type BPFMapCreateOpts struct {
+	Size                  uint64
+	BtfFD                 uint32
+	BtfKeyTypeID          uint32
+	BtfValueTypeID        uint32
+	BtfVmlinuxValueTypeID uint32
+	InnerMapFD            uint32
+	MapFlags              uint32
+	MapExtra              uint64
+	NumaNode              uint32
+	MapIfIndex            uint32
+}
+
+func bpfMapCreateOptsToC(createOpts *BPFMapCreateOpts) *C.struct_bpf_map_create_opts {
+	if createOpts == nil {
+		return nil
+	}
+	opts := C.struct_bpf_map_create_opts{}
+	opts.sz = C.ulong(createOpts.Size)
+	opts.btf_fd = C.uint(createOpts.BtfFD)
+	opts.btf_key_type_id = C.uint(createOpts.BtfKeyTypeID)
+	opts.btf_value_type_id = C.uint(createOpts.BtfValueTypeID)
+	opts.btf_vmlinux_value_type_id = C.uint(createOpts.BtfVmlinuxValueTypeID)
+	opts.inner_map_fd = C.uint(createOpts.InnerMapFD)
+	opts.map_flags = C.uint(createOpts.MapFlags)
+	opts.map_extra = C.ulonglong(createOpts.MapExtra)
+	opts.numa_node = C.uint(createOpts.NumaNode)
+	opts.map_ifindex = C.uint(createOpts.MapIfIndex)
+
+	return &opts
+}
+
+// CreateMap creates a BPF map from userspace. This can be used for populating
+// BPF array of maps or hash of maps. However, this function uses a low-level
+// libbpf API; maps created in this way do not conform to libbpf map formats,
+// and therefore do not have access to libbpf high level bpf_map__* APIS
+// which causes different behavior from maps created in the kernel side code
+//
+// See usage of `bpf_map_create()` in kernel selftests for more info
+func CreateMap(mapType MapType, mapName string, keySize, valueSize, maxEntries int, opts *BPFMapCreateOpts) (*BPFMap, error) {
+	cs := C.CString(mapName)
+	fdOrError := C.bpf_map_create(uint32(mapType), cs, C.uint(keySize), C.uint(valueSize), C.uint(maxEntries), bpfMapCreateOptsToC(opts))
+	C.free(unsafe.Pointer(cs))
+	if fdOrError < 0 {
+		return nil, fmt.Errorf("could not create map: %w", syscall.Errno(-fdOrError))
+	}
+
+	return &BPFMap{
+		name:   mapName,
+		fd:     fdOrError,
+		module: nil,
+		bpfMap: nil,
+	}, nil
 }
 
 func (m *Module) GetMap(mapName string) (*BPFMap, error) {
