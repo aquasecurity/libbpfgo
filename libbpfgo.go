@@ -1111,7 +1111,9 @@ func (pb *PerfBuffer) Stop() {
 		// Close the channel -- this is useful for the consumer but
 		// also to terminate the drain goroutine above.
 		close(pb.eventsChan)
-		close(pb.lostChan)
+		if pb.lostChan != nil {
+			close(pb.lostChan)
+		}
 
 		// This allows Stop() to be called multiple times safely
 		pb.stop = nil
