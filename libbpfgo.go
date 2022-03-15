@@ -160,6 +160,43 @@ const (
 	MapTypeBloomFilter
 )
 
+func (m MapType) String() string {
+	x := map[MapType]string{
+		MapTypeUnspec:              "BPF_MAP_TYPE_UNSPEC",
+		MapTypeHash:                "BPF_MAP_TYPE_HASH",
+		MapTypeArray:               "BPF_MAP_TYPE_ARRAY",
+		MapTypeProgArray:           "BPF_MAP_TYPE_PROG_ARRAY",
+		MapTypePerfEventArray:      "BPF_MAP_TYPE_PERF_EVENT_ARRAY",
+		MapTypePerCPUHash:          "BPF_MAP_TYPE_PERCPU_HASH",
+		MapTypePerCPUArray:         "BPF_MAP_TYPE_PERCPU_ARRAY",
+		MapTypeStackTrace:          "BPF_MAP_TYPE_STACK_TRACE",
+		MapTypeCgroupArray:         "BPF_MAP_TYPE_CGROUP_ARRAY",
+		MapTypeLRUHash:             "BPF_MAP_TYPE_LRU_HASH",
+		MapTypeLRUPerCPUHash:       "BPF_MAP_TYPE_LRU_PERCPU_HASH",
+		MapTypeLPMTrie:             "BPF_MAP_TYPE_LPM_TRIE",
+		MapTypeArrayOfMaps:         "BPF_MAP_TYPE_ARRAY_OF_MAPS",
+		MapTypeHashOfMaps:          "BPF_MAP_TYPE_HASH_OF_MAPS",
+		MapTypeDevMap:              "BPF_MAP_TYPE_DEVMAP",
+		MapTypeSockMap:             "BPF_MAP_TYPE_SOCKMAP",
+		MapTypeCPUMap:              "BPF_MAP_TYPE_CPUMAP",
+		MapTypeXSKMap:              "BPF_MAP_TYPE_XSKMAP",
+		MapTypeSockHash:            "BPF_MAP_TYPE_SOCKHASH",
+		MapTypeCgroupStorage:       "BPF_MAP_TYPE_CGROUP_STORAGE",
+		MapTypeReusePortSockArray:  "BPF_MAP_TYPE_REUSEPORT_SOCKARRAY",
+		MapTypePerCPUCgroupStorage: "BPF_MAP_TYPE_PERCPU_CGROUP_STORAGE",
+		MapTypeQueue:               "BPF_MAP_TYPE_QUEUE",
+		MapTypeStack:               "BPF_MAP_TYPE_STACK",
+		MapTypeSKStorage:           "BPF_MAP_TYPE_SK_STORAGE",
+		MapTypeDevmapHash:          "BPF_MAP_TYPE_DEVMAP_HASH",
+		MapTypeStructOps:           "BPF_MAP_TYPE_STRUCT_OPS",
+		MapTypeRingbuf:             "BPF_MAP_TYPE_RINGBUF",
+		MapTypeInodeStorage:        "BPF_MAP_TYPE_INODE_STORAGE",
+		MapTypeTaskStorage:         "BPF_MAP_TYPE_TASK_STORAGE",
+		MapTypeBloomFilter:         "BPF_MAP_TYPE_BLOOM_FILTER",
+	}
+	return x[m]
+}
+
 type BPFProg struct {
 	name       string
 	prog       *C.struct_bpf_program
@@ -431,6 +468,30 @@ func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 		fd:     C.bpf_map__fd(bpfMap),
 		module: m,
 	}, nil
+}
+
+func (b *BPFMap) Name() string {
+	cs := C.bpf_map__name(b.bpfMap)
+	if cs == nil {
+		return ""
+	}
+	s := C.GoString(cs)
+	return s
+}
+
+func (b *BPFMap) Type() MapType {
+	return MapType(C.bpf_map__type(b.bpfMap))
+}
+
+// SetType is used to set the type of a bpf map that isn't associated
+// with a file descriptor already. If the map is already associated
+// with a file descriptor the libbpf API will return error code EBUSY
+func (b *BPFMap) SetType(mapType MapType) error {
+	errC := C.bpf_map__set_type(b.bpfMap, C.enum_bpf_map_type(int(mapType)))
+	if errC != 0 {
+		return fmt.Errorf("could not set bpf map type: %w", syscall.Errno(-errC))
+	}
+	return nil
 }
 
 func (b *BPFMap) Pin(pinPath string) error {

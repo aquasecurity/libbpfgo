@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"syscall"
 
+	"github.com/aquasecurity/libbpfgo"
 	bpf "github.com/aquasecurity/libbpfgo"
 )
 
@@ -55,6 +56,16 @@ func main() {
 	testerMap, err := bpfModule.GetMap("tester")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
+		os.Exit(-1)
+	}
+
+	if testerMap.Name() != "tester" {
+		fmt.Fprintln(os.Stderr, "wrong map")
+		os.Exit(-1)
+	}
+
+	if testerMap.Type() != libbpfgo.MapTypeHash {
+		fmt.Fprintln(os.Stderr, "wrong map type")
 		os.Exit(-1)
 	}
 
