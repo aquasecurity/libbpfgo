@@ -124,6 +124,79 @@ type BPFMap struct {
 	module *Module
 }
 
+type MapType uint32
+
+const (
+	MapTypeUnspec MapType = iota
+	MapTypeHash
+	MapTypeArray
+	MapTypeProgArray
+	MapTypePerfEventArray
+	MapTypePerCPUHash
+	MapTypePerCPUArray
+	MapTypeStackTrace
+	MapTypeCgroupArray
+	MapTypeLRUHash
+	MapTypeLRUPerCPUHash
+	MapTypeLPMTrie
+	MapTypeArrayOfMaps
+	MapTypeHashOfMaps
+	MapTypeDevMap
+	MapTypeSockMap
+	MapTypeCPUMap
+	MapTypeXSKMap
+	MapTypeSockHash
+	MapTypeCgroupStorage
+	MapTypeReusePortSockArray
+	MapTypePerCPUCgroupStorage
+	MapTypeQueue
+	MapTypeStack
+	MapTypeSKStorage
+	MapTypeDevmapHash
+	MapTypeStructOps
+	MapTypeRingbuf
+	MapTypeInodeStorage
+	MapTypeTaskStorage
+	MapTypeBloomFilter
+)
+
+func (m MapType) String() string {
+	x := map[MapType]string{
+		MapTypeUnspec:              "BPF_MAP_TYPE_UNSPEC",
+		MapTypeHash:                "BPF_MAP_TYPE_HASH",
+		MapTypeArray:               "BPF_MAP_TYPE_ARRAY",
+		MapTypeProgArray:           "BPF_MAP_TYPE_PROG_ARRAY",
+		MapTypePerfEventArray:      "BPF_MAP_TYPE_PERF_EVENT_ARRAY",
+		MapTypePerCPUHash:          "BPF_MAP_TYPE_PERCPU_HASH",
+		MapTypePerCPUArray:         "BPF_MAP_TYPE_PERCPU_ARRAY",
+		MapTypeStackTrace:          "BPF_MAP_TYPE_STACK_TRACE",
+		MapTypeCgroupArray:         "BPF_MAP_TYPE_CGROUP_ARRAY",
+		MapTypeLRUHash:             "BPF_MAP_TYPE_LRU_HASH",
+		MapTypeLRUPerCPUHash:       "BPF_MAP_TYPE_LRU_PERCPU_HASH",
+		MapTypeLPMTrie:             "BPF_MAP_TYPE_LPM_TRIE",
+		MapTypeArrayOfMaps:         "BPF_MAP_TYPE_ARRAY_OF_MAPS",
+		MapTypeHashOfMaps:          "BPF_MAP_TYPE_HASH_OF_MAPS",
+		MapTypeDevMap:              "BPF_MAP_TYPE_DEVMAP",
+		MapTypeSockMap:             "BPF_MAP_TYPE_SOCKMAP",
+		MapTypeCPUMap:              "BPF_MAP_TYPE_CPUMAP",
+		MapTypeXSKMap:              "BPF_MAP_TYPE_XSKMAP",
+		MapTypeSockHash:            "BPF_MAP_TYPE_SOCKHASH",
+		MapTypeCgroupStorage:       "BPF_MAP_TYPE_CGROUP_STORAGE",
+		MapTypeReusePortSockArray:  "BPF_MAP_TYPE_REUSEPORT_SOCKARRAY",
+		MapTypePerCPUCgroupStorage: "BPF_MAP_TYPE_PERCPU_CGROUP_STORAGE",
+		MapTypeQueue:               "BPF_MAP_TYPE_QUEUE",
+		MapTypeStack:               "BPF_MAP_TYPE_STACK",
+		MapTypeSKStorage:           "BPF_MAP_TYPE_SK_STORAGE",
+		MapTypeDevmapHash:          "BPF_MAP_TYPE_DEVMAP_HASH",
+		MapTypeStructOps:           "BPF_MAP_TYPE_STRUCT_OPS",
+		MapTypeRingbuf:             "BPF_MAP_TYPE_RINGBUF",
+		MapTypeInodeStorage:        "BPF_MAP_TYPE_INODE_STORAGE",
+		MapTypeTaskStorage:         "BPF_MAP_TYPE_TASK_STORAGE",
+		MapTypeBloomFilter:         "BPF_MAP_TYPE_BLOOM_FILTER",
+	}
+	return x[m]
+}
+
 type BPFProg struct {
 	name       string
 	prog       *C.struct_bpf_program
@@ -325,6 +398,62 @@ func (m *Module) BPFLoadObject() error {
 	return nil
 }
 
+// BPFMapCreateOpts mirrors the C structure bpf_map_create_opts
+type BPFMapCreateOpts struct {
+	Size                  uint64
+	BtfFD                 uint32
+	BtfKeyTypeID          uint32
+	BtfValueTypeID        uint32
+	BtfVmlinuxValueTypeID uint32
+	InnerMapFD            uint32
+	MapFlags              uint32
+	MapExtra              uint64
+	NumaNode              uint32
+	MapIfIndex            uint32
+}
+
+func bpfMapCreateOptsToC(createOpts *BPFMapCreateOpts) *C.struct_bpf_map_create_opts {
+	if createOpts == nil {
+		return nil
+	}
+	opts := C.struct_bpf_map_create_opts{}
+	opts.sz = C.ulong(createOpts.Size)
+	opts.btf_fd = C.uint(createOpts.BtfFD)
+	opts.btf_key_type_id = C.uint(createOpts.BtfKeyTypeID)
+	opts.btf_value_type_id = C.uint(createOpts.BtfValueTypeID)
+	opts.btf_vmlinux_value_type_id = C.uint(createOpts.BtfVmlinuxValueTypeID)
+	opts.inner_map_fd = C.uint(createOpts.InnerMapFD)
+	opts.map_flags = C.uint(createOpts.MapFlags)
+	opts.map_extra = C.ulonglong(createOpts.MapExtra)
+	opts.numa_node = C.uint(createOpts.NumaNode)
+	opts.map_ifindex = C.uint(createOpts.MapIfIndex)
+
+	return &opts
+}
+
+// CreateMap creates a BPF map from userspace. This can be used for populating
+// BPF array of maps or hash of maps. However, this function uses a low-level
+// libbpf API; maps created in this way do not conform to libbpf map formats,
+// and therefore do not have access to libbpf high level bpf_map__* APIS
+// which causes different behavior from maps created in the kernel side code
+//
+// See usage of `bpf_map_create()` in kernel selftests for more info
+func CreateMap(mapType MapType, mapName string, keySize, valueSize, maxEntries int, opts *BPFMapCreateOpts) (*BPFMap, error) {
+	cs := C.CString(mapName)
+	fdOrError := C.bpf_map_create(uint32(mapType), cs, C.uint(keySize), C.uint(valueSize), C.uint(maxEntries), bpfMapCreateOptsToC(opts))
+	C.free(unsafe.Pointer(cs))
+	if fdOrError < 0 {
+		return nil, fmt.Errorf("could not create map: %w", syscall.Errno(-fdOrError))
+	}
+
+	return &BPFMap{
+		name:   mapName,
+		fd:     fdOrError,
+		module: nil,
+		bpfMap: nil,
+	}, nil
+}
+
 func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 	cs := C.CString(mapName)
 	bpfMap, errno := C.bpf_object__find_map_by_name(m.obj, cs)
@@ -339,6 +468,30 @@ func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 		fd:     C.bpf_map__fd(bpfMap),
 		module: m,
 	}, nil
+}
+
+func (b *BPFMap) Name() string {
+	cs := C.bpf_map__name(b.bpfMap)
+	if cs == nil {
+		return ""
+	}
+	s := C.GoString(cs)
+	return s
+}
+
+func (b *BPFMap) Type() MapType {
+	return MapType(C.bpf_map__type(b.bpfMap))
+}
+
+// SetType is used to set the type of a bpf map that isn't associated
+// with a file descriptor already. If the map is already associated
+// with a file descriptor the libbpf API will return error code EBUSY
+func (b *BPFMap) SetType(mapType MapType) error {
+	errC := C.bpf_map__set_type(b.bpfMap, C.enum_bpf_map_type(int(mapType)))
+	if errC != 0 {
+		return fmt.Errorf("could not set bpf map type: %w", syscall.Errno(-errC))
+	}
+	return nil
 }
 
 func (b *BPFMap) Pin(pinPath string) error {
