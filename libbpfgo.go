@@ -60,6 +60,18 @@ struct ring_buffer * init_ring_buf(int map_fd, uintptr_t ctx)
     return rb;
 }
 
+void list_programs(struct bpf_object* obj) {
+	struct bpf_program *pos;
+	const char *cs;
+	const char *css;
+
+	bpf_object__for_each_program(pos, obj) {
+		cs = bpf_program__section_name(pos);
+		css = bpf_program__name(pos);
+		printf("section: %s\tname: %s\n", cs, css);
+	}
+}
+
 struct perf_buffer * init_perf_buf(int map_fd, int page_cnt, uintptr_t ctx)
 {
     struct perf_buffer_opts pb_opts = {};
@@ -215,6 +227,7 @@ const (
 	PerfEvent
 	Uprobe
 	Uretprobe
+	Tracing
 )
 
 type BPFLink struct {
@@ -234,6 +247,26 @@ func (l *BPFLink) Destroy() error {
 
 func (l *BPFLink) GetFd() int {
 	return int(C.bpf_link__fd(l.link))
+}
+
+func (l *BPFLink) Pin(pinPath string) error {
+	path := C.CString(pinPath)
+	errC := C.bpf_link__pin(l.link, path)
+	C.free(unsafe.Pointer(path))
+	if errC != 0 {
+		return fmt.Errorf("failed to pin link %s to path %s: %w", l.eventName, pinPath, syscall.Errno(-errC))
+	}
+	return nil
+}
+
+func (l *BPFLink) Unpin(pinPath string) error {
+	path := C.CString(pinPath)
+	errC := C.bpf_link__unpin(l.link)
+	C.free(unsafe.Pointer(path))
+	if errC != 0 {
+		return fmt.Errorf("failed to unpin link %s from path %s: %w", l.eventName, pinPath, syscall.Errno(-errC))
+	}
+	return nil
 }
 
 type PerfBuffer struct {
@@ -843,6 +876,10 @@ func (m *Module) GetProgram(progName string) (*BPFProg, error) {
 	}, nil
 }
 
+func (m *Module) ListProgramNames() {
+	C.list_programs(m.obj)
+}
+
 func (p *BPFProg) GetFd() int {
 	return int(C.bpf_program__fd(p.prog))
 }
@@ -922,6 +959,7 @@ const (
 	BPFProgTypeExt
 	BPFProgTypeLsm
 	BPFProgTypeSkLookup
+	BPFProgTypeSyscall
 )
 
 func (p *BPFProg) GetType() uint32 {
@@ -941,6 +979,30 @@ func (p *BPFProg) SetTracepoint() error {
 	errC := C.bpf_program__set_tracepoint(p.prog)
 	if errC != 0 {
 		return fmt.Errorf("failed to set bpf program as tracepoint: %w", syscall.Errno(-errC))
+	}
+	return nil
+}
+
+func (p *BPFProg) AttachGeneric() (*BPFLink, error) {
+	link, errno := C.bpf_program__attach(p.prog)
+	if C.IS_ERR_OR_NULL(unsafe.Pointer(link)) {
+		return nil, fmt.Errorf("failed to attach program: %w", errno)
+	}
+	bpfLink := &BPFLink{
+		link:      link,
+		prog:      p,
+		linkType:  Tracing,
+		eventName: fmt.Sprintf("tracing-%s", p.name),
+	}
+	return bpfLink, nil
+}
+
+func (p *BPFProg) SetAttachType(attachProgFD int, attachFuncName string) error {
+	cs := C.CString(attachFuncName)
+	errC := C.bpf_program__set_attach_target(p.prog, C.int(attachProgFD), cs)
+	C.free(unsafe.Pointer(cs))
+	if errC != 0 {
+		return fmt.Errorf("failed to set attach target for program %s %s %w", p.name, attachFuncName, syscall.Errno(-errC))
 	}
 	return nil
 }
