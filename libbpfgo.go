@@ -928,7 +928,7 @@ func (p *BPFProg) GetPinPath() string {
 type BPFProgType uint32
 
 const (
-	BPFProgTypeUnspec uint32 = iota
+	BPFProgTypeUnspec BPFProgType = iota
 	BPFProgTypeSocketFilter
 	BPFProgTypeKprobe
 	BPFProgTypeSchedCls
@@ -960,6 +960,54 @@ const (
 	BPFProgTypeLsm
 	BPFProgTypeSkLookup
 	BPFProgTypeSyscall
+)
+
+type BPFAttachType uint32
+
+const (
+	BPFAttachTypeCgroupInetIngress BPFAttachType = iota
+	BPFAttachTypeCgroupInetEgress
+	BPFAttachTypeCgroupInetSockCreate
+	BPFAttachTypeCgroupSockOps
+	BPFAttachTypeSKSKBStreamParser
+	BPFAttachTypeSKSKBStreamVerdict
+	BPFAttachTypeCgroupDevice
+	BPFAttachTypeSKMSGVerdict
+	BPFAttachTypeCgroupInet4Bind
+	BPFAttachTypeCgroupInet6Bind
+	BPFAttachTypeCgroupInet4Connect
+	BPFAttachTypeCgroupInet6Connect
+	BPFAttachTypeCgroupInet4PostBind
+	BPFAttachTypeCgroupInet6PostBind
+	BPFAttachTypeCgroupUDP4SendMsg
+	BPFAttachTypeCgroupUDP6SendMsg
+	BPFAttachTypeLircMode2
+	BPFAttachTypeFlowDissector
+	BPFAttachTypeCgroupSysctl
+	BPFAttachTypeCgroupUDP4RecvMsg
+	BPFAttachTypeCgroupUDP6RecvMsg
+	BPFAttachTypeCgroupGetSockOpt
+	BPFAttachTypeCgroupSetSockOpt
+	BPFAttachTypeTraceRawTP
+	BPFAttachTypeTraceFentry
+	BPFAttachTypeTraceFexit
+	BPFAttachTypeModifyReturn
+	BPFAttachTypeLSMMac
+	BPFAttachTypeTraceIter
+	BPFAttachTypeCgroupInet4GetPeerName
+	BPFAttachTypeCgroupInet6GetPeerName
+	BPFAttachTypeCgroupInet4GetSockName
+	BPFAttachTypeCgroupInet6GetSockName
+	BPFAttachTypeXDPDevMap
+	BPFAttachTypeCgroupInetSockRelease
+	BPFAttachTypeXDPCPUMap
+	BPFAttachTypeSKLookup
+	BPFAttachTypeXDP
+	BPFAttachTypeSKSKBVerdict
+	BPFAttachTypeSKReusePortSelect
+	BPFAttachTypeSKReusePortSelectorMigrate
+	BPFAttachTypePerfEvent
+	BPFAttachTypeTraceKprobeMulti
 )
 
 func (p *BPFProg) GetType() uint32 {
@@ -997,7 +1045,7 @@ func (p *BPFProg) AttachGeneric() (*BPFLink, error) {
 	return bpfLink, nil
 }
 
-func (p *BPFProg) SetAttachType(attachProgFD int, attachFuncName string) error {
+func (p *BPFProg) SetAttachTarget(attachProgFD int, attachFuncName string) error {
 	cs := C.CString(attachFuncName)
 	errC := C.bpf_program__set_attach_target(p.prog, C.int(attachProgFD), cs)
 	C.free(unsafe.Pointer(cs))
@@ -1005,6 +1053,14 @@ func (p *BPFProg) SetAttachType(attachProgFD int, attachFuncName string) error {
 		return fmt.Errorf("failed to set attach target for program %s %s %w", p.name, attachFuncName, syscall.Errno(-errC))
 	}
 	return nil
+}
+
+func (p *BPFProg) SetProgramType(progType BPFProgType) {
+	C.bpf_program__set_type(p.prog, C.enum_bpf_prog_type(int(progType)))
+}
+
+func (p *BPFProg) SetAttachType(attachType BPFAttachType) {
+	C.bpf_program__set_expected_attach_type(p.prog, C.enum_bpf_attach_type(int(attachType)))
 }
 
 func (p *BPFProg) AttachTracepoint(category, name string) (*BPFLink, error) {
