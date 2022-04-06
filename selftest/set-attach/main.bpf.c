@@ -14,27 +14,17 @@ struct {
 } events SEC(".maps");
 long ringbuffer_flags = 0;
 
-SEC("fentry/__x64_sys_mmap")
-int mmap_fentry(struct pt_regs *ctx)
+SEC("fentry/FUNC")
+int BPF_PROG(foobar)
 {
     int *process;
-
     // Reserve space on the ringbuffer for the sample
     process = bpf_ringbuf_reserve(&events, sizeof(int), ringbuffer_flags);
     if (!process) {
         return 0;
     }
-
     *process = 2021;
-
     bpf_ringbuf_submit(process, ringbuffer_flags);
-    return 0;
-}
-
-SEC("fentry/commit_creds")
-int BPF_PROG(commit_creds, struct cred *foobar)
-{
-    bpf_printk("%d\n", foobar->uid.val);
     return 0;
 }
 

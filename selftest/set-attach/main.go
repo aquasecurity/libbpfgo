@@ -22,39 +22,29 @@ func main() {
 	}
 	defer bpfModule.Close()
 
+	bpfModule.ListProgramNames()
+
+	prog, err := bpfModule.GetProgram("foobar")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(-1)
+	}
+
+	prog.SetProgramType(bpf.BPFProgTypeTracing)
+	prog.SetAttachType(bpf.BPFAttachTypeTraceFentry)
+	err = prog.SetAttachTarget(0, "__x64_sys_mmap")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(-1)
+	}
 	err = bpfModule.BPFLoadObject()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
 	}
-
-	bpfModule.ListProgramNames()
-
-	prog, err := bpfModule.GetProgram("mmap_fentry")
+	_, err = prog.AttachGeneric()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
-	}
-	link, err := prog.AttachGeneric()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
-	}
-	if link.GetFd() == 0 {
-		os.Exit(-1)
-	}
-
-	prog1, err := bpfModule.GetProgram("commit_creds")
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
-	}
-	link1, err := prog1.AttachGeneric()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
-	}
-	if link1.GetFd() == 0 {
 		os.Exit(-1)
 	}
 
@@ -85,7 +75,6 @@ recvLoop:
 			break recvLoop
 		}
 	}
-
 	rb.Stop()
 	rb.Close()
 }
