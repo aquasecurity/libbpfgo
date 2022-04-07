@@ -31,12 +31,5 @@ int mmap_fentry(struct pt_regs *ctx)
     return 0;
 }
 
-SEC("fentry/commit_creds")
-int BPF_PROG(commit_creds, struct cred *foobar)
-{
-    bpf_printk("%d\n", foobar->uid.val);
-    return 0;
-}
-
 char LICENSE[] SEC("license") = "GPL";
 

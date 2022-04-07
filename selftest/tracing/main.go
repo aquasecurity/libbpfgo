@@ -44,20 +44,6 @@ func main() {
 		os.Exit(-1)
 	}
 
-	prog1, err := bpfModule.GetProgram("commit_creds")
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
-	}
-	link1, err := prog1.AttachGeneric()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
-	}
-	if link1.GetFd() == 0 {
-		os.Exit(-1)
-	}
-
 	eventsChannel := make(chan []byte)
 	rb, err := bpfModule.InitRingBuf("events", eventsChannel)
 	if err != nil {
