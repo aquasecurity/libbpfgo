@@ -1073,6 +1073,9 @@ func (p *BPFProg) SetTracepoint() error {
 	return nil
 }
 
+// AttachGeneric is used to attach the BPF program using autodetection
+// for the attach target. You can specify the destination in BPF code
+// via the SEC() such as `SEC("fentry/some_kernel_func")`
 func (p *BPFProg) AttachGeneric() (*BPFLink, error) {
 	link, errno := C.bpf_program__attach(p.prog)
 	if C.IS_ERR_OR_NULL(unsafe.Pointer(link)) {
@@ -1087,6 +1090,8 @@ func (p *BPFProg) AttachGeneric() (*BPFLink, error) {
 	return bpfLink, nil
 }
 
+// SetAttachTarget can be used to specify the program and/or function to attach
+// the BPF program to. To attach to a kernel function specify attachProgFD as 0
 func (p *BPFProg) SetAttachTarget(attachProgFD int, attachFuncName string) error {
 	cs := C.CString(attachFuncName)
 	errC := C.bpf_program__set_attach_target(p.prog, C.int(attachProgFD), cs)
