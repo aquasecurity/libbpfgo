@@ -714,7 +714,7 @@ func (b *BPFMap) UpdateBatch(keys, values unsafe.Pointer, count uint32) error {
 	}
 	errC := C.bpf_map_update_batch(b.fd, keys, values, &countC, bpfMapBatchOptsToC(&opts))
 	if errC != 0 {
-		return fmt.Errorf("failed to update map %s: %w", b.name, errC)
+		return fmt.Errorf("failed to batch update map %s: %w", b.name, syscall.Errno(-errC))
 	}
 	return nil
 }
@@ -730,7 +730,7 @@ func (b *BPFMap) DeleteKeyBatch(keys unsafe.Pointer, count uint32) error {
 	}
 	errC := C.bpf_map_delete_batch(b.fd, keys, &countC, bpfMapBatchOptsToC(opts))
 	if errC != 0 {
-		return fmt.Errorf("failed to get lookup key %d from map %s: %w", keys, b.name, syscall.Errno(-errC))
+		return fmt.Errorf("failed to batch delete key %d from map %s: %w", keys, b.name, syscall.Errno(-errC))
 	}
 	return nil
 }
@@ -869,7 +869,7 @@ func (p *BPFProg) Unpin(path string) error {
 	errC := C.bpf_program__unpin(p.prog, cs)
 	C.free(unsafe.Pointer(cs))
 	if errC != 0 {
-		return fmt.Errorf("failed to unpin program %s to %s: %w", p.name, path, errC)
+		return fmt.Errorf("failed to unpin program %s to %s: %w", p.name, path, syscall.Errno(-errC))
 	}
 	p.pinnedPath = ""
 	return nil
