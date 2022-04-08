@@ -21,8 +21,6 @@ func main() {
 	}
 	defer bpfModule.Close()
 
-	bpfModule.ListProgramNames()
-
 	err = bpfModule.BPFLoadObject()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
