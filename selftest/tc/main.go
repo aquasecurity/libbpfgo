@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"os"
 	"os/exec"
+	"syscall"
 
 	"fmt"
 
@@ -28,17 +29,22 @@ func main() {
 	}
 
 	hook := bpfModule.TcHookInit()
-
 	err = hook.SetInterfaceByName("lo")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintln(os.Stderr, "failed to set tc hook on interface lo: %v", err)
 		os.Exit(-1)
 	}
 
 	hook.SetAttachPoint(bpf.BPFTcEgress)
+	err = hook.Create()
+	if err != nil {
+		if errno, ok := err.(syscall.Errno); ok && errno != syscall.EEXIST {
+			fmt.Fprintln(os.Stderr, "tc hook create: %v", err)
+		}
+	}
 
 	tcProg, err := bpfModule.GetProgram("target")
-	if err != nil {
+	if tcProg == nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
 	}
@@ -67,7 +73,9 @@ func main() {
 			os.Exit(-1)
 		}
 	}()
+
 recvLoop:
+
 	for {
 		b := <-eventsChannel
 		if binary.LittleEndian.Uint32(b) != 2021 {
