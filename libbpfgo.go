@@ -570,30 +570,6 @@ func (b *BPFMap) IsPinned() bool {
 	return false
 }
 
-func GetUnsafePointer(data interface{}) (unsafe.Pointer, error) {
-	var dataPtr unsafe.Pointer
-	switch k := data.(type) {
-	case int8:
-		dataPtr = unsafe.Pointer(&k)
-	case uint8:
-		dataPtr = unsafe.Pointer(&k)
-	case int32:
-		dataPtr = unsafe.Pointer(&k)
-	case uint32:
-		dataPtr = unsafe.Pointer(&k)
-	case int64:
-		dataPtr = unsafe.Pointer(&k)
-	case uint64:
-		dataPtr = unsafe.Pointer(&k)
-	case []byte:
-		dataPtr = unsafe.Pointer(&k[0])
-	default:
-		return nil, fmt.Errorf("unknown data type %T", data)
-	}
-
-	return dataPtr, nil
-}
-
 func (b *BPFMap) KeySize() int {
 	return int(C.bpf_map__key_size(b.bpfMap))
 }
