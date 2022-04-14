@@ -616,13 +616,21 @@ func bpfMapBatchOptsToC(batchOpts *BPFMapBatchOpts) *C.struct_bpf_map_batch_opts
 	return &opts
 }
 
-// GetValueBatch allows for batch lookups of multiple keys.
-// The first argument is a pointer to an array or slice of keys which will be populated with the keys returned from this operation.
+// GetValueBatch allows for batch lookups of multiple keys from the map.
+//
+// The first argument, keys, is a pointer to an array or slice of keys which will be populated with the keys returned from this operation.
 // It returns the associated values as a slice of slices of bytes.
+//
 // This API allows for batch lookups of multiple keys, potentially in steps over multiple iterations. For example,
 // you provide the last key seen (or nil) for the startKey, and the first key to start the next iteration with in nextKey.
 // Once the first iteration is complete you can provide the last key seen in the previous iteration as the startKey for the next iteration
 // and repeat until nextKey is nil.
+//
+// The last argument, count, is the number of keys to lookup. Passing an argument that greater than the number of keys
+// in the map will cause the function to return a syscall.EPERM as an error.
+//
+// The API can return partial results even though an error is returned.
+// In this case the keys that were successfully retrieved until an error occurred will be in the result slice.
 func (b *BPFMap) GetValueBatch(keys unsafe.Pointer, startKey, nextKey unsafe.Pointer, count uint32) ([][]byte, error) {
 	var (
 		values    = make([]byte, b.ValueSize()*int(count))
@@ -638,15 +646,34 @@ func (b *BPFMap) GetValueBatch(keys unsafe.Pointer, startKey, nextKey unsafe.Poi
 
 	errC := C.bpf_map_lookup_batch(b.fd, startKey, nextKey, keys, valuesPtr, &countC, bpfMapBatchOptsToC(opts))
 	if errC != 0 {
+		sc := syscall.Errno(-errC)
+		if sc != syscall.EFAULT {
+			if uint32(countC) != count {
+				return collectBatchValues(values, uint32(countC), b.ValueSize()),
+					fmt.Errorf("failed to retrieve ALL elements in map %s, fetched (%d/%d): %w", b.name, uint32(countC), count, sc)
+			}
+		}
 		return nil, fmt.Errorf("failed to batch lookup values %v in map %s: %w", keys, b.name, syscall.Errno(-errC))
 	}
 
-	parsedVals := collectBatchValues(values, count, b.ValueSize())
-
-	return parsedVals, nil
+	return collectBatchValues(values, count, b.ValueSize()), nil
 }
 
-// GetValueAndDeleteBatch allows for batch lookups of multiple keys and deletes those keys.
+// GetValueAndDeleteBatch allows for batch lookup and deletion of elements where each element is deleted after being retrieved from the map.
+//
+// The first argument, keys. is a pointer to an array or slice of keys which will be populated with the keys returned from this operation.
+// It returns the associated values as a slice of slices of bytes.
+//
+// This API allows for batch lookups and deletion of multiple keys, potentially in steps over multiple iterations. For example,
+// you provide the last key seen (or nil) for the startKey, and the first key to start the next iteration with in nextKey.
+// Once the first iteration is complete you can provide the last key seen in the previous iteration as the startKey for the next iteration
+// and repeat until nextKey is nil.
+//
+// The last argument, count, is the number of keys to lookup, and delete. Passing an argument that greater than the number of keys
+// in the map will cause the function to return a syscall.EPERM as an error.
+//
+// The API can return partial results even though an error is returned.
+// In this case the keys that were successfully retrieved and deleted will be in the result slice.
 func (b *BPFMap) GetValueAndDeleteBatch(keys, startKey, nextKey unsafe.Pointer, count uint32) ([][]byte, error) {
 	var (
 		values    = make([]byte, b.ValueSize()*int(count))
@@ -662,12 +689,17 @@ func (b *BPFMap) GetValueAndDeleteBatch(keys, startKey, nextKey unsafe.Pointer, 
 
 	errC := C.bpf_map_lookup_and_delete_batch(b.fd, startKey, nextKey, keys, valuesPtr, &countC, bpfMapBatchOptsToC(opts))
 	if errC != 0 {
+		sc := syscall.Errno(-errC)
+		if sc != syscall.EFAULT {
+			if uint32(countC) != count {
+				return collectBatchValues(values, uint32(countC), b.ValueSize()),
+					fmt.Errorf("failed to retrieve and delete ALL elements in map %s, deleted (%d/%d): %w", b.name, uint32(countC), count, sc)
+			}
+		}
 		return nil, fmt.Errorf("failed to batch lookup and delete values %v in map %s: %w", keys, b.name, syscall.Errno(-errC))
 	}
 
-	parsedVals := collectBatchValues(values, count, b.ValueSize())
-
-	return parsedVals, nil
+	return collectBatchValues(values, count, b.ValueSize()), nil
 }
 
 func collectBatchValues(values []byte, count uint32, valueSize int) [][]byte {
@@ -680,34 +712,60 @@ func collectBatchValues(values []byte, count uint32, valueSize int) [][]byte {
 	return collected
 }
 
-// UpdateBatch takes a pointer to an array of keys and values which are then stored in the map.
+// UpdateBatch updates multiple elements in the map by specified keys and their corresponding values.
+//
+// The first argument, keys, is a pointer to an array or slice of keys which will be updated using the second argument, values.
+// It returns the associated error if any occurred.
+//
+// The last argument, count, is the number of keys to update. Passing an argument that greater than the number of keys
+// in the map will cause the function to return a syscall.EPERM as an error.
 func (b *BPFMap) UpdateBatch(keys, values unsafe.Pointer, count uint32) error {
 	countC := C.uint(count)
+
 	opts := BPFMapBatchOpts{
 		Sz:        uint64(unsafe.Sizeof(BPFMapBatchOpts{})),
 		ElemFlags: C.BPF_ANY,
 		Flags:     C.BPF_ANY,
 	}
+
 	errC := C.bpf_map_update_batch(b.fd, keys, values, &countC, bpfMapBatchOptsToC(&opts))
 	if errC != 0 {
-		return fmt.Errorf("failed to batch update map %s: %w", b.name, syscall.Errno(-errC))
+		sc := syscall.Errno(-errC)
+		if sc != syscall.EFAULT {
+			if uint32(countC) != count {
+				return fmt.Errorf("failed to update ALL elements in map %s, updated (%d/%d): %w", b.name, uint32(countC), count, sc)
+			}
+		}
+		return fmt.Errorf("failed to batch update elements in map %s: %w", b.name, syscall.Errno(-errC))
 	}
+
 	return nil
 }
 
-// DeleteKeyBatch will delete `count` keys from the map, returning the keys deleted in the
-// slice pointed to by `keys`.
+// DeleteKeyBatch allows for batch deletion of multiple elements in the map.
+//
+// `count` number of keys will be deleted from the map. Passing an argument that greater than the number of keys
+// in the map will cause the function to return a syscall.EPERM as an error.
 func (b *BPFMap) DeleteKeyBatch(keys unsafe.Pointer, count uint32) error {
 	countC := C.uint(count)
+
 	opts := &BPFMapBatchOpts{
 		Sz:        uint64(unsafe.Sizeof(BPFMapBatchOpts{})),
 		ElemFlags: C.BPF_ANY,
 		Flags:     C.BPF_ANY,
 	}
+	
 	errC := C.bpf_map_delete_batch(b.fd, keys, &countC, bpfMapBatchOptsToC(opts))
 	if errC != 0 {
-		return fmt.Errorf("failed to batch delete key %d from map %s: %w", keys, b.name, syscall.Errno(-errC))
+		sc := syscall.Errno(-errC)
+		if sc != syscall.EFAULT {
+			if uint32(countC) != count {
+				return fmt.Errorf("failed to batch delete ALL keys from map %s, deleted (%d/%d): %w", b.name, uint32(countC), count, sc)
+			}
+		}
+		return fmt.Errorf("failed to batch delete keys from map %s: %w", b.name, syscall.Errno(-errC))
 	}
+
 	return nil
 }
 
