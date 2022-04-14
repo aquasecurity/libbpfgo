@@ -60,6 +60,18 @@ struct ring_buffer * init_ring_buf(int map_fd, uintptr_t ctx)
     return rb;
 }
 
+void list_programs(struct bpf_object* obj) {
+	struct bpf_program *pos;
+	const char *cs;
+	const char *css;
+
+	bpf_object__for_each_program(pos, obj) {
+		cs = bpf_program__section_name(pos);
+		css = bpf_program__name(pos);
+		printf("section: %s\tname: %s\n", cs, css);
+	}
+}
+
 struct perf_buffer * init_perf_buf(int map_fd, int page_cnt, uintptr_t ctx)
 {
     struct perf_buffer_opts pb_opts = {};
@@ -215,6 +227,7 @@ const (
 	PerfEvent
 	Uprobe
 	Uretprobe
+	Tracing
 )
 
 type BPFLink struct {
@@ -234,6 +247,26 @@ func (l *BPFLink) Destroy() error {
 
 func (l *BPFLink) GetFd() int {
 	return int(C.bpf_link__fd(l.link))
+}
+
+func (l *BPFLink) Pin(pinPath string) error {
+	path := C.CString(pinPath)
+	errC := C.bpf_link__pin(l.link, path)
+	C.free(unsafe.Pointer(path))
+	if errC != 0 {
+		return fmt.Errorf("failed to pin link %s to path %s: %w", l.eventName, pinPath, syscall.Errno(-errC))
+	}
+	return nil
+}
+
+func (l *BPFLink) Unpin(pinPath string) error {
+	path := C.CString(pinPath)
+	errC := C.bpf_link__unpin(l.link)
+	C.free(unsafe.Pointer(path))
+	if errC != 0 {
+		return fmt.Errorf("failed to unpin link %s from path %s: %w", l.eventName, pinPath, syscall.Errno(-errC))
+	}
+	return nil
 }
 
 type PerfBuffer struct {
@@ -819,6 +852,10 @@ func (m *Module) GetProgram(progName string) (*BPFProg, error) {
 	}, nil
 }
 
+func (m *Module) ListProgramNames() {
+	C.list_programs(m.obj)
+}
+
 func (p *BPFProg) GetFd() int {
 	return int(C.bpf_program__fd(p.prog))
 }
@@ -867,7 +904,7 @@ func (p *BPFProg) GetPinPath() string {
 type BPFProgType uint32
 
 const (
-	BPFProgTypeUnspec uint32 = iota
+	BPFProgTypeUnspec BPFProgType = iota
 	BPFProgTypeSocketFilter
 	BPFProgTypeKprobe
 	BPFProgTypeSchedCls
@@ -898,10 +935,101 @@ const (
 	BPFProgTypeExt
 	BPFProgTypeLsm
 	BPFProgTypeSkLookup
+	BPFProgTypeSyscall
 )
 
-func (p *BPFProg) GetType() uint32 {
-	return C.bpf_program__get_type(p.prog)
+func (b BPFProgType) String() (str string) {
+	x := map[BPFProgType]string{
+		BPFProgTypeUnspec:                "BPF_PROG_TYPE_UNSPEC",
+		BPFProgTypeSocketFilter:          "BPF_PROG_TYPE_SOCKET_FILTER",
+		BPFProgTypeKprobe:                "BPF_PROG_TYPE_KPROBE",
+		BPFProgTypeSchedCls:              "BPF_PROG_TYPE_SCHED_CLS",
+		BPFProgTypeSchedAct:              "BPF_PROG_TYPE_SCHED_ACT",
+		BPFProgTypeTracepoint:            "BPF_PROG_TYPE_TRACEPOINT",
+		BPFProgTypeXdp:                   "BPF_PROG_TYPE_XDP",
+		BPFProgTypePerfEvent:             "BPF_PROG_TYPE_PERF_EVENT",
+		BPFProgTypeCgroupSkb:             "BPF_PROG_TYPE_CGROUP_SKB",
+		BPFProgTypeCgroupSock:            "BPF_PROG_TYPE_CGROUP_SOCK",
+		BPFProgTypeLwtIn:                 "BPF_PROG_TYPE_LWT_IN",
+		BPFProgTypeLwtOut:                "BPF_PROG_TYPE_LWT_OUT",
+		BPFProgTypeLwtXmit:               "BPF_PROG_TYPE_LWT_XMIT",
+		BPFProgTypeSockOps:               "BPF_PROG_TYPE_SOCK_OPS",
+		BPFProgTypeSkSkb:                 "BPF_PROG_TYPE_SK_SKB",
+		BPFProgTypeCgroupDevice:          "BPF_PROG_TYPE_CGROUP_DEVICE",
+		BPFProgTypeSkMsg:                 "BPF_PROG_TYPE_SK_MSG",
+		BPFProgTypeRawTracepoint:         "BPF_PROG_TYPE_RAW_TRACEPOINT",
+		BPFProgTypeCgroupSockAddr:        "BPF_PROG_TYPE_CGROUP_SOCK_ADDR",
+		BPFProgTypeLwtSeg6Local:          "BPF_PROG_TYPE_LWT_SEG6LOCAL",
+		BPFProgTypeLircMode2:             "BPF_PROG_TYPE_LIRC_MODE2",
+		BPFProgTypeSkReuseport:           "BPF_PROG_TYPE_SK_REUSEPORT",
+		BPFProgTypeFlowDissector:         "BPF_PROG_TYPE_FLOW_DISSECTOR",
+		BPFProgTypeCgroupSysctl:          "BPF_PROG_TYPE_CGROUP_SYSCTL",
+		BPFProgTypeRawTracepointWritable: "BPF_PROG_TYPE_RAW_TRACEPOINT_WRITABLE",
+		BPFProgTypeCgroupSockopt:         "BPF_PROG_TYPE_CGROUP_SOCKOPT",
+		BPFProgTypeTracing:               "BPF_PROG_TYPE_TRACING",
+		BPFProgTypeStructOps:             "BPF_PROG_TYPE_STRUCT_OPS",
+		BPFProgTypeExt:                   "BPF_PROG_TYPE_EXT",
+		BPFProgTypeLsm:                   "BPF_PROG_TYPE_LSM",
+		BPFProgTypeSkLookup:              "BPF_PROG_TYPE_SK_LOOKUP",
+		BPFProgTypeSyscall:               "BPF_PROG_TYPE_SYSCALL",
+	}
+	str = x[b]
+	if str == "" {
+		str = BPFProgTypeUnspec.String()
+	}
+	return str
+}
+
+type BPFAttachType uint32
+
+const (
+	BPFAttachTypeCgroupInetIngress BPFAttachType = iota
+	BPFAttachTypeCgroupInetEgress
+	BPFAttachTypeCgroupInetSockCreate
+	BPFAttachTypeCgroupSockOps
+	BPFAttachTypeSKSKBStreamParser
+	BPFAttachTypeSKSKBStreamVerdict
+	BPFAttachTypeCgroupDevice
+	BPFAttachTypeSKMSGVerdict
+	BPFAttachTypeCgroupInet4Bind
+	BPFAttachTypeCgroupInet6Bind
+	BPFAttachTypeCgroupInet4Connect
+	BPFAttachTypeCgroupInet6Connect
+	BPFAttachTypeCgroupInet4PostBind
+	BPFAttachTypeCgroupInet6PostBind
+	BPFAttachTypeCgroupUDP4SendMsg
+	BPFAttachTypeCgroupUDP6SendMsg
+	BPFAttachTypeLircMode2
+	BPFAttachTypeFlowDissector
+	BPFAttachTypeCgroupSysctl
+	BPFAttachTypeCgroupUDP4RecvMsg
+	BPFAttachTypeCgroupUDP6RecvMsg
+	BPFAttachTypeCgroupGetSockOpt
+	BPFAttachTypeCgroupSetSockOpt
+	BPFAttachTypeTraceRawTP
+	BPFAttachTypeTraceFentry
+	BPFAttachTypeTraceFexit
+	BPFAttachTypeModifyReturn
+	BPFAttachTypeLSMMac
+	BPFAttachTypeTraceIter
+	BPFAttachTypeCgroupInet4GetPeerName
+	BPFAttachTypeCgroupInet6GetPeerName
+	BPFAttachTypeCgroupInet4GetSockName
+	BPFAttachTypeCgroupInet6GetSockName
+	BPFAttachTypeXDPDevMap
+	BPFAttachTypeCgroupInetSockRelease
+	BPFAttachTypeXDPCPUMap
+	BPFAttachTypeSKLookup
+	BPFAttachTypeXDP
+	BPFAttachTypeSKSKBVerdict
+	BPFAttachTypeSKReusePortSelect
+	BPFAttachTypeSKReusePortSelectorMigrate
+	BPFAttachTypePerfEvent
+	BPFAttachTypeTraceKprobeMulti
+)
+
+func (p *BPFProg) GetType() BPFProgType {
+	return BPFProgType(C.bpf_program__get_type(p.prog))
 }
 
 func (p *BPFProg) SetAutoload(autoload bool) error {
@@ -919,6 +1047,43 @@ func (p *BPFProg) SetTracepoint() error {
 		return fmt.Errorf("failed to set bpf program as tracepoint: %w", syscall.Errno(-errC))
 	}
 	return nil
+}
+
+// AttachGeneric is used to attach the BPF program using autodetection
+// for the attach target. You can specify the destination in BPF code
+// via the SEC() such as `SEC("fentry/some_kernel_func")`
+func (p *BPFProg) AttachGeneric() (*BPFLink, error) {
+	link, errno := C.bpf_program__attach(p.prog)
+	if C.IS_ERR_OR_NULL(unsafe.Pointer(link)) {
+		return nil, fmt.Errorf("failed to attach program: %w", errno)
+	}
+	bpfLink := &BPFLink{
+		link:      link,
+		prog:      p,
+		linkType:  Tracing,
+		eventName: fmt.Sprintf("tracing-%s", p.name),
+	}
+	return bpfLink, nil
+}
+
+// SetAttachTarget can be used to specify the program and/or function to attach
+// the BPF program to. To attach to a kernel function specify attachProgFD as 0
+func (p *BPFProg) SetAttachTarget(attachProgFD int, attachFuncName string) error {
+	cs := C.CString(attachFuncName)
+	errC := C.bpf_program__set_attach_target(p.prog, C.int(attachProgFD), cs)
+	C.free(unsafe.Pointer(cs))
+	if errC != 0 {
+		return fmt.Errorf("failed to set attach target for program %s %s %w", p.name, attachFuncName, syscall.Errno(-errC))
+	}
+	return nil
+}
+
+func (p *BPFProg) SetProgramType(progType BPFProgType) {
+	C.bpf_program__set_type(p.prog, C.enum_bpf_prog_type(int(progType)))
+}
+
+func (p *BPFProg) SetAttachType(attachType BPFAttachType) {
+	C.bpf_program__set_expected_attach_type(p.prog, C.enum_bpf_attach_type(int(attachType)))
 }
 
 func (p *BPFProg) AttachTracepoint(category, name string) (*BPFLink, error) {
