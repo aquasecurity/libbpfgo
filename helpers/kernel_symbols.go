@@ -60,6 +60,8 @@ func NewKernelSymbolsMap() (*KernelSymbolTable, error) {
 		//if the line is only 3 words then the symbol is owned by the system
 		if len(line) > 3 {
 			symbolOwner = line[3]
+			symbolOwner = strings.TrimPrefix(line[3], "[")
+			symbolOwner = strings.TrimSuffix(symbolOwner, "]")
 		}
 		symbolKey := fmt.Sprintf("%s_%s", symbolOwner, symbolName)
 		KernelSymbols.symbolMap[symbolKey] = KernelSymbol{symbolName, symbolType, symbolAddr, symbolOwner}
