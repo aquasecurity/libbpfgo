@@ -172,6 +172,15 @@ const (
 	MapTypeBloomFilter
 )
 
+type MapFlag uint32
+
+const (
+	MapFlagUpdateAny     MapFlag = iota // create new element or update existing
+	MapFlagUpdateNoExist                // create new element if it didn't exist
+	MapFlagUpdateExist                  // update existing element
+	MapFlagFLock                        // spin_lock-ed map_lookup/map_update
+)
+
 func (m MapType) String() string {
 	x := map[MapType]string{
 		MapTypeUnspec:              "BPF_MAP_TYPE_UNSPEC",
@@ -630,6 +639,17 @@ func (b *BPFMap) GetValue(key unsafe.Pointer) ([]byte, error) {
 	return value, nil
 }
 
+func (b *BPFMap) GetValueFlags(key unsafe.Pointer, flags MapFlag) ([]byte, error) {
+	value := make([]byte, b.ValueSize())
+	valuePtr := unsafe.Pointer(&value[0])
+
+	errC := C.bpf_map_lookup_elem_flags(b.fd, key, valuePtr, C.ulonglong(flags))
+	if errC != 0 {
+		return nil, fmt.Errorf("failed to lookup value %v in map %s: %w", key, b.name, syscall.Errno(-errC))
+	}
+	return value, nil
+}
+
 // BPFMapBatchOpts mirrors the C structure bpf_map_batch_opts.
 type BPFMapBatchOpts struct {
 	Sz        uint64
@@ -787,7 +807,7 @@ func (b *BPFMap) DeleteKeyBatch(keys unsafe.Pointer, count uint32) error {
 		ElemFlags: C.BPF_ANY,
 		Flags:     C.BPF_ANY,
 	}
-	
+
 	errC := C.bpf_map_delete_batch(b.fd, keys, &countC, bpfMapBatchOptsToC(opts))
 	if errC != 0 {
 		sc := syscall.Errno(-errC)
@@ -834,7 +854,11 @@ func (b *BPFMap) DeleteKey(key unsafe.Pointer) error {
 //  bpfmap.Update(keyPtr, valuePtr)
 //
 func (b *BPFMap) Update(key, value unsafe.Pointer) error {
-	errC := C.bpf_map_update_elem(b.fd, key, value, C.BPF_ANY)
+	return b.UpdateWithFlags(key, value, MapFlagUpdateAny)
+}
+
+func (b *BPFMap) UpdateWithFlags(key, value unsafe.Pointer, flags MapFlag) error {
+	errC := C.bpf_map_update_elem(b.fd, key, value, C.ulonglong(flags))
 	if errC != 0 {
 		return fmt.Errorf("failed to update map %s: %w", b.name, syscall.Errno(-errC))
 	}
