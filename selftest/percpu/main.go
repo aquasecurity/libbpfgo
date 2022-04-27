@@ -3,6 +3,7 @@ package main
 import "C"
 
 import (
+	"encoding/binary"
 	"fmt"
 	"os"
 	"runtime"
@@ -28,15 +29,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	bpfModule.ListProgramNames()
-
 	prog, err := bpfModule.GetProgram("mmap_fentry")
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
-	}
-
-	lostEventCounterMap, err := bpfModule.GetMap("percpu_hash")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
@@ -58,11 +51,7 @@ func main() {
 		}
 	}()
 
-	// all values regardless of size are rounded up to 8 for struct
-	// padding in PERCPU maps
-	valueSize := 8 * runtime.NumCPU()
-	fmt.Println(valueSize)
-	err = lostEventCounterMap.SetValueSize(uint32(valueSize))
+	lostEventCounterMap, err := bpfModule.GetMap("percpu_hash")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
@@ -70,18 +59,16 @@ func main() {
 
 	time.Sleep(time.Second * 2)
 	key := 0
-	val, err := lostEventCounterMap.GetValue(unsafe.Pointer(&key))
+	values := make([]byte, 8*runtime.NumCPU())
+	err = lostEventCounterMap.GetValueReadInto(unsafe.Pointer(&key), &values)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
 	}
 
 	last := 0
-	fmt.Println("len", len(val))
 	for i := 0; i < runtime.NumCPU(); i++ {
-		fmt.Println((val[last : last+8]))
+		fmt.Printf("CPU %d: %d\n", i, binary.LittleEndian.Uint32(values[last:last+8]))
 		last += 8
 	}
-
-	time.Sleep(time.Minute)
 }

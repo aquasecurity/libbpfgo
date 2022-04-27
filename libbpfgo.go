@@ -716,7 +716,6 @@ func (b *BPFMap) GetValueFlags(key unsafe.Pointer, flags MapFlag) ([]byte, error
 // number of CPUs
 func (b *BPFMap) GetValueReadInto(key unsafe.Pointer, value *[]byte) error {
 	valuePtr := unsafe.Pointer(&(*value)[0])
-	fmt.Println("fd: ", b.fd)
 	errC := C.bpf_map_lookup_elem(b.fd, key, valuePtr)
 	if errC != 0 {
 		return fmt.Errorf("failed to lookup value %v in map %s: %w", key, b.name, syscall.Errno(-errC))

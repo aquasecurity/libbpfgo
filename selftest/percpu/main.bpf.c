@@ -11,7 +11,7 @@
 struct {
 	__uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
 	__uint(max_entries, 1);
-	__type(key, __u64);
+	__type(key, __u32);
 	__type(value, __u64);
 } percpu_hash SEC(".maps");
 
