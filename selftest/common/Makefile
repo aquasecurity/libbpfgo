@@ -7,9 +7,9 @@ LIBBPF_OBJ = $(abspath $(OUTPUT)/libbpf.a)
 
 CC = gcc
 CLANG = clang
+GO = go
 
-ARCH := $(shell uname -m)
-ARCH := $(subst x86_64,amd64,$(ARCH))
+ARCH := $(shell uname -m | sed 's/x86_64/amd64/g; s/aarch64/arm64/g')
 
 CFLAGS = -g -O2 -Wall -fpie
 LDFLAGS =
@@ -51,7 +51,7 @@ outputdir:
 
 $(TEST).bpf.o: $(TEST).bpf.c
 	$(MAKE) -C $(BASEDIR) vmlinuxh
-	$(CLANG) $(CFLAGS) -target bpf -I$(OUTPUT) -c $< -o $@
+	$(CLANG) $(CFLAGS) -target bpf -D__TARGET_ARCH_$(ARCH) -I$(OUTPUT) -c $< -o $@
 
 ## test
 
@@ -63,7 +63,7 @@ $(TEST)-static: libbpfgo-static | $(TEST).bpf.o
 		CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
 		CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
 		GOOS=linux GOARCH=$(ARCH) \
-		go build \
+		$(GO) build \
 		-tags netgo -ldflags $(CGO_EXTLDFLAGS_STATIC) \
 		-o $(TEST)-static ./$(TEST).go
 
@@ -71,7 +71,7 @@ $(TEST)-dynamic: libbpfgo-dynamic | $(TEST).bpf.o
 	CC=$(CLANG) \
 		CGO_CFLAGS=$(CGO_CFLAGS_DYN) \
 		CGO_LDFLAGS=$(CGO_LDFLAGS_DYN) \
-		go build -o ./$(TEST)-dynamic ./$(TEST).go
+		$(GO) build -o ./$(TEST)-dynamic ./$(TEST).go
 
 ## run
 
