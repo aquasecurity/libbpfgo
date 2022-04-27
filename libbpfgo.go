@@ -670,6 +670,14 @@ func (b *BPFMap) ValueSize() int {
 	return int(C.bpf_map__value_size(b.bpfMap))
 }
 
+func (b *BPFMap) SetValueSize(size uint32) error {
+	errC := C.bpf_map__set_value_size(b.bpfMap, C.uint(size))
+	if errC != 0 {
+		return fmt.Errorf("could not set map value size: %w", syscall.Errno(-errC))
+	}
+	return nil
+}
+
 // GetValue takes a pointer to the key which is stored in the map.
 // It returns the associated value as a slice of bytes.
 // All basic types, and structs are supported as keys.
