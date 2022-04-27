@@ -74,11 +74,18 @@ func main() {
 	}
 
 	// Test batch lookup and delete.
-	deleteKeys := make([]uint32, 3)
+	deleteKeys := make([]uint32, 2)
 	nextKey = uint32(0)
-	vals, err := testerMap.GetValueAndDeleteBatch(unsafe.Pointer(&deleteKeys[0]), nil, unsafe.Pointer(&nextKey), uint32(len(deleteKeys)))
+	requestedCount := len(deleteKeys)
+
+	vals, err := testerMap.GetValueAndDeleteBatch(unsafe.Pointer(&deleteKeys[0]), nil, unsafe.Pointer(&nextKey), uint32(requestedCount))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "testerMap.LookupBatch failed: %v", err)
+		os.Exit(-1)
+	}
+	processedCount := len(vals)
+	if requestedCount != processedCount {
+		fmt.Fprintf(os.Stderr, "testerMap.LookupBatch failed: %d!=%d", requestedCount, processedCount)
 		os.Exit(-1)
 	}
 	for i, val := range vals {
@@ -94,13 +101,32 @@ func main() {
 		fmt.Fprintf(os.Stderr, "testerMap.UpdateBatch failed: %v", err)
 		os.Exit(-1)
 	}
+
 	// Test batch delete.
-	testerMap.DeleteKeyBatch(unsafe.Pointer(&keys[0]), uint32(len(keys)))
+	testerMap.DeleteKeyBatch(unsafe.Pointer(&keys[0]), uint32(len(keys)-1))
 
 	// Ensure value is no longer there.
 	_, err = testerMap.GetValue(unsafe.Pointer(&keys[0]))
 	if err == nil {
 		fmt.Fprintf(os.Stderr, "testerMap.GetValue was expected to fail, but succeeded")
+		os.Exit(-1)
+	}
+
+	// Test batch lookup and delete when requesting more elements than are in the map.
+	deleteKeys = make([]uint32, 3)
+	nextKey = uint32(0)
+	requestedCount = 5
+
+	vals, err = testerMap.GetValueAndDeleteBatch(unsafe.Pointer(&deleteKeys[0]), nil, unsafe.Pointer(&nextKey), uint32(requestedCount))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "testerMap.LookupBatch failed: %v", err)
+		os.Exit(-1)
+	}
+	processedCount = len(vals)
+
+	// We removed all but one element in the test case before.
+	if processedCount != 1 {
+		fmt.Fprintf(os.Stderr, "testerMap.LookupBatch failed: processedCount=%d", processedCount)
 		os.Exit(-1)
 	}
 }

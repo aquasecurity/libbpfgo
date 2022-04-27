@@ -694,7 +694,7 @@ func (b *BPFMap) GetValueBatch(keys unsafe.Pointer, startKey, nextKey unsafe.Poi
 
 // GetValueAndDeleteBatch allows for batch lookup and deletion of elements where each element is deleted after being retrieved from the map.
 //
-// The first argument, keys. is a pointer to an array or slice of keys which will be populated with the keys returned from this operation.
+// The first argument, keys, is a pointer to an array or slice of keys which will be populated with the keys returned from this operation.
 // It returns the associated values as a slice of slices of bytes.
 //
 // This API allows for batch lookups and deletion of multiple keys, potentially in steps over multiple iterations. For example,
@@ -702,11 +702,11 @@ func (b *BPFMap) GetValueBatch(keys unsafe.Pointer, startKey, nextKey unsafe.Poi
 // Once the first iteration is complete you can provide the last key seen in the previous iteration as the startKey for the next iteration
 // and repeat until nextKey is nil.
 //
-// The last argument, count, is the number of keys to lookup, and delete. Passing an argument that greater than the number of keys
-// in the map will cause the function to return a syscall.EPERM as an error.
+// The last argument, count, is the number of keys to lookup and delete. The kernel will update it with the count of the elements that were
+// retrieved and deleted.
 //
-// The API can return partial results even though an error is returned.
-// In this case the keys that were successfully retrieved and deleted will be in the result slice.
+// The API can return partial results even though an -1 is returned. In this case, errno will be set to `ENOENT` and the values slice and count
+// will be filled in with the elements that were read. See the comment below for more context.
 func (b *BPFMap) GetValueAndDeleteBatch(keys, startKey, nextKey unsafe.Pointer, count uint32) ([][]byte, error) {
 	var (
 		values    = make([]byte, b.ValueSize()*int(count))
@@ -720,19 +720,38 @@ func (b *BPFMap) GetValueAndDeleteBatch(keys, startKey, nextKey unsafe.Pointer, 
 		Flags:     C.BPF_ANY,
 	}
 
-	errC := C.bpf_map_lookup_and_delete_batch(b.fd, startKey, nextKey, keys, valuesPtr, &countC, bpfMapBatchOptsToC(opts))
-	if errC != 0 {
-		sc := syscall.Errno(-errC)
-		if sc != syscall.EFAULT {
-			if uint32(countC) != count {
-				return collectBatchValues(values, uint32(countC), b.ValueSize()),
-					fmt.Errorf("failed to retrieve and delete ALL elements in map %s, deleted (%d/%d): %w", b.name, uint32(countC), count, sc)
-			}
-		}
-		return nil, fmt.Errorf("failed to batch lookup and delete values %v in map %s: %w", keys, b.name, syscall.Errno(-errC))
+	// Before libbpf 1.0 (without LIBBPF_STRICT_DIRECT_ERRS), the return value
+	// and errno are not modified [1]. On error, we will get a return value of
+	// -1 and errno will be set accordingly with most BPF calls.
+	//
+	// The batch APIs are a bit different in which they can return an error, but
+	// depending on the errno code, it might mean a complete error (nothing was
+	// done) or a partial success (some elements were processed).
+	//
+	// - On complete sucess, it will return 0, and errno won't be set.
+	// - On partial sucess, it will return -1, and errno will be set to ENOENT.
+	// - On error, it will return -1, and an errno different to ENOENT.
+	//
+	// [1] https://github.com/libbpf/libbpf/blob/b69f8ee93ef6aa3518f8fbfd9d1df6c2c84fd08f/src/libbpf_internal.h#L496
+	ret, errC := C.bpf_map_lookup_and_delete_batch(
+		b.fd,
+		startKey,
+		nextKey,
+		keys,
+		valuesPtr,
+		&countC,
+		bpfMapBatchOptsToC(opts))
+
+	processed := uint32(countC)
+
+	if ret != 0 && errC != syscall.ENOENT {
+		// ret = -1 && errno == syscall.ENOENT indicates a partial read and delete.
+		return nil, fmt.Errorf("failed to batch lookup and delete values %v in map %s: ret %d (err: %s)", keys, b.name, ret, errC)
 	}
 
-	return collectBatchValues(values, count, b.ValueSize()), nil
+	// Either some or all entries were read and deleted.
+	parsedVals := collectBatchValues(values, processed, b.ValueSize())
+	return parsedVals, nil
 }
 
 func collectBatchValues(values []byte, count uint32, valueSize int) [][]byte {
@@ -787,7 +806,7 @@ func (b *BPFMap) DeleteKeyBatch(keys unsafe.Pointer, count uint32) error {
 		ElemFlags: C.BPF_ANY,
 		Flags:     C.BPF_ANY,
 	}
-	
+
 	errC := C.bpf_map_delete_batch(b.fd, keys, &countC, bpfMapBatchOptsToC(opts))
 	if errC != 0 {
 		sc := syscall.Errno(-errC)
@@ -811,9 +830,9 @@ func (b *BPFMap) DeleteKeyBatch(keys unsafe.Pointer, count uint32) error {
 // in the slice or array instead of the slice/array itself, as to
 // avoid undefined behavior.
 func (b *BPFMap) DeleteKey(key unsafe.Pointer) error {
-	errC := C.bpf_map_delete_elem(b.fd, key)
-	if errC != 0 {
-		return fmt.Errorf("failed to get lookup key %d from map %s: %w", key, b.name, syscall.Errno(-errC))
+	ret, errC := C.bpf_map_delete_elem(b.fd, key)
+	if ret != 0 {
+		return fmt.Errorf("failed to get lookup key %d from map %s: %w", key, b.name, errC)
 	}
 	return nil
 }
