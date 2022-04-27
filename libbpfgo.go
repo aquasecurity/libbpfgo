@@ -708,6 +708,22 @@ func (b *BPFMap) GetValueFlags(key unsafe.Pointer, flags MapFlag) ([]byte, error
 	return value, nil
 }
 
+// GetValueReadInto is like GetValue, except it allows the caller to pass in
+// a pointer to the slice of bytes that the value would be read into from the
+// map.
+// This is useful for reading from maps with variable sizes, especially
+// per-cpu arrays and hash maps where the size of each value depends on the
+// number of CPUs
+func (b *BPFMap) GetValueReadInto(key unsafe.Pointer, value *[]byte) error {
+	valuePtr := unsafe.Pointer(&(*value)[0])
+	fmt.Println("fd: ", b.fd)
+	errC := C.bpf_map_lookup_elem(b.fd, key, valuePtr)
+	if errC != 0 {
+		return fmt.Errorf("failed to lookup value %v in map %s: %w", key, b.name, syscall.Errno(-errC))
+	}
+	return nil
+}
+
 // BPFMapBatchOpts mirrors the C structure bpf_map_batch_opts.
 type BPFMapBatchOpts struct {
 	Sz        uint64
