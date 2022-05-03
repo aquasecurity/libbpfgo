@@ -328,6 +328,43 @@ func NewModuleFromFile(bpfObjPath string) (*Module, error) {
 	})
 }
 
+// LibbpfStrictMode is an enum as defined in https://github.com/libbpf/libbpf/blob/2cd2d03f63242c048a896179398c68d2dbefe3d6/src/libbpf_legacy.h#L23
+type LibbpfStrictMode uint32
+
+const (
+	LibbpfStrictModeAll               LibbpfStrictMode = C.LIBBPF_STRICT_ALL
+	LibbpfStrictModeNone              LibbpfStrictMode = C.LIBBPF_STRICT_NONE
+	LibbpfStrictModeCleanPtrs         LibbpfStrictMode = C.LIBBPF_STRICT_CLEAN_PTRS
+	LibbpfStrictModeDirectErrs        LibbpfStrictMode = C.LIBBPF_STRICT_DIRECT_ERRS
+	LibbpfStrictModeSecName           LibbpfStrictMode = C.LIBBPF_STRICT_SEC_NAME
+	LibbpfStrictModeNoObjectList      LibbpfStrictMode = C.LIBBPF_STRICT_NO_OBJECT_LIST
+	LibbpfStrictModeAutoRlimitMemlock LibbpfStrictMode = C.LIBBPF_STRICT_AUTO_RLIMIT_MEMLOCK
+	LibbpfStrictModeMapDefinitions    LibbpfStrictMode = C.LIBBPF_STRICT_MAP_DEFINITIONS
+)
+
+func (b LibbpfStrictMode) String() (str string) {
+	x := map[LibbpfStrictMode]string{
+		LibbpfStrictModeAll:               "LIBBPF_STRICT_ALL",
+		LibbpfStrictModeNone:              "LIBBPF_STRICT_NONE",
+		LibbpfStrictModeCleanPtrs:         "LIBBPF_STRICT_CLEAN_PTRS",
+		LibbpfStrictModeDirectErrs:        "LIBBPF_STRICT_DIRECT_ERRS",
+		LibbpfStrictModeSecName:           "LIBBPF_STRICT_SEC_NAME",
+		LibbpfStrictModeNoObjectList:      "LIBBPF_STRICT_NO_OBJECT_LIST",
+		LibbpfStrictModeAutoRlimitMemlock: "LIBBPF_STRICT_AUTO_RLIMIT_MEMLOCK",
+		LibbpfStrictModeMapDefinitions:    "LIBBPF_STRICT_MAP_DEFINITIONS",
+	}
+
+	str, ok := x[b]
+	if !ok {
+		str = LibbpfStrictModeNone.String()
+	}
+	return str
+}
+
+func SetStrictMode(mode LibbpfStrictMode) {
+	C.libbpf_set_strict_mode(uint32(mode))
+}
+
 func NewModuleFromFileArgs(args NewModuleArgs) (*Module, error) {
 	C.set_print_fn()
 	if err := bumpMemlockRlimit(); err != nil {
