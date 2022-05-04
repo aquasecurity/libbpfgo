@@ -68,7 +68,7 @@ func Test_LoadAndAttach(t *testing.T) {
 			},
 		},
 		{
-			prog:     "socket_connect",
+			prog: "socket_connect",
 			attachFn: func(prog *BPFProg, name string) (*BPFLink, error) {
 				if name != "" {
 					// to make the check for attaching with "foo" happy
