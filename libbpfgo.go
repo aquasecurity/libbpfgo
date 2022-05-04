@@ -954,6 +954,12 @@ func (p *BPFProg) GetName() string {
 	return p.name
 }
 
+func (p *BPFProg) GetSectionName() string {
+	cs := C.bpf_program__section_name(p.prog)
+	gs := C.GoString(cs)
+	return gs
+}
+
 func (p *BPFProg) GetPinPath() string {
 	return p.pinnedPath
 }
