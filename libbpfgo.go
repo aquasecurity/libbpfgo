@@ -787,7 +787,7 @@ func (b *BPFMap) DeleteKeyBatch(keys unsafe.Pointer, count uint32) error {
 		ElemFlags: C.BPF_ANY,
 		Flags:     C.BPF_ANY,
 	}
-	
+
 	errC := C.bpf_map_delete_batch(b.fd, keys, &countC, bpfMapBatchOptsToC(opts))
 	if errC != 0 {
 		sc := syscall.Errno(-errC)
@@ -1640,4 +1640,20 @@ func (hook *TcHook) Query(tcOpts *TcOpts) error {
 	tcOptsFromC(tcOpts, opts)
 
 	return nil
+}
+
+func BPFMapTypeIsSupported(mapType MapType) (bool, error) {
+	cSupported := C.libbpf_probe_bpf_map_type(C.enum_bpf_map_type(int(mapType)), nil)
+	if cSupported < 1 {
+		return false, syscall.Errno(-cSupported)
+	}
+	return cSupported == 1, nil
+}
+
+func BPFProgramTypeIsSupported(progType BPFProgType) (bool, error) {
+	cSupported := C.libbpf_probe_bpf_prog_type(C.enum_bpf_prog_type(int(progType)), nil)
+	if cSupported < 1 {
+		return false, syscall.Errno(-cSupported)
+	}
+	return cSupported == 1, nil
 }
