@@ -787,7 +787,7 @@ func (b *BPFMap) DeleteKeyBatch(keys unsafe.Pointer, count uint32) error {
 		ElemFlags: C.BPF_ANY,
 		Flags:     C.BPF_ANY,
 	}
-	
+
 	errC := C.bpf_map_delete_batch(b.fd, keys, &countC, bpfMapBatchOptsToC(opts))
 	if errC != 0 {
 		sc := syscall.Errno(-errC)
@@ -841,6 +841,42 @@ func (b *BPFMap) Update(key, value unsafe.Pointer) error {
 	return nil
 }
 
+// BPFObjectProgramIterator iterates over maps in a BPF object
+type BPFObjectProgramIterator struct {
+	m    *Module
+	prev *BPFProg
+}
+
+func (m *Module) ProgramIterator() *BPFObjectProgramIterator {
+	return &BPFObjectProgramIterator{
+		m:    m,
+		prev: nil,
+	}
+}
+
+func (it *BPFObjectProgramIterator) Next() *BPFProg {
+
+	var startProg *C.struct_bpf_program
+	if it.prev != nil && it.prev.prog != nil {
+		startProg = it.prev.prog
+	}
+
+	p := C.bpf_object__next_program(it.m.obj, startProg)
+	if p == nil {
+		return nil
+	}
+	cName := C.bpf_program__name(p)
+
+	prog := &BPFProg{
+		name:   C.GoString(cName),
+		prog:   p,
+		module: it.m,
+	}
+	it.prev = prog
+	return prog
+}
+
+// BPFMapIterator iterates over keys in a BPF map
 type BPFMapIterator struct {
 	b    *BPFMap
 	err  error
