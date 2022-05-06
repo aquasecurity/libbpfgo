@@ -897,6 +897,66 @@ func (b *BPFMap) Update(key, value unsafe.Pointer) error {
 	return nil
 }
 
+// BPFObjectProgramIterator iterates over maps in a BPF object
+type BPFObjectIterator struct {
+	m        *Module
+	prevProg *BPFProg
+	prevMap  *BPFMap
+}
+
+func (m *Module) Iterator() *BPFObjectIterator {
+	return &BPFObjectIterator{
+		m:        m,
+		prevProg: nil,
+		prevMap:  nil,
+	}
+}
+
+func (it *BPFObjectIterator) NextMap() *BPFMap {
+	var startMap *C.struct_bpf_map
+	if it.prevMap != nil && it.prevMap.bpfMap != nil {
+		startMap = it.prevMap.bpfMap
+	}
+
+	m := C.bpf_object__next_map(it.m.obj, startMap)
+	if m == nil {
+		return nil
+	}
+	cName := C.bpf_map__name(m)
+
+	bpfMap := &BPFMap{
+		name:   C.GoString(cName),
+		bpfMap: m,
+		module: it.m,
+	}
+
+	it.prevMap = bpfMap
+	return bpfMap
+}
+
+func (it *BPFObjectIterator) NextProgram() *BPFProg {
+
+	var startProg *C.struct_bpf_program
+	if it.prevProg != nil && it.prevProg.prog != nil {
+		startProg = it.prevProg.prog
+	}
+
+	p := C.bpf_object__next_program(it.m.obj, startProg)
+	if p == nil {
+		return nil
+	}
+	cName := C.bpf_program__name(p)
+
+	prog := &BPFProg{
+		name:   C.GoString(cName),
+		prog:   p,
+		module: it.m,
+	}
+	it.prevProg = prog
+	return prog
+}
+
+// BPFMapIterator iterates over keys in a BPF map
 type BPFMapIterator struct {
 	b    *BPFMap
 	err  error
