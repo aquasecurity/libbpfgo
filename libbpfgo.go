@@ -1010,6 +1010,12 @@ func (p *BPFProg) GetName() string {
 	return p.name
 }
 
+func (p *BPFProg) GetSectionName() string {
+	cs := C.bpf_program__section_name(p.prog)
+	gs := C.GoString(cs)
+	return gs
+}
+
 func (p *BPFProg) GetPinPath() string {
 	return p.pinnedPath
 }
@@ -1696,4 +1702,20 @@ func (hook *TcHook) Query(tcOpts *TcOpts) error {
 	tcOptsFromC(tcOpts, opts)
 
 	return nil
+}
+
+func BPFMapTypeIsSupported(mapType MapType) (bool, error) {
+	cSupported := C.libbpf_probe_bpf_map_type(C.enum_bpf_map_type(int(mapType)), nil)
+	if cSupported < 1 {
+		return false, syscall.Errno(-cSupported)
+	}
+	return cSupported == 1, nil
+}
+
+func BPFProgramTypeIsSupported(progType BPFProgType) (bool, error) {
+	cSupported := C.libbpf_probe_bpf_prog_type(C.enum_bpf_prog_type(int(progType)), nil)
+	if cSupported < 1 {
+		return false, syscall.Errno(-cSupported)
+	}
+	return cSupported == 1, nil
 }
