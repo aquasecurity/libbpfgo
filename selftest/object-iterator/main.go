@@ -46,7 +46,7 @@ func main() {
 	}
 	for k, v := range expectedProgramNames {
 		if v == false {
-			fmt.Fprintln(os.Stderr, "did not iterate over expected program: %s", k)
+			fmt.Fprintf(os.Stderr, "did not iterate over expected program: %s", k)
 			os.Exit(-1)
 		}
 	}
@@ -69,7 +69,7 @@ func main() {
 	}
 	for k, v := range expectedMapNames {
 		if v == false {
-			fmt.Fprintln(os.Stderr, "did not iterate over expected map: %s", k)
+			fmt.Fprintf(os.Stderr, "did not iterate over expected map: %s", k)
 			os.Exit(-1)
 		}
 	}
