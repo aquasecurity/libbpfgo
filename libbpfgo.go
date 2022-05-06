@@ -566,30 +566,30 @@ func (b *BPFMap) SetType(mapType MapType) error {
 
 func (b *BPFMap) Pin(pinPath string) error {
 	path := C.CString(pinPath)
-	errC := C.bpf_map__pin(b.bpfMap, path)
+	ret, errC := C.bpf_map__pin(b.bpfMap, path)
 	C.free(unsafe.Pointer(path))
-	if errC != 0 {
-		return fmt.Errorf("failed to pin map %s to path %s: %w", b.name, pinPath, syscall.Errno(-errC))
+	if ret != 0 {
+		return fmt.Errorf("failed to pin map %s to path %s: %w", b.name, pinPath, errC)
 	}
 	return nil
 }
 
 func (b *BPFMap) Unpin(pinPath string) error {
 	path := C.CString(pinPath)
-	errC := C.bpf_map__unpin(b.bpfMap, path)
+	ret, errC := C.bpf_map__unpin(b.bpfMap, path)
 	C.free(unsafe.Pointer(path))
-	if errC != 0 {
-		return fmt.Errorf("failed to unpin map %s from path %s: %w", b.name, pinPath, syscall.Errno(-errC))
+	if ret != 0 {
+		return fmt.Errorf("failed to unpin map %s from path %s: %w", b.name, pinPath, errC)
 	}
 	return nil
 }
 
 func (b *BPFMap) SetPinPath(pinPath string) error {
 	path := C.CString(pinPath)
-	errC := C.bpf_map__set_pin_path(b.bpfMap, path)
+	ret, errC := C.bpf_map__set_pin_path(b.bpfMap, path)
 	C.free(unsafe.Pointer(path))
-	if errC != 0 {
-		return fmt.Errorf("failed to set pin for map %s to path %s: %w", b.name, pinPath, syscall.Errno(-errC))
+	if ret != 0 {
+		return fmt.Errorf("failed to set pin for map %s to path %s: %w", b.name, pinPath, errC)
 	}
 	return nil
 }
@@ -600,9 +600,9 @@ func (b *BPFMap) SetPinPath(pinPath string) error {
 // Note: for ring buffer and perf buffer, maxEntries is the
 // capacity in bytes.
 func (b *BPFMap) Resize(maxEntries uint32) error {
-	errC := C.bpf_map__set_max_entries(b.bpfMap, C.uint(maxEntries))
-	if errC != 0 {
-		return fmt.Errorf("failed to resize map %s to %v: %w", b.name, maxEntries, syscall.Errno(-errC))
+	ret, errC := C.bpf_map__set_max_entries(b.bpfMap, C.uint(maxEntries))
+	if ret != 0 {
+		return fmt.Errorf("failed to resize map %s to %v: %w", b.name, maxEntries, errC)
 	}
 	return nil
 }
@@ -634,10 +634,7 @@ func (b *BPFMap) GetPinPath() string {
 
 func (b *BPFMap) IsPinned() bool {
 	isPinned := C.bpf_map__is_pinned(b.bpfMap)
-	if isPinned == C.bool(true) {
-		return true
-	}
-	return false
+	return isPinned == C.bool(true)
 }
 
 func (b *BPFMap) KeySize() int {
@@ -660,9 +657,9 @@ func (b *BPFMap) GetValue(key unsafe.Pointer) ([]byte, error) {
 	value := make([]byte, b.ValueSize())
 	valuePtr := unsafe.Pointer(&value[0])
 
-	errC := C.bpf_map_lookup_elem(b.fd, key, valuePtr)
-	if errC != 0 {
-		return nil, fmt.Errorf("failed to lookup value %v in map %s: %w", key, b.name, syscall.Errno(-errC))
+	ret, errC := C.bpf_map_lookup_elem(b.fd, key, valuePtr)
+	if ret != 0 {
+		return nil, fmt.Errorf("failed to lookup value %v in map %s: %w", key, b.name, errC)
 	}
 	return value, nil
 }
@@ -890,9 +887,9 @@ func (b *BPFMap) DeleteKey(key unsafe.Pointer) error {
 //  bpfmap.Update(keyPtr, valuePtr)
 //
 func (b *BPFMap) Update(key, value unsafe.Pointer) error {
-	errC := C.bpf_map_update_elem(b.fd, key, value, C.BPF_ANY)
-	if errC != 0 {
-		return fmt.Errorf("failed to update map %s: %w", b.name, syscall.Errno(-errC))
+	ret, errC := C.bpf_map_update_elem(b.fd, key, value, C.BPF_ANY)
+	if ret != 0 {
+		return fmt.Errorf("failed to update map %s: %w", b.name, errC)
 	}
 	return nil
 }
@@ -1013,10 +1010,10 @@ func (it *BPFMapIterator) Err() error {
 
 func (m *Module) GetProgram(progName string) (*BPFProg, error) {
 	cs := C.CString(progName)
-	prog, errno := C.bpf_object__find_program_by_name(m.obj, cs)
+	prog, errC := C.bpf_object__find_program_by_name(m.obj, cs)
 	C.free(unsafe.Pointer(cs))
 	if prog == nil {
-		return nil, fmt.Errorf("failed to find BPF program %s: %w", progName, errno)
+		return nil, fmt.Errorf("failed to find BPF program %s: %w", progName, errC)
 	}
 
 	return &BPFProg{
@@ -1042,10 +1039,10 @@ func (p *BPFProg) Pin(path string) error {
 	}
 
 	cs := C.CString(absPath)
-	errC := C.bpf_program__pin(p.prog, cs)
+	ret, errC := C.bpf_program__pin(p.prog, cs)
 	C.free(unsafe.Pointer(cs))
-	if errC != 0 {
-		return fmt.Errorf("failed to pin program %s to %s: %w", p.name, path, syscall.Errno(-errC))
+	if ret != 0 {
+		return fmt.Errorf("failed to pin program %s to %s: %w", p.name, path, errC)
 	}
 	p.pinnedPath = absPath
 	return nil
@@ -1053,10 +1050,10 @@ func (p *BPFProg) Pin(path string) error {
 
 func (p *BPFProg) Unpin(path string) error {
 	cs := C.CString(path)
-	errC := C.bpf_program__unpin(p.prog, cs)
+	ret, errC := C.bpf_program__unpin(p.prog, cs)
 	C.free(unsafe.Pointer(cs))
-	if errC != 0 {
-		return fmt.Errorf("failed to unpin program %s to %s: %w", p.name, path, syscall.Errno(-errC))
+	if ret != 0 {
+		return fmt.Errorf("failed to unpin program %s to %s: %w", p.name, path, errC)
 	}
 	p.pinnedPath = ""
 	return nil
@@ -1214,17 +1211,17 @@ func (p *BPFProg) GetType() BPFProgType {
 
 func (p *BPFProg) SetAutoload(autoload bool) error {
 	cbool := C.bool(autoload)
-	errC := C.bpf_program__set_autoload(p.prog, cbool)
-	if errC != 0 {
-		return fmt.Errorf("failed to set bpf program autoload: %w", syscall.Errno(-errC))
+	ret, errC := C.bpf_program__set_autoload(p.prog, cbool)
+	if ret != 0 {
+		return fmt.Errorf("failed to set bpf program autoload: %w", errC)
 	}
 	return nil
 }
 
 func (p *BPFProg) SetTracepoint() error {
-	errC := C.bpf_program__set_tracepoint(p.prog)
-	if errC != 0 {
-		return fmt.Errorf("failed to set bpf program as tracepoint: %w", syscall.Errno(-errC))
+	ret, errC := C.bpf_program__set_tracepoint(p.prog)
+	if ret != 0 {
+		return fmt.Errorf("failed to set bpf program as tracepoint: %w", errC)
 	}
 	return nil
 }
@@ -1250,10 +1247,10 @@ func (p *BPFProg) AttachGeneric() (*BPFLink, error) {
 // the BPF program to. To attach to a kernel function specify attachProgFD as 0
 func (p *BPFProg) SetAttachTarget(attachProgFD int, attachFuncName string) error {
 	cs := C.CString(attachFuncName)
-	errC := C.bpf_program__set_attach_target(p.prog, C.int(attachProgFD), cs)
+	ret, errC := C.bpf_program__set_attach_target(p.prog, C.int(attachProgFD), cs)
 	C.free(unsafe.Pointer(cs))
-	if errC != 0 {
-		return fmt.Errorf("failed to set attach target for program %s %s %w", p.name, attachFuncName, syscall.Errno(-errC))
+	if ret != 0 {
+		return fmt.Errorf("failed to set attach target for program %s %s %w", p.name, attachFuncName, errC)
 	}
 	return nil
 }
