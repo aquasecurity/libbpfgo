@@ -1259,6 +1259,11 @@ func (p *BPFProg) SetProgramType(progType BPFProgType) {
 	C.bpf_program__set_type(p.prog, C.enum_bpf_prog_type(int(progType)))
 }
 
+func (p *BPFProg) GetProgramType() BPFProgType {
+	progTypeC := C.bpf_program__type(p.prog)
+	return BPFProgType(progTypeC)
+}
+
 func (p *BPFProg) SetAttachType(attachType BPFAttachType) {
 	C.bpf_program__set_expected_attach_type(p.prog, C.enum_bpf_attach_type(int(attachType)))
 }
