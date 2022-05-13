@@ -1,0 +1,64 @@
+BASEDIR = $(abspath ../../)
+
+OUTPUT = ../../output
+
+LIBBPF_SRC = $(abspath ../../libbpf/src)
+LIBBPF_OBJ = $(abspath $(OUTPUT)/libbpf.a)
+
+CC = gcc
+CLANG = clang
+GO = go
+
+ARCH := $(shell uname -m | sed 's/x86_64/amd64/g; s/aarch64/arm64/g')
+
+CFLAGS = -g -O2 -Wall -fpie
+LDFLAGS =
+
+CGO_CFLAGS_STATIC = "-I$(abspath $(OUTPUT))"
+CGO_LDFLAGS_STATIC = "-lelf -lz $(LIBBPF_OBJ)"
+CGO_EXTLDFLAGS_STATIC = '-w -extldflags "-static"'
+
+CGO_CFGLAGS_DYN = "-I. -I/usr/include/"
+CGO_LDFLAGS_DYN = "-lelf -lz -lbpf"
+
+.PHONY: $(TEST)
+.PHONY: $(TEST).go
+.PHONY: $(TEST).bpf.c
+
+TEST = main
+
+all: $(TEST)-static
+
+.PHONY: libbpfgo
+.PHONY: libbpfgo-static
+.PHONY: libbpfgo-dynamic
+
+## libbpfgo
+
+libbpfgo-static:
+	$(MAKE) -C $(BASEDIR) libbpfgo-static
+
+vmlinuxh:
+	$(MAKE) -C $(BASEDIR) vmlinuxh
+
+outputdir:
+	$(MAKE) -C $(BASEDIR) outputdir
+
+## test bpf dependency
+
+$(TEST).bpf.o: $(TEST).bpf.c
+	$(MAKE) -C $(BASEDIR) vmlinuxh
+	$(CLANG) $(CFLAGS) -target bpf -D__TARGET_ARCH_$(ARCH) -I$(OUTPUT) -c $< -o $@
+
+## test
+
+.PHONY: $(TEST)-static
+
+$(TEST)-static: libbpfgo-static | $(TEST).bpf.o
+	CC=$(CLANG) \
+		CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
+		CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
+		GOOS=linux GOARCH=$(ARCH) \
+		$(GO) build \
+		-tags netgo -ldflags $(CGO_EXTLDFLAGS_STATIC) \
+		-o $(TEST)-static ./$(TEST).go
