@@ -1263,21 +1263,21 @@ func (p *BPFProg) SetAttachType(attachType BPFAttachType) {
 	C.bpf_program__set_expected_attach_type(p.prog, C.enum_bpf_attach_type(int(attachType)))
 }
 
-func (p *BPFProg) AttachXDP(devName string) (*BPFLink, error) {
-	a, err := net.InterfaceByName(devName)
+func (p *BPFProg) AttachXDP(deviceName string) (*BPFLink, error) {
+	iface, err := net.InterfaceByName(deviceName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to attach program to device %s: %w", devName, err)
+		return nil, fmt.Errorf("failed to attach program to device %s: %w", deviceName, err)
 	}
-	link := C.bpf_program__attach_xdp(p.prog, C.int(a.Index))
+	link := C.bpf_program__attach_xdp(p.prog, C.int(iface.Index))
 	if C.IS_ERR_OR_NULL(unsafe.Pointer(link)) {
-		return nil, errptrError(unsafe.Pointer(link), "failed to attach xdp on device %s to program %s", devName, p.name)
+		return nil, errptrError(unsafe.Pointer(link), "failed to attach xdp on device %s to program %s", deviceName, p.name)
 	}
 
 	bpfLink := &BPFLink{
 		link:      link,
 		prog:      p,
 		linkType:  Tracepoint,
-		eventName: fmt.Sprintf("xdp-%s-%s", p.name, devName),
+		eventName: fmt.Sprintf("xdp-%s-%s", p.name, deviceName),
 	}
 	p.module.links = append(p.module.links, bpfLink)
 	return bpfLink, nil
