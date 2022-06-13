@@ -242,6 +242,8 @@ func (l *BPFLink) Destroy() error {
 	if ret < 0 {
 		return syscall.Errno(-ret)
 	}
+	l.link = nil
+
 	return nil
 }
 
@@ -454,7 +456,9 @@ func (m *Module) Close() {
 		rb.Close()
 	}
 	for _, link := range m.links {
-		C.bpf_link__destroy(link.link)
+		if link.link != nil {
+			C.bpf_link__destroy(link.link)
+		}
 	}
 	C.bpf_object__close(m.obj)
 }
