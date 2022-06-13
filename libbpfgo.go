@@ -36,6 +36,16 @@ int libbpf_print_fn(enum libbpf_print_level level, const char *format,
     if (level != LIBBPF_WARN)
         return 0;
 
+	// BUG: https://github.com/aquasecurity/tracee/issues/1676
+
+	va_list check; va_copy(check, args);
+	char *str = va_arg(check, char *);
+	if (strstr(str, "Exclusivity flag on") != NULL) {
+		va_end(check);
+		return 0;
+	}
+	va_end(check);
+
     return vfprintf(stderr, format, args);
 }
 
