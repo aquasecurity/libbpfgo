@@ -68,7 +68,7 @@ recvLoop:
 			os.Exit(-1)
 		}
 		numberOfEventsReceived++
-		if numberOfEventsReceived > 10 {
+		if numberOfEventsReceived > 5 {
 			break recvLoop
 		}
 	}
