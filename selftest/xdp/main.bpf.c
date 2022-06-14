@@ -27,7 +27,7 @@ int target(struct xdp_md *ctx) {
     *process = 2021;
 
     bpf_ringbuf_submit(process, ringbuffer_flags);
-    return 0;
+    return XDP_PASS;
 }
 
 char LICENSE[] SEC("license") = "GPL";
