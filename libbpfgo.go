@@ -228,6 +228,7 @@ const (
 	Uprobe
 	Uretprobe
 	Tracing
+	XDP
 )
 
 type BPFLink struct {
@@ -1276,7 +1277,7 @@ func (p *BPFProg) AttachXDP(deviceName string) (*BPFLink, error) {
 	bpfLink := &BPFLink{
 		link:      link,
 		prog:      p,
-		linkType:  Tracepoint,
+		linkType:  XDP,
 		eventName: fmt.Sprintf("xdp-%s-%s", p.name, deviceName),
 	}
 	p.module.links = append(p.module.links, bpfLink)
