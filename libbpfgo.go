@@ -1266,7 +1266,7 @@ func (p *BPFProg) SetAttachType(attachType BPFAttachType) {
 func (p *BPFProg) AttachXDP(deviceName string) (*BPFLink, error) {
 	iface, err := net.InterfaceByName(deviceName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to attach program to device %s: %w", deviceName, err)
+		return nil, fmt.Errorf("failed to find device by name %s: %w", deviceName, err)
 	}
 	link := C.bpf_program__attach_xdp(p.prog, C.int(iface.Index))
 	if C.IS_ERR_OR_NULL(unsafe.Pointer(link)) {
