@@ -922,10 +922,10 @@ func (b *BPFMap) DeleteKey(key unsafe.Pointer) error {
 //  bpfmap.Update(keyPtr, valuePtr)
 //
 func (b *BPFMap) Update(key, value unsafe.Pointer) error {
-	return b.UpdateWithFlags(key, value, MapFlagUpdateAny)
+	return b.UpdateValueFlags(key, value, MapFlagUpdateAny)
 }
 
-func (b *BPFMap) UpdateWithFlags(key, value unsafe.Pointer, flags MapFlag) error {
+func (b *BPFMap) UpdateValueFlags(key, value unsafe.Pointer, flags MapFlag) error {
 	errC := C.bpf_map_update_elem(b.fd, key, value, C.ulonglong(flags))
 	if errC != 0 {
 		return fmt.Errorf("failed to update map %s: %w", b.name, syscall.Errno(-errC))
