@@ -1257,14 +1257,6 @@ func (p *BPFProg) SetAutoload(autoload bool) error {
 	return nil
 }
 
-func (p *BPFProg) SetTracepoint() error {
-	ret, errC := C.bpf_program__set_tracepoint(p.prog)
-	if ret != 0 {
-		return fmt.Errorf("failed to set bpf program as tracepoint: %w", errC)
-	}
-	return nil
-}
-
 // AttachGeneric is used to attach the BPF program using autodetection
 // for the attach target. You can specify the destination in BPF code
 // via the SEC() such as `SEC("fentry/some_kernel_func")`
