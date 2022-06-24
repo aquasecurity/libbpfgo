@@ -36,6 +36,16 @@ int libbpf_print_fn(enum libbpf_print_level level, const char *format,
     if (level != LIBBPF_WARN)
         return 0;
 
+	// BUG: https://github.com/aquasecurity/tracee/issues/1676
+
+	va_list check; va_copy(check, args);
+	char *str = va_arg(check, char *);
+	if (strstr(str, "Exclusivity flag on") != NULL) {
+		va_end(check);
+		return 0;
+	}
+	va_end(check);
+
     return vfprintf(stderr, format, args);
 }
 
@@ -237,6 +247,7 @@ const (
 	Uprobe
 	Uretprobe
 	Tracing
+	XDP
 )
 
 type BPFLink struct {
@@ -251,6 +262,8 @@ func (l *BPFLink) Destroy() error {
 	if ret < 0 {
 		return syscall.Errno(-ret)
 	}
+	l.link = nil
+
 	return nil
 }
 
@@ -335,6 +348,43 @@ func NewModuleFromFile(bpfObjPath string) (*Module, error) {
 	return NewModuleFromFileArgs(NewModuleArgs{
 		BPFObjPath: bpfObjPath,
 	})
+}
+
+// LibbpfStrictMode is an enum as defined in https://github.com/libbpf/libbpf/blob/2cd2d03f63242c048a896179398c68d2dbefe3d6/src/libbpf_legacy.h#L23
+type LibbpfStrictMode uint32
+
+const (
+	LibbpfStrictModeAll               LibbpfStrictMode = C.LIBBPF_STRICT_ALL
+	LibbpfStrictModeNone              LibbpfStrictMode = C.LIBBPF_STRICT_NONE
+	LibbpfStrictModeCleanPtrs         LibbpfStrictMode = C.LIBBPF_STRICT_CLEAN_PTRS
+	LibbpfStrictModeDirectErrs        LibbpfStrictMode = C.LIBBPF_STRICT_DIRECT_ERRS
+	LibbpfStrictModeSecName           LibbpfStrictMode = C.LIBBPF_STRICT_SEC_NAME
+	LibbpfStrictModeNoObjectList      LibbpfStrictMode = C.LIBBPF_STRICT_NO_OBJECT_LIST
+	LibbpfStrictModeAutoRlimitMemlock LibbpfStrictMode = C.LIBBPF_STRICT_AUTO_RLIMIT_MEMLOCK
+	LibbpfStrictModeMapDefinitions    LibbpfStrictMode = C.LIBBPF_STRICT_MAP_DEFINITIONS
+)
+
+func (b LibbpfStrictMode) String() (str string) {
+	x := map[LibbpfStrictMode]string{
+		LibbpfStrictModeAll:               "LIBBPF_STRICT_ALL",
+		LibbpfStrictModeNone:              "LIBBPF_STRICT_NONE",
+		LibbpfStrictModeCleanPtrs:         "LIBBPF_STRICT_CLEAN_PTRS",
+		LibbpfStrictModeDirectErrs:        "LIBBPF_STRICT_DIRECT_ERRS",
+		LibbpfStrictModeSecName:           "LIBBPF_STRICT_SEC_NAME",
+		LibbpfStrictModeNoObjectList:      "LIBBPF_STRICT_NO_OBJECT_LIST",
+		LibbpfStrictModeAutoRlimitMemlock: "LIBBPF_STRICT_AUTO_RLIMIT_MEMLOCK",
+		LibbpfStrictModeMapDefinitions:    "LIBBPF_STRICT_MAP_DEFINITIONS",
+	}
+
+	str, ok := x[b]
+	if !ok {
+		str = LibbpfStrictModeNone.String()
+	}
+	return str
+}
+
+func SetStrictMode(mode LibbpfStrictMode) {
+	C.libbpf_set_strict_mode(uint32(mode))
 }
 
 func NewModuleFromFileArgs(args NewModuleArgs) (*Module, error) {
@@ -426,7 +476,9 @@ func (m *Module) Close() {
 		rb.Close()
 	}
 	for _, link := range m.links {
-		C.bpf_link__destroy(link.link)
+		if link.link != nil {
+			C.bpf_link__destroy(link.link)
+		}
 	}
 	C.bpf_object__close(m.obj)
 }
@@ -538,30 +590,30 @@ func (b *BPFMap) SetType(mapType MapType) error {
 
 func (b *BPFMap) Pin(pinPath string) error {
 	path := C.CString(pinPath)
-	errC := C.bpf_map__pin(b.bpfMap, path)
+	ret, errC := C.bpf_map__pin(b.bpfMap, path)
 	C.free(unsafe.Pointer(path))
-	if errC != 0 {
-		return fmt.Errorf("failed to pin map %s to path %s: %w", b.name, pinPath, syscall.Errno(-errC))
+	if ret != 0 {
+		return fmt.Errorf("failed to pin map %s to path %s: %w", b.name, pinPath, errC)
 	}
 	return nil
 }
 
 func (b *BPFMap) Unpin(pinPath string) error {
 	path := C.CString(pinPath)
-	errC := C.bpf_map__unpin(b.bpfMap, path)
+	ret, errC := C.bpf_map__unpin(b.bpfMap, path)
 	C.free(unsafe.Pointer(path))
-	if errC != 0 {
-		return fmt.Errorf("failed to unpin map %s from path %s: %w", b.name, pinPath, syscall.Errno(-errC))
+	if ret != 0 {
+		return fmt.Errorf("failed to unpin map %s from path %s: %w", b.name, pinPath, errC)
 	}
 	return nil
 }
 
 func (b *BPFMap) SetPinPath(pinPath string) error {
 	path := C.CString(pinPath)
-	errC := C.bpf_map__set_pin_path(b.bpfMap, path)
+	ret, errC := C.bpf_map__set_pin_path(b.bpfMap, path)
 	C.free(unsafe.Pointer(path))
-	if errC != 0 {
-		return fmt.Errorf("failed to set pin for map %s to path %s: %w", b.name, pinPath, syscall.Errno(-errC))
+	if ret != 0 {
+		return fmt.Errorf("failed to set pin for map %s to path %s: %w", b.name, pinPath, errC)
 	}
 	return nil
 }
@@ -572,9 +624,9 @@ func (b *BPFMap) SetPinPath(pinPath string) error {
 // Note: for ring buffer and perf buffer, maxEntries is the
 // capacity in bytes.
 func (b *BPFMap) Resize(maxEntries uint32) error {
-	errC := C.bpf_map__set_max_entries(b.bpfMap, C.uint(maxEntries))
-	if errC != 0 {
-		return fmt.Errorf("failed to resize map %s to %v: %w", b.name, maxEntries, syscall.Errno(-errC))
+	ret, errC := C.bpf_map__set_max_entries(b.bpfMap, C.uint(maxEntries))
+	if ret != 0 {
+		return fmt.Errorf("failed to resize map %s to %v: %w", b.name, maxEntries, errC)
 	}
 	return nil
 }
@@ -606,10 +658,7 @@ func (b *BPFMap) GetPinPath() string {
 
 func (b *BPFMap) IsPinned() bool {
 	isPinned := C.bpf_map__is_pinned(b.bpfMap)
-	if isPinned == C.bool(true) {
-		return true
-	}
-	return false
+	return isPinned == C.bool(true)
 }
 
 func (b *BPFMap) KeySize() int {
@@ -632,9 +681,9 @@ func (b *BPFMap) GetValue(key unsafe.Pointer) ([]byte, error) {
 	value := make([]byte, b.ValueSize())
 	valuePtr := unsafe.Pointer(&value[0])
 
-	errC := C.bpf_map_lookup_elem(b.fd, key, valuePtr)
-	if errC != 0 {
-		return nil, fmt.Errorf("failed to lookup value %v in map %s: %w", key, b.name, syscall.Errno(-errC))
+	ret, errC := C.bpf_map_lookup_elem(b.fd, key, valuePtr)
+	if ret != 0 {
+		return nil, fmt.Errorf("failed to lookup value %v in map %s: %w", key, b.name, errC)
 	}
 	return value, nil
 }
@@ -714,7 +763,7 @@ func (b *BPFMap) GetValueBatch(keys unsafe.Pointer, startKey, nextKey unsafe.Poi
 
 // GetValueAndDeleteBatch allows for batch lookup and deletion of elements where each element is deleted after being retrieved from the map.
 //
-// The first argument, keys. is a pointer to an array or slice of keys which will be populated with the keys returned from this operation.
+// The first argument, keys, is a pointer to an array or slice of keys which will be populated with the keys returned from this operation.
 // It returns the associated values as a slice of slices of bytes.
 //
 // This API allows for batch lookups and deletion of multiple keys, potentially in steps over multiple iterations. For example,
@@ -722,11 +771,11 @@ func (b *BPFMap) GetValueBatch(keys unsafe.Pointer, startKey, nextKey unsafe.Poi
 // Once the first iteration is complete you can provide the last key seen in the previous iteration as the startKey for the next iteration
 // and repeat until nextKey is nil.
 //
-// The last argument, count, is the number of keys to lookup, and delete. Passing an argument that greater than the number of keys
-// in the map will cause the function to return a syscall.EPERM as an error.
+// The last argument, count, is the number of keys to lookup and delete. The kernel will update it with the count of the elements that were
+// retrieved and deleted.
 //
-// The API can return partial results even though an error is returned.
-// In this case the keys that were successfully retrieved and deleted will be in the result slice.
+// The API can return partial results even though an -1 is returned. In this case, errno will be set to `ENOENT` and the values slice and count
+// will be filled in with the elements that were read. See the comment below for more context.
 func (b *BPFMap) GetValueAndDeleteBatch(keys, startKey, nextKey unsafe.Pointer, count uint32) ([][]byte, error) {
 	var (
 		values    = make([]byte, b.ValueSize()*int(count))
@@ -740,19 +789,38 @@ func (b *BPFMap) GetValueAndDeleteBatch(keys, startKey, nextKey unsafe.Pointer, 
 		Flags:     C.BPF_ANY,
 	}
 
-	errC := C.bpf_map_lookup_and_delete_batch(b.fd, startKey, nextKey, keys, valuesPtr, &countC, bpfMapBatchOptsToC(opts))
-	if errC != 0 {
-		sc := syscall.Errno(-errC)
-		if sc != syscall.EFAULT {
-			if uint32(countC) != count {
-				return collectBatchValues(values, uint32(countC), b.ValueSize()),
-					fmt.Errorf("failed to retrieve and delete ALL elements in map %s, deleted (%d/%d): %w", b.name, uint32(countC), count, sc)
-			}
-		}
-		return nil, fmt.Errorf("failed to batch lookup and delete values %v in map %s: %w", keys, b.name, syscall.Errno(-errC))
+	// Before libbpf 1.0 (without LIBBPF_STRICT_DIRECT_ERRS), the return value
+	// and errno are not modified [1]. On error, we will get a return value of
+	// -1 and errno will be set accordingly with most BPF calls.
+	//
+	// The batch APIs are a bit different in which they can return an error, but
+	// depending on the errno code, it might mean a complete error (nothing was
+	// done) or a partial success (some elements were processed).
+	//
+	// - On complete sucess, it will return 0, and errno won't be set.
+	// - On partial sucess, it will return -1, and errno will be set to ENOENT.
+	// - On error, it will return -1, and an errno different to ENOENT.
+	//
+	// [1] https://github.com/libbpf/libbpf/blob/b69f8ee93ef6aa3518f8fbfd9d1df6c2c84fd08f/src/libbpf_internal.h#L496
+	ret, errC := C.bpf_map_lookup_and_delete_batch(
+		b.fd,
+		startKey,
+		nextKey,
+		keys,
+		valuesPtr,
+		&countC,
+		bpfMapBatchOptsToC(opts))
+
+	processed := uint32(countC)
+
+	if ret != 0 && errC != syscall.ENOENT {
+		// ret = -1 && errno == syscall.ENOENT indicates a partial read and delete.
+		return nil, fmt.Errorf("failed to batch lookup and delete values %v in map %s: ret %d (err: %s)", keys, b.name, ret, errC)
 	}
 
-	return collectBatchValues(values, count, b.ValueSize()), nil
+	// Either some or all entries were read and deleted.
+	parsedVals := collectBatchValues(values, processed, b.ValueSize())
+	return parsedVals, nil
 }
 
 func collectBatchValues(values []byte, count uint32, valueSize int) [][]byte {
@@ -831,9 +899,9 @@ func (b *BPFMap) DeleteKeyBatch(keys unsafe.Pointer, count uint32) error {
 // in the slice or array instead of the slice/array itself, as to
 // avoid undefined behavior.
 func (b *BPFMap) DeleteKey(key unsafe.Pointer) error {
-	errC := C.bpf_map_delete_elem(b.fd, key)
-	if errC != 0 {
-		return fmt.Errorf("failed to get lookup key %d from map %s: %w", key, b.name, syscall.Errno(-errC))
+	ret, errC := C.bpf_map_delete_elem(b.fd, key)
+	if ret != 0 {
+		return fmt.Errorf("failed to get lookup key %d from map %s: %w", key, b.name, errC)
 	}
 	return nil
 }
@@ -865,6 +933,66 @@ func (b *BPFMap) UpdateWithFlags(key, value unsafe.Pointer, flags MapFlag) error
 	return nil
 }
 
+// BPFObjectProgramIterator iterates over maps in a BPF object
+type BPFObjectIterator struct {
+	m        *Module
+	prevProg *BPFProg
+	prevMap  *BPFMap
+}
+
+func (m *Module) Iterator() *BPFObjectIterator {
+	return &BPFObjectIterator{
+		m:        m,
+		prevProg: nil,
+		prevMap:  nil,
+	}
+}
+
+func (it *BPFObjectIterator) NextMap() *BPFMap {
+	var startMap *C.struct_bpf_map
+	if it.prevMap != nil && it.prevMap.bpfMap != nil {
+		startMap = it.prevMap.bpfMap
+	}
+
+	m := C.bpf_object__next_map(it.m.obj, startMap)
+	if m == nil {
+		return nil
+	}
+	cName := C.bpf_map__name(m)
+
+	bpfMap := &BPFMap{
+		name:   C.GoString(cName),
+		bpfMap: m,
+		module: it.m,
+	}
+
+	it.prevMap = bpfMap
+	return bpfMap
+}
+
+func (it *BPFObjectIterator) NextProgram() *BPFProg {
+
+	var startProg *C.struct_bpf_program
+	if it.prevProg != nil && it.prevProg.prog != nil {
+		startProg = it.prevProg.prog
+	}
+
+	p := C.bpf_object__next_program(it.m.obj, startProg)
+	if p == nil {
+		return nil
+	}
+	cName := C.bpf_program__name(p)
+
+	prog := &BPFProg{
+		name:   C.GoString(cName),
+		prog:   p,
+		module: it.m,
+	}
+	it.prevProg = prog
+	return prog
+}
+
+// BPFMapIterator iterates over keys in a BPF map
 type BPFMapIterator struct {
 	b    *BPFMap
 	err  error
@@ -921,10 +1049,10 @@ func (it *BPFMapIterator) Err() error {
 
 func (m *Module) GetProgram(progName string) (*BPFProg, error) {
 	cs := C.CString(progName)
-	prog, errno := C.bpf_object__find_program_by_name(m.obj, cs)
+	prog, errC := C.bpf_object__find_program_by_name(m.obj, cs)
 	C.free(unsafe.Pointer(cs))
 	if prog == nil {
-		return nil, fmt.Errorf("failed to find BPF program %s: %w", progName, errno)
+		return nil, fmt.Errorf("failed to find BPF program %s: %w", progName, errC)
 	}
 
 	return &BPFProg{
@@ -950,10 +1078,10 @@ func (p *BPFProg) Pin(path string) error {
 	}
 
 	cs := C.CString(absPath)
-	errC := C.bpf_program__pin(p.prog, cs)
+	ret, errC := C.bpf_program__pin(p.prog, cs)
 	C.free(unsafe.Pointer(cs))
-	if errC != 0 {
-		return fmt.Errorf("failed to pin program %s to %s: %w", p.name, path, syscall.Errno(-errC))
+	if ret != 0 {
+		return fmt.Errorf("failed to pin program %s to %s: %w", p.name, path, errC)
 	}
 	p.pinnedPath = absPath
 	return nil
@@ -961,10 +1089,10 @@ func (p *BPFProg) Pin(path string) error {
 
 func (p *BPFProg) Unpin(path string) error {
 	cs := C.CString(path)
-	errC := C.bpf_program__unpin(p.prog, cs)
+	ret, errC := C.bpf_program__unpin(p.prog, cs)
 	C.free(unsafe.Pointer(cs))
-	if errC != 0 {
-		return fmt.Errorf("failed to unpin program %s to %s: %w", p.name, path, syscall.Errno(-errC))
+	if ret != 0 {
+		return fmt.Errorf("failed to unpin program %s to %s: %w", p.name, path, errC)
 	}
 	p.pinnedPath = ""
 	return nil
@@ -976,6 +1104,12 @@ func (p *BPFProg) GetModule() *Module {
 
 func (p *BPFProg) GetName() string {
 	return p.name
+}
+
+func (p *BPFProg) GetSectionName() string {
+	cs := C.bpf_program__section_name(p.prog)
+	gs := C.GoString(cs)
+	return gs
 }
 
 func (p *BPFProg) GetPinPath() string {
@@ -1116,17 +1250,17 @@ func (p *BPFProg) GetType() BPFProgType {
 
 func (p *BPFProg) SetAutoload(autoload bool) error {
 	cbool := C.bool(autoload)
-	errC := C.bpf_program__set_autoload(p.prog, cbool)
-	if errC != 0 {
-		return fmt.Errorf("failed to set bpf program autoload: %w", syscall.Errno(-errC))
+	ret, errC := C.bpf_program__set_autoload(p.prog, cbool)
+	if ret != 0 {
+		return fmt.Errorf("failed to set bpf program autoload: %w", errC)
 	}
 	return nil
 }
 
 func (p *BPFProg) SetTracepoint() error {
-	errC := C.bpf_program__set_tracepoint(p.prog)
-	if errC != 0 {
-		return fmt.Errorf("failed to set bpf program as tracepoint: %w", syscall.Errno(-errC))
+	ret, errC := C.bpf_program__set_tracepoint(p.prog)
+	if ret != 0 {
+		return fmt.Errorf("failed to set bpf program as tracepoint: %w", errC)
 	}
 	return nil
 }
@@ -1152,10 +1286,10 @@ func (p *BPFProg) AttachGeneric() (*BPFLink, error) {
 // the BPF program to. To attach to a kernel function specify attachProgFD as 0
 func (p *BPFProg) SetAttachTarget(attachProgFD int, attachFuncName string) error {
 	cs := C.CString(attachFuncName)
-	errC := C.bpf_program__set_attach_target(p.prog, C.int(attachProgFD), cs)
+	ret, errC := C.bpf_program__set_attach_target(p.prog, C.int(attachProgFD), cs)
 	C.free(unsafe.Pointer(cs))
-	if errC != 0 {
-		return fmt.Errorf("failed to set attach target for program %s %s %w", p.name, attachFuncName, syscall.Errno(-errC))
+	if ret != 0 {
+		return fmt.Errorf("failed to set attach target for program %s %s %w", p.name, attachFuncName, errC)
 	}
 	return nil
 }
@@ -1166,6 +1300,26 @@ func (p *BPFProg) SetProgramType(progType BPFProgType) {
 
 func (p *BPFProg) SetAttachType(attachType BPFAttachType) {
 	C.bpf_program__set_expected_attach_type(p.prog, C.enum_bpf_attach_type(int(attachType)))
+}
+
+func (p *BPFProg) AttachXDP(deviceName string) (*BPFLink, error) {
+	iface, err := net.InterfaceByName(deviceName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find device by name %s: %w", deviceName, err)
+	}
+	link := C.bpf_program__attach_xdp(p.prog, C.int(iface.Index))
+	if C.IS_ERR_OR_NULL(unsafe.Pointer(link)) {
+		return nil, errptrError(unsafe.Pointer(link), "failed to attach xdp on device %s to program %s", deviceName, p.name)
+	}
+
+	bpfLink := &BPFLink{
+		link:      link,
+		prog:      p,
+		linkType:  XDP,
+		eventName: fmt.Sprintf("xdp-%s-%s", p.name, deviceName),
+	}
+	p.module.links = append(p.module.links, bpfLink)
+	return bpfLink, nil
 }
 
 func (p *BPFProg) AttachTracepoint(category, name string) (*BPFLink, error) {
@@ -1664,4 +1818,20 @@ func (hook *TcHook) Query(tcOpts *TcOpts) error {
 	tcOptsFromC(tcOpts, opts)
 
 	return nil
+}
+
+func BPFMapTypeIsSupported(mapType MapType) (bool, error) {
+	cSupported := C.libbpf_probe_bpf_map_type(C.enum_bpf_map_type(int(mapType)), nil)
+	if cSupported < 1 {
+		return false, syscall.Errno(-cSupported)
+	}
+	return cSupported == 1, nil
+}
+
+func BPFProgramTypeIsSupported(progType BPFProgType) (bool, error) {
+	cSupported := C.libbpf_probe_bpf_prog_type(C.enum_bpf_prog_type(int(progType)), nil)
+	if cSupported < 1 {
+		return false, syscall.Errno(-cSupported)
+	}
+	return cSupported == 1, nil
 }

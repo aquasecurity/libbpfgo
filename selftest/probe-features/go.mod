@@ -1,4 +1,4 @@
-module tcpconnect
+module github.com/aquasecurity/libbpfgo/selftest/map-pin-info
 
 go 1.16
 

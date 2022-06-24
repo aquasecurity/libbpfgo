@@ -7,13 +7,11 @@ LIBBPF_OBJ = $(abspath $(OUTPUT)/libbpf.a)
 
 CC = gcc
 CLANG = clang
+GO = go
 
-ARCH = x86
-GOARCH = amd64
+ARCH := $(shell uname -m | sed 's/x86_64/amd64/g; s/aarch64/arm64/g')
 
-BPFTOOL = $(shell which bpftool || /bin/false)
-
-CFLAGS = -g -O2 -Wall -fpie -Wno-unused-variable -Wno-unused-function
+CFLAGS = -g -O2 -Wall -fpie
 LDFLAGS =
 
 CGO_CFLAGS_STATIC = "-I$(abspath $(OUTPUT))"
@@ -26,15 +24,10 @@ CGO_LDFLAGS_DYN = "-lelf -lz -lbpf"
 .PHONY: $(TEST)
 .PHONY: $(TEST).go
 .PHONY: $(TEST).bpf.c
-.PHONY: tcpclient tcpserver
 
 TEST = main
 
-all:
-	$(MAKE) -C . $(TEST)-dynamic
-	$(MAKE) -C . $(TEST)-static
-	$(MAKE) -C . $(TEST)-c-dynamic
-	$(MAKE) -C . $(TEST)-c-static
+all: $(TEST)-static
 
 .PHONY: libbpfgo
 .PHONY: libbpfgo-static
@@ -69,8 +62,8 @@ $(TEST)-static: libbpfgo-static | $(TEST).bpf.o
 	CC=$(CLANG) \
 		CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
 		CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
-		GOARCH=$(GOARCH) \
-		go build \
+		GOOS=linux GOARCH=$(ARCH) \
+		$(GO) build \
 		-tags netgo -ldflags $(CGO_EXTLDFLAGS_STATIC) \
 		-o $(TEST)-static ./$(TEST).go
 
@@ -78,34 +71,7 @@ $(TEST)-dynamic: libbpfgo-dynamic | $(TEST).bpf.o
 	CC=$(CLANG) \
 		CGO_CFLAGS=$(CGO_CFLAGS_DYN) \
 		CGO_LDFLAGS=$(CGO_LDFLAGS_DYN) \
-		go build -o ./$(TEST)-dynamic ./$(TEST).go
-
-## clean
-
-clean:
-	rm -f *.o *-static *-dynamic *.skel.h
-
-## c example (extra, no need for libbpfgo only project)
-
-.PHONY: $(TEST).c
-
-$(TEST).skel.h: $(TEST).bpf.o
-	$(BPFTOOL) gen skeleton $< > $@
-
-.PHONY: $(TEST)-c-static
-.PHONY: $(TEST)-c-dynamic
-
-libbpf-static:
-	$(MAKE) -C $(BASEDIR) libbpf-static
-
-# static here means libbpf statically compiled only
-# go example is generating full static binaries
-
-$(TEST)-c-static: libbpf-static | $(TEST).skel.h
-	$(CLANG) $(CGO_CFLAGS_STATIC) -lelf -lz -I$(OUTPUT) $(TEST).c -o $@ $(LIBBPF_OBJ)
-
-$(TEST)-c-dynamic: $(TEST).skel.h
-	$(CLANG) $(CGO_CFLAGS_STATIC) -lelf -lz -lbpf -I$(OUTPUT) $(TEST).c -o $@
+		$(GO) build -o ./$(TEST)-dynamic ./$(TEST).go
 
 ## run
 
@@ -115,10 +81,11 @@ $(TEST)-c-dynamic: $(TEST).skel.h
 
 run: run-static
 
-run-static: $(TEST)-static | $(TEST)-c-static
+run-static: $(TEST)-static
 	sudo ./run.sh $(TEST)-static
-	sudo ./run.sh $(TEST)-c-static
 
-run-dynamic: $(TEST)-dynamic | $(TEST)-c-dynamic
+run-dynamic: $(TEST)-dynamic
 	sudo ./run.sh $(TEST)-dynamic
-	sudo ./run.sh $(TEST)-c-dynamic
+
+clean:
+	rm -f *.o *-static *-dynamic

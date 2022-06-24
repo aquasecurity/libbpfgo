@@ -3,9 +3,7 @@
 # SETTINGS
 
 TEST=$(dirname $0)/$1	# execute
-
-SERVER=$(dirname $0)/tcpserver
-CLIENT=$(dirname $0)/tcpclient
+TIMEOUT=5			# seconds
 
 # COMMON
 
@@ -14,14 +12,11 @@ COMMON="$(dirname $0)/../common/common.sh"
 
 # MAIN
 
-kern_version gt 5.2
+kern_version ge 5.8
+
 check_build
 check_ppid
-execbg 20 $SERVER
-execbg 20 $CLIENT
-execfg 10 $TEST
+test_exec
 test_finish
-
-waitbg
 
 exit 0
