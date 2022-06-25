@@ -127,8 +127,9 @@ func MinorVersion() int {
 	return C.LIBBPF_MINOR_VERSION
 }
 
-// VersionString returns the string representation of the libbpf version.
-func VersionString() string {
+// LibbpfVersionString returns the string representation of the libbpf version which
+// libbpfgo is linked against
+func LibbpfVersionString() string {
 	return fmt.Sprintf("v%d.%d", MajorVersion(), MinorVersion())
 }
 
