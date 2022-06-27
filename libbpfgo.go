@@ -670,6 +670,14 @@ func (b *BPFMap) ValueSize() int {
 	return int(C.bpf_map__value_size(b.bpfMap))
 }
 
+func (b *BPFMap) SetValueSize(size uint32) error {
+	errC := C.bpf_map__set_value_size(b.bpfMap, C.uint(size))
+	if errC != 0 {
+		return fmt.Errorf("could not set map value size: %w", syscall.Errno(-errC))
+	}
+	return nil
+}
+
 // GetValue takes a pointer to the key which is stored in the map.
 // It returns the associated value as a slice of bytes.
 // All basic types, and structs are supported as keys.
@@ -698,6 +706,21 @@ func (b *BPFMap) GetValueFlags(key unsafe.Pointer, flags MapFlag) ([]byte, error
 		return nil, fmt.Errorf("failed to lookup value %v in map %s: %w", key, b.name, syscall.Errno(-errC))
 	}
 	return value, nil
+}
+
+// GetValueReadInto is like GetValue, except it allows the caller to pass in
+// a pointer to the slice of bytes that the value would be read into from the
+// map.
+// This is useful for reading from maps with variable sizes, especially
+// per-cpu arrays and hash maps where the size of each value depends on the
+// number of CPUs
+func (b *BPFMap) GetValueReadInto(key unsafe.Pointer, value *[]byte) error {
+	valuePtr := unsafe.Pointer(&(*value)[0])
+	errC := C.bpf_map__lookup_elem(b.bpfMap, key, C.ulong(b.KeySize()), valuePtr, C.ulong(len(*value)), 0)
+	if errC != 0 {
+		return fmt.Errorf("failed to lookup value %v in map %s: %w", key, b.name, syscall.Errno(-errC))
+	}
+	return nil
 }
 
 // BPFMapBatchOpts mirrors the C structure bpf_map_batch_opts.
