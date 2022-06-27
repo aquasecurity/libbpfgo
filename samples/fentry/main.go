@@ -25,7 +25,6 @@ func main() {
 		os.Exit(-1)
 	}
 
-	bpfModule.ListProgramNames()
 	prog1, err := bpfModule.GetProgram("commit_creds")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
