@@ -22,8 +22,6 @@ func main() {
 	}
 	defer bpfModule.Close()
 
-	bpfModule.ListProgramNames()
-
 	prog, err := bpfModule.GetProgram("foobar")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

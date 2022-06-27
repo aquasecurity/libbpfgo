@@ -70,18 +70,6 @@ struct ring_buffer * init_ring_buf(int map_fd, uintptr_t ctx)
     return rb;
 }
 
-void list_programs(struct bpf_object* obj) {
-	struct bpf_program *pos;
-	const char *cs;
-	const char *css;
-
-	bpf_object__for_each_program(pos, obj) {
-		cs = bpf_program__section_name(pos);
-		css = bpf_program__name(pos);
-		printf("section: %s\tname: %s\n", cs, css);
-	}
-}
-
 struct perf_buffer * init_perf_buf(int map_fd, int page_cnt, uintptr_t ctx)
 {
     struct perf_buffer_opts pb_opts = {};
@@ -1084,10 +1072,6 @@ func (m *Module) GetProgram(progName string) (*BPFProg, error) {
 		prog:   prog,
 		module: m,
 	}, nil
-}
-
-func (m *Module) ListProgramNames() {
-	C.list_programs(m.obj)
 }
 
 func (p *BPFProg) GetFd() int {
