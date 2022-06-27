@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/helpers"
 )
 
 func main() {
@@ -28,7 +29,22 @@ func main() {
 		os.Exit(-1)
 	}
 
-	bpfModule.ListProgramNames()
+	m, err := helpers.NewKernelSymbolsMap()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(-1)
+	}
+
+	sym, err := m.GetSymbolByName("system", "__x64_sys_mmap")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(-1)
+	}
+
+	if sym.Address == 0 || sym.Name == "" {
+		fmt.Fprintln(os.Stderr, "could not find symbol to attach to")
+		os.Exit(-1)
+	}
 
 	prog, err := bpfModule.GetProgram("mmap_fentry")
 	if err != nil {
