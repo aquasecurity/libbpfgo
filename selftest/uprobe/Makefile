@@ -7,6 +7,7 @@ LIBBPF_OBJ = $(abspath $(OUTPUT)/libbpf.a)
 
 CC = gcc
 CLANG = clang
+GO = go
 
 CFLAGS = -g -O2 -Wall -fpie
 LDFLAGS =
