@@ -101,12 +101,38 @@ func (k *KernelSymbolTable) GetSymbolByName(owner string, name string) (*KernelS
 	return nil, fmt.Errorf("symbol not found: %s_%s", owner, name)
 }
 
+func bin_search(arr []uint64, finddata uint64) uint64 {
+    start := 0
+    end := len(arr) - 1
+    for start < end {	
+        mid := (start+end)/2
+		if finddata < arr[mid]{
+			end = mid
+		}else if finddata > arr[mid]{
+			start = mid +1 
+		}else{
+			return arr[mid]
+		}
+	}
+	if start >=1 && arr[start-1] < finddata && finddata <arr[start]{
+		return arr[start -1]
+	}
+    return 0
+}
+
 // GetSymbolByAddr returns a symbol by a given address
 func (k *KernelSymbolTable) GetSymbolByAddr(addr uint64) (*KernelSymbol, error) {
+	var keys []uint64
 	for _, Symbol := range k.symbolMap {
-		if Symbol.Address == addr {
+		keys = append(keys,Symbol.Address)
+	}
+	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+	kallsyms_addr :=bin_search(keys,addr)
+	
+	for _, Symbol := range k.symbolMap {
+		if Symbol.Address == kallsyms_addr {
 			return &Symbol, nil
-		}
+		 }
 	}
 	return nil, fmt.Errorf("symbol not found at address: 0x%x", addr)
 }
