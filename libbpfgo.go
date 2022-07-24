@@ -93,6 +93,7 @@ import (
 	"fmt"
 	"net"
 	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
 	"unsafe"
@@ -237,6 +238,7 @@ const (
 	Uretprobe
 	Tracing
 	XDP
+	Cgroup
 )
 
 type BPFLink struct {
@@ -1300,6 +1302,36 @@ func (p *BPFProg) SetProgramType(progType BPFProgType) {
 
 func (p *BPFProg) SetAttachType(attachType BPFAttachType) {
 	C.bpf_program__set_expected_attach_type(p.prog, C.enum_bpf_attach_type(int(attachType)))
+}
+
+func (p *BPFProg) AttachCgroup(cgroupV2DirPath string) (*BPFLink, error) {
+	const (
+		O_DIRECTORY int = 0200000
+		O_RDONLY    int = 00
+	)
+	fd, err := syscall.Open(cgroupV2DirPath, O_DIRECTORY|O_RDONLY, 0)
+	if fd < 0 {
+		return nil, fmt.Errorf("failed to open cgroupv2 directory path %s: %w", cgroupV2DirPath, err)
+	}
+	link := C.bpf_program__attach_cgroup(p.prog, C.int(fd))
+	if C.IS_ERR_OR_NULL(unsafe.Pointer(link)) {
+		return nil, errptrError(unsafe.Pointer(link), "failed to attach cgroup on cgroupv2 %s to program %s", cgroupV2DirPath, p.name)
+	}
+
+	// dirName will be used in bpfLink.eventName. eventName follows a format
+	// convention and is used to better identify link types and what they are
+	// linked with in case of errors or similar needs. Having eventName as:
+	// cgroup-progName-/sys/fs/cgroup/unified/ would look weird so replace it
+	// to be cgroup-progName-sys-fs-cgroup-unified instead.
+	dirName := strings.ReplaceAll(cgroupV2DirPath[1:], "/", "-")
+	bpfLink := &BPFLink{
+		link:      link,
+		prog:      p,
+		linkType:  Cgroup,
+		eventName: fmt.Sprintf("cgroup-%s-%s", p.name, dirName),
+	}
+	p.module.links = append(p.module.links, bpfLink)
+	return bpfLink, nil
 }
 
 func (p *BPFProg) AttachXDP(deviceName string) (*BPFLink, error) {
