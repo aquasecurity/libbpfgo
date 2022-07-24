@@ -1360,6 +1360,21 @@ func (p *BPFProg) AttachRawTracepoint(tpEvent string) (*BPFLink, error) {
 	return bpfLink, nil
 }
 
+func (p *BPFProg) AttachLSM() (*BPFLink, error) {
+	link := C.bpf_program__attach_lsm(p.prog)
+	if C.IS_ERR_OR_NULL(unsafe.Pointer(link)) {
+		return nil, errptrError(unsafe.Pointer(link), "failed to attach lsm to program %s", p.name)
+	}
+
+	bpfLink := &BPFLink{
+		link:     link,
+		prog:     p,
+		linkType: LSM,
+	}
+	p.module.links = append(p.module.links, bpfLink)
+	return bpfLink, nil
+}
+
 func (p *BPFProg) AttachPerfEvent(fd int) (*BPFLink, error) {
 	link := C.bpf_program__attach_perf_event(p.prog, C.int(fd))
 	if C.IS_ERR_OR_NULL(unsafe.Pointer(link)) {
@@ -1383,21 +1398,6 @@ func (p *BPFProg) AttachKprobe(kp string) (*BPFLink, error) {
 // this API should be used for kernels > 4.17
 func (p *BPFProg) AttachKretprobe(kp string) (*BPFLink, error) {
 	return doAttachKprobe(p, kp, true)
-}
-
-func (p *BPFProg) AttachLSM() (*BPFLink, error) {
-	link := C.bpf_program__attach_lsm(p.prog)
-	if C.IS_ERR_OR_NULL(unsafe.Pointer(link)) {
-		return nil, errptrError(unsafe.Pointer(link), "failed to attach lsm to program %s", p.name)
-	}
-
-	bpfLink := &BPFLink{
-		link:     link,
-		prog:     p,
-		linkType: LSM,
-	}
-	p.module.links = append(p.module.links, bpfLink)
-	return bpfLink, nil
 }
 
 func doAttachKprobe(prog *BPFProg, kp string, isKretprobe bool) (*BPFLink, error) {
