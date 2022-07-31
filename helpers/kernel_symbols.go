@@ -93,6 +93,9 @@ func (k *KernelSymbolTable) TextSegmentContains(addr uint64) (bool, error) {
 
 // GetSymbolByName returns a symbol by a given name and owner
 func (k *KernelSymbolTable) GetSymbolByName(owner string, name string) (*KernelSymbol, error) {
+	if !k.initialized {
+		return nil, errors.New("kernel symbols map isnt initialized")
+	}
 	key := fmt.Sprintf("%s_%s", owner, name)
 	symbol, exist := k.symbolMap[key]
 	if exist {
@@ -103,6 +106,9 @@ func (k *KernelSymbolTable) GetSymbolByName(owner string, name string) (*KernelS
 
 // GetSymbolByAddr returns a symbol by a given address
 func (k *KernelSymbolTable) GetSymbolByAddr(addr uint64) (*KernelSymbol, error) {
+	if !k.initialized {
+		return nil, errors.New("kernel symbols map isnt initialized")
+	}
 	for _, Symbol := range k.symbolMap {
 		if Symbol.Address == addr {
 			return &Symbol, nil
