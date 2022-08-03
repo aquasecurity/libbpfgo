@@ -103,12 +103,31 @@ func main() {
 	}
 
 	// Test batch delete.
-	testerMap.DeleteKeyBatch(unsafe.Pointer(&keys[0]), uint32(len(keys)-1))
+	// Trying to delete more keys than we have.
+	err = testerMap.DeleteKeyBatch(unsafe.Pointer(&keys[0]), uint32(len(keys)+100))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "testerMap.DeleteKeyBatch was expected to not fail")
+		os.Exit(-1)
+	}
 
 	// Ensure value is no longer there.
 	_, err = testerMap.GetValue(unsafe.Pointer(&keys[0]))
 	if err == nil {
 		fmt.Fprintf(os.Stderr, "testerMap.GetValue was expected to fail, but succeeded")
+		os.Exit(-1)
+	}
+
+	// Re-add deleted entries.
+	if err := testerMap.UpdateBatch(unsafe.Pointer(&keys[0]), unsafe.Pointer(&values[0]), uint32(len(keys))); err != nil {
+		fmt.Fprintf(os.Stderr, "testerMap.UpdateBatch failed: %v", err)
+		os.Exit(-1)
+	}
+
+	// Test batch delete.
+	// Trying to delete fewer or equal keys than we have.
+	err = testerMap.DeleteKeyBatch(unsafe.Pointer(&keys[0]), uint32(len(keys)-1))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "testerMap.DeleteKeyBatch was expected to not fail")
 		os.Exit(-1)
 	}
 
