@@ -73,6 +73,13 @@ func main() {
 		}
 	}
 
+	// Test batch get value with more elements than we have.
+	_, err = testerMap.GetValueBatch(unsafe.Pointer(&batchKeys[0]), prevKey, unsafe.Pointer(&nextKey), uint32(len(batchKeys))+100)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "testerMap.GetValueBatch failed: %v", err)
+		os.Exit(-1)
+	}
+
 	// Test batch lookup and delete.
 	deleteKeys := make([]uint32, 2)
 	nextKey = uint32(0)
