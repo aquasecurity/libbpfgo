@@ -877,7 +877,8 @@ func (b *BPFMap) UpdateBatch(keys, values unsafe.Pointer, count uint32) error {
 // DeleteKeyBatch allows for batch deletion of multiple elements in the map.
 //
 // `count` number of keys will be deleted from the map. Passing an argument that greater than the number of keys
-// in the map will cause the function to return a syscall.EPERM as an error.
+// in the map will cause the function to delete fewer keys than requested. See the inline comment in
+// `GetValueAndDeleteBatch` for more context.
 func (b *BPFMap) DeleteKeyBatch(keys unsafe.Pointer, count uint32) error {
 	countC := C.uint(count)
 
@@ -887,17 +888,13 @@ func (b *BPFMap) DeleteKeyBatch(keys unsafe.Pointer, count uint32) error {
 		Flags:     C.BPF_ANY,
 	}
 
-	errC := C.bpf_map_delete_batch(b.fd, keys, &countC, bpfMapBatchOptsToC(opts))
-	if errC != 0 {
-		sc := syscall.Errno(-errC)
-		if sc != syscall.EFAULT {
-			if uint32(countC) != count {
-				return fmt.Errorf("failed to batch delete ALL keys from map %s, deleted (%d/%d): %w", b.name, uint32(countC), count, sc)
-			}
-		}
-		return fmt.Errorf("failed to batch delete keys from map %s: %w", b.name, syscall.Errno(-errC))
+	ret, errC := C.bpf_map_delete_batch(b.fd, keys, &countC, bpfMapBatchOptsToC(opts))
+
+	if ret != 0 && errC != syscall.ENOENT {
+		return fmt.Errorf("failed to batch delete keys %v in map %s: ret %d (err: %s)", keys, b.name, ret, errC)
 	}
 
+	// ret = -1 && errno == syscall.ENOENT indicates a partial deletion.
 	return nil
 }
 
