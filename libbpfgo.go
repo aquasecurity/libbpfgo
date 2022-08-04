@@ -742,11 +742,11 @@ func bpfMapBatchOptsToC(batchOpts *BPFMapBatchOpts) *C.struct_bpf_map_batch_opts
 // Once the first iteration is complete you can provide the last key seen in the previous iteration as the startKey for the next iteration
 // and repeat until nextKey is nil.
 //
-// The last argument, count, is the number of keys to lookup. Passing an argument that greater than the number of keys
-// in the map will cause the function to return a syscall.EPERM as an error.
+// The last argument, count, is the number of keys to lookup. The kernel will update it with the count of the elements that were
+// retrieved.
 //
-// The API can return partial results even though an error is returned.
-// In this case the keys that were successfully retrieved until an error occurred will be in the result slice.
+// The API can return partial results even though an -1 is returned. In this case, errno will be set to `ENOENT` and the values slice and count
+// will be filled in with the elements that were read. See the inline comment in `GetValueAndDeleteBatch` for more context.
 func (b *BPFMap) GetValueBatch(keys unsafe.Pointer, startKey, nextKey unsafe.Pointer, count uint32) ([][]byte, error) {
 	var (
 		values    = make([]byte, b.ValueSize()*int(count))
@@ -760,19 +760,16 @@ func (b *BPFMap) GetValueBatch(keys unsafe.Pointer, startKey, nextKey unsafe.Poi
 		Flags:     C.BPF_ANY,
 	}
 
-	errC := C.bpf_map_lookup_batch(b.fd, startKey, nextKey, keys, valuesPtr, &countC, bpfMapBatchOptsToC(opts))
-	if errC != 0 {
-		sc := syscall.Errno(-errC)
-		if sc != syscall.EFAULT {
-			if uint32(countC) != count {
-				return collectBatchValues(values, uint32(countC), b.ValueSize()),
-					fmt.Errorf("failed to retrieve ALL elements in map %s, fetched (%d/%d): %w", b.name, uint32(countC), count, sc)
-			}
-		}
-		return nil, fmt.Errorf("failed to batch lookup values %v in map %s: %w", keys, b.name, syscall.Errno(-errC))
+	ret, errC := C.bpf_map_lookup_batch(b.fd, startKey, nextKey, keys, valuesPtr, &countC, bpfMapBatchOptsToC(opts))
+	processed := uint32(countC)
+
+	if ret != 0 && errC != syscall.ENOENT {
+		return nil, fmt.Errorf("failed to batch get value %v in map %s: ret %d (err: %s)", keys, b.name, ret, errC)
 	}
 
-	return collectBatchValues(values, count, b.ValueSize()), nil
+	// Either some or all entries were read.
+	// ret = -1 && errno == syscall.ENOENT indicates a partial read.
+	return collectBatchValues(values, processed, b.ValueSize()), nil
 }
 
 // GetValueAndDeleteBatch allows for batch lookup and deletion of elements where each element is deleted after being retrieved from the map.
