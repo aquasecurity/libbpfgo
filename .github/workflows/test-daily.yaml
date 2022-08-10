@@ -1,0 +1,24 @@
+name: Tests (DAILY)
+on:
+  workflow_dispatch: {}
+  schedule:
+    # Daily at 03:00
+    - cron: '0 3 * * *'
+  pull_request:
+    branches:
+      - main
+  workflow_call:
+jobs:
+  compile-trace:
+    name: Compile Tracee
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+      - name: Install Dependencies
+        uses: ./.github/actions/build-dependencies
+        with:
+          go-version: 1.18
+      - name: Compile Tracee
+        run: |
+          sudo ./testing/compile-tracee.sh
