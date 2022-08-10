@@ -98,7 +98,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/libbpfgo/helpers/rwarray"
 )
 
 const (
@@ -239,6 +239,7 @@ const (
 	Tracing
 	XDP
 	Cgroup
+	Netns
 )
 
 type BPFLink struct {
@@ -1426,6 +1427,33 @@ func (p *BPFProg) AttachKretprobe(kp string) (*BPFLink, error) {
 	return doAttachKprobe(p, kp, true)
 }
 
+func (p *BPFProg) AttachNetns(networkNamespacePath string) (*BPFLink, error) {
+	const O_RDONLY int = 00
+	fd, err := syscall.Open(networkNamespacePath, O_RDONLY, 0)
+	if fd < 0 {
+		return nil, fmt.Errorf("failed to open network namespace path %s: %w", networkNamespacePath, err)
+	}
+	link := C.bpf_program__attach_netns(p.prog, C.int(fd))
+	if C.IS_ERR_OR_NULL(unsafe.Pointer(link)) {
+		return nil, errptrError(unsafe.Pointer(link), "failed to attach network namespace on %s to program %s", networkNamespacePath, p.name)
+	}
+
+	// fileName will be used in bpfLink.eventName. eventName follows a format
+	// convention and is used to better identify link types and what they are
+	// linked with in case of errors or similar needs. Having eventName as:
+	// netns-progName-/proc/self/ns/net would look weird so replace it
+	// to be netns-progName-proc-self-ns-net instead.
+	fileName := strings.ReplaceAll(networkNamespacePath[1:], "/", "-")
+	bpfLink := &BPFLink{
+		link:      link,
+		prog:      p,
+		linkType:  Netns,
+		eventName: fmt.Sprintf("netns-%s-%s", p.name, fileName),
+	}
+	p.module.links = append(p.module.links, bpfLink)
+	return bpfLink, nil
+}
+
 func doAttachKprobe(prog *BPFProg, kp string, isKretprobe bool) (*BPFLink, error) {
 	cs := C.CString(kp)
 	cbool := C.bool(isKretprobe)
@@ -1501,7 +1529,7 @@ func doAttachUprobe(prog *BPFProg, isUretprobe bool, pid int, path string, offse
 	return bpfLink, nil
 }
 
-var eventChannels = helpers.NewRWArray(maxEventChannels)
+var eventChannels = rwarray.NewRWArray(maxEventChannels)
 
 func (m *Module) InitRingBuf(mapName string, eventsChan chan []byte) (*RingBuffer, error) {
 	bpfMap, err := m.GetMap(mapName)
