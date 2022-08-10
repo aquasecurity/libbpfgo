@@ -1443,7 +1443,7 @@ func (p *BPFProg) AttachNetns(networkNamespacePath string) (*BPFLink, error) {
 	// linked with in case of errors or similar needs. Having eventName as:
 	// netns-progName-/proc/self/ns/net would look weird so replace it
 	// to be netns-progName-proc-self-ns-net instead.
-	fileName := strings.ReplaceAll(networkNamespacePath, "/", "-")
+	fileName := strings.ReplaceAll(networkNamespacePath[1:], "/", "-")
 	bpfLink := &BPFLink{
 		link:      link,
 		prog:      p,
