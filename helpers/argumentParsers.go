@@ -1506,179 +1506,98 @@ func ParseSocketLevel(rawValue uint64) (SocketLevelArgument, error) {
 	return v, nil
 }
 
-type SocketOptionArgument uint64
+type SocketOptionArgument struct {
+	value uint64
+	name  string
+}
 
-const (
-	SO_DEBUG                         SocketOptionArgument = unix.SO_DEBUG
-	SO_REUSEADDR                     SocketOptionArgument = unix.SO_REUSEADDR
-	SO_TYPE                          SocketOptionArgument = unix.SO_TYPE
-	SO_ERROR                         SocketOptionArgument = unix.SO_ERROR
-	SO_DONTROUTE                     SocketOptionArgument = unix.SO_DONTROUTE
-	SO_BROADCAST                     SocketOptionArgument = unix.SO_BROADCAST
-	SO_SNDBUF                        SocketOptionArgument = unix.SO_SNDBUF
-	SO_RCVBUF                        SocketOptionArgument = unix.SO_RCVBUF
-	SO_SNDBUFFORCE                   SocketOptionArgument = unix.SO_SNDBUFFORCE
-	SO_RCVBUFFORCE                   SocketOptionArgument = unix.SO_RCVBUFFORCE
-	SO_KEEPALIVE                     SocketOptionArgument = unix.SO_KEEPALIVE
-	SO_OOBINLINE                     SocketOptionArgument = unix.SO_OOBINLINE
-	SO_NO_CHECK                      SocketOptionArgument = unix.SO_NO_CHECK
-	SO_PRIORITY                      SocketOptionArgument = unix.SO_PRIORITY
-	SO_LINGER                        SocketOptionArgument = unix.SO_LINGER
-	SO_BSDCOMPAT                     SocketOptionArgument = unix.SO_BSDCOMPAT
-	SO_REUSEPORT                     SocketOptionArgument = unix.SO_REUSEPORT
-	SO_PASSCRED                      SocketOptionArgument = unix.SO_PASSCRED
-	SO_PEERCRED                      SocketOptionArgument = unix.SO_PEERCRED
-	SO_RCVLOWAT                      SocketOptionArgument = unix.SO_RCVLOWAT
-	SO_SNDLOWAT                      SocketOptionArgument = unix.SO_SNDLOWAT
-	SO_SECURITY_AUTHENTICATION       SocketOptionArgument = unix.SO_SECURITY_AUTHENTICATION
-	SO_SECURITY_ENCRYPTION_TRANSPORT SocketOptionArgument = unix.SO_SECURITY_ENCRYPTION_TRANSPORT
-	SO_SECURITY_ENCRYPTION_NETWORK   SocketOptionArgument = unix.SO_SECURITY_ENCRYPTION_NETWORK
-	SO_BINDTODEVICE                  SocketOptionArgument = unix.SO_BINDTODEVICE
-	SO_ATTACH_OR_GET_FILTER          SocketOptionArgument = unix.SO_ATTACH_FILTER
-	SO_DETACH_FILTER_OR_BPF          SocketOptionArgument = unix.SO_DETACH_FILTER
-	SO_PEERNAME                      SocketOptionArgument = unix.SO_PEERNAME
-	SO_ACCEPTCONN                    SocketOptionArgument = unix.SO_ACCEPTCONN
-	SO_PEERSEC                       SocketOptionArgument = unix.SO_PEERSEC
-	SO_PASSSEC                       SocketOptionArgument = unix.SO_PASSSEC
-	SO_MARK                          SocketOptionArgument = unix.SO_MARK
-	SO_PROTOCOL                      SocketOptionArgument = unix.SO_PROTOCOL
-	SO_DOMAIN                        SocketOptionArgument = unix.SO_DOMAIN
-	SO_RXQ_OVFL                      SocketOptionArgument = unix.SO_RXQ_OVFL
-	SO_WIFI_STATUS                   SocketOptionArgument = unix.SO_WIFI_STATUS
-	SO_PEEK_OFF                      SocketOptionArgument = unix.SO_PEEK_OFF
-	SO_NOFCS                         SocketOptionArgument = unix.SO_NOFCS
-	SO_LOCK_FILTER                   SocketOptionArgument = unix.SO_LOCK_FILTER
-	SO_SELECT_ERR_QUEUE              SocketOptionArgument = unix.SO_SELECT_ERR_QUEUE
-	SO_BUSY_POLL                     SocketOptionArgument = unix.SO_BUSY_POLL
-	SO_MAX_PACING_RATE               SocketOptionArgument = unix.SO_MAX_PACING_RATE
-	SO_BPF_EXTENSIONS                SocketOptionArgument = unix.SO_BPF_EXTENSIONS
-	SO_INCOMING_CPU                  SocketOptionArgument = unix.SO_INCOMING_CPU
-	SO_ATTACH_BPF                    SocketOptionArgument = unix.SO_ATTACH_BPF
-	SO_ATTACH_REUSEPORT_CBPF         SocketOptionArgument = unix.SO_ATTACH_REUSEPORT_CBPF
-	SO_ATTACH_REUSEPORT_EBPF         SocketOptionArgument = unix.SO_ATTACH_REUSEPORT_EBPF
-	SO_CNX_ADVICE                    SocketOptionArgument = unix.SO_CNX_ADVICE
-	SCM_TIMESTAMPING_OPT_STATS       SocketOptionArgument = unix.SCM_TIMESTAMPING_OPT_STATS
-	SO_MEMINFO                       SocketOptionArgument = unix.SO_MEMINFO
-	SO_INCOMING_NAPI_ID              SocketOptionArgument = unix.SO_INCOMING_NAPI_ID
-	SO_COOKIE                        SocketOptionArgument = unix.SO_COOKIE
-	SCM_TIMESTAMPING_PKTINFO         SocketOptionArgument = unix.SCM_TIMESTAMPING_PKTINFO
-	SO_PEERGROUPS                    SocketOptionArgument = unix.SO_PEERGROUPS
-	SO_ZEROCOPY                      SocketOptionArgument = unix.SO_ZEROCOPY
-	SO_TXTIME                        SocketOptionArgument = unix.SO_TXTIME
-	SO_BINDTOIFINDEX                 SocketOptionArgument = unix.SO_BINDTOIFINDEX
-	SO_TIMESTAMP_NEW                 SocketOptionArgument = unix.SO_TIMESTAMP_NEW
-	SO_TIMESTAMPNS_NEW               SocketOptionArgument = unix.SO_TIMESTAMPNS_NEW
-	SO_TIMESTAMPING_NEW              SocketOptionArgument = unix.SO_TIMESTAMPING_NEW
-	SO_RCVTIMEO_NEW                  SocketOptionArgument = unix.SO_RCVTIMEO_NEW
-	SO_SNDTIMEO_NEW                  SocketOptionArgument = unix.SO_SNDTIMEO_NEW
-	SO_DETACH_REUSEPORT_BPF          SocketOptionArgument = unix.SO_DETACH_REUSEPORT_BPF
-	SO_PREFER_BUSY_POLL              SocketOptionArgument = unix.SO_PREFER_BUSY_POLL
-	SO_BUSY_POLL_BUDGET              SocketOptionArgument = unix.SO_BUSY_POLL_BUDGET
-	SO_TIMESTAMP                     SocketOptionArgument = unix.SO_TIMESTAMP
-	SO_TIMESTAMPNS                   SocketOptionArgument = unix.SO_TIMESTAMPNS
-	SO_TIMESTAMPING                  SocketOptionArgument = unix.SO_TIMESTAMPING
-	SO_RCVTIMEO                      SocketOptionArgument = unix.SO_RCVTIMEO
-	SO_SNDTIMEO                      SocketOptionArgument = unix.SO_SNDTIMEO
+var (
+	SO_DEBUG                         = SocketOptionArgument{unix.SO_DEBUG, "SO_DEBUG"}
+	SO_REUSEADDR                     = SocketOptionArgument{unix.SO_REUSEADDR, "SO_REUSEADDR"}
+	SO_TYPE                          = SocketOptionArgument{unix.SO_TYPE, "SO_TYPE"}
+	SO_ERROR                         = SocketOptionArgument{unix.SO_ERROR, "SO_ERROR"}
+	SO_DONTROUTE                     = SocketOptionArgument{unix.SO_DONTROUTE, "SO_DONTROUTE"}
+	SO_BROADCAST                     = SocketOptionArgument{unix.SO_BROADCAST, "SO_BROADCAST"}
+	SO_SNDBUF                        = SocketOptionArgument{unix.SO_SNDBUF, "SO_SNDBUF"}
+	SO_RCVBUF                        = SocketOptionArgument{unix.SO_RCVBUF, "SO_RCVBUF"}
+	SO_SNDBUFFORCE                   = SocketOptionArgument{unix.SO_SNDBUFFORCE, "SO_SNDBUFFORCE"}
+	SO_RCVBUFFORCE                   = SocketOptionArgument{unix.SO_RCVBUFFORCE, "SO_RCVBUFFORCE"}
+	SO_KEEPALIVE                     = SocketOptionArgument{unix.SO_KEEPALIVE, "SO_KEEPALIVE"}
+	SO_OOBINLINE                     = SocketOptionArgument{unix.SO_OOBINLINE, "SO_OOBINLINE"}
+	SO_NO_CHECK                      = SocketOptionArgument{unix.SO_NO_CHECK, "SO_NO_CHECK"}
+	SO_PRIORITY                      = SocketOptionArgument{unix.SO_PRIORITY, "SO_PRIORITY"}
+	SO_LINGER                        = SocketOptionArgument{unix.SO_LINGER, "SO_LINGER"}
+	SO_BSDCOMPAT                     = SocketOptionArgument{unix.SO_BSDCOMPAT, "SO_BSDCOMPAT"}
+	SO_REUSEPORT                     = SocketOptionArgument{unix.SO_REUSEPORT, "SO_REUSEPORT"}
+	SO_PASSCRED                      = SocketOptionArgument{unix.SO_PASSCRED, "SO_PASSCRED"}
+	SO_PEERCRED                      = SocketOptionArgument{unix.SO_PEERCRED, "SO_PEERCRED"}
+	SO_RCVLOWAT                      = SocketOptionArgument{unix.SO_RCVLOWAT, "SO_RCVLOWAT"}
+	SO_SNDLOWAT                      = SocketOptionArgument{unix.SO_SNDLOWAT, "SO_SNDLOWAT"}
+	SO_SECURITY_AUTHENTICATION       = SocketOptionArgument{unix.SO_SECURITY_AUTHENTICATION, "SO_SECURITY_AUTHENTICATION"}
+	SO_SECURITY_ENCRYPTION_TRANSPORT = SocketOptionArgument{unix.SO_SECURITY_ENCRYPTION_TRANSPORT, "SO_SECURITY_ENCRYPTION_TRANSPORT"}
+	SO_SECURITY_ENCRYPTION_NETWORK   = SocketOptionArgument{unix.SO_SECURITY_ENCRYPTION_NETWORK, "SO_SECURITY_ENCRYPTION_NETWORK"}
+	SO_BINDTODEVICE                  = SocketOptionArgument{unix.SO_BINDTODEVICE, "SO_BINDTODEVICE"}
+	SO_ATTACH_FILTER                 = SocketOptionArgument{unix.SO_ATTACH_FILTER, "SO_ATTACH_FILTER"}
+	SO_GET_FILTER                    = SocketOptionArgument{unix.SO_GET_FILTER, "SO_GET_FILTER"}
+	SO_DETACH_FILTER                 = SocketOptionArgument{unix.SO_DETACH_FILTER, "SO_DETACH_FILTER"}
+	SO_PEERNAME                      = SocketOptionArgument{unix.SO_PEERNAME, "SO_PEERNAME"}
+	SO_ACCEPTCONN                    = SocketOptionArgument{unix.SO_ACCEPTCONN, "SO_ACCEPTCONN"}
+	SO_PEERSEC                       = SocketOptionArgument{unix.SO_PEERSEC, "SO_PEERSEC"}
+	SO_PASSSEC                       = SocketOptionArgument{unix.SO_PASSSEC, "SO_PASSSEC"}
+	SO_MARK                          = SocketOptionArgument{unix.SO_MARK, "SO_MARK"}
+	SO_PROTOCOL                      = SocketOptionArgument{unix.SO_PROTOCOL, "SO_PROTOCOL"}
+	SO_DOMAIN                        = SocketOptionArgument{unix.SO_DOMAIN, "SO_DOMAIN"}
+	SO_RXQ_OVFL                      = SocketOptionArgument{unix.SO_RXQ_OVFL, "SO_RXQ_OVFL"}
+	SO_WIFI_STATUS                   = SocketOptionArgument{unix.SO_WIFI_STATUS, "SO_WIFI_STATUS"}
+	SO_PEEK_OFF                      = SocketOptionArgument{unix.SO_PEEK_OFF, "SO_PEEK_OFF"}
+	SO_NOFCS                         = SocketOptionArgument{unix.SO_NOFCS, "SO_NOFCS"}
+	SO_LOCK_FILTER                   = SocketOptionArgument{unix.SO_LOCK_FILTER, "SO_LOCK_FILTER"}
+	SO_SELECT_ERR_QUEUE              = SocketOptionArgument{unix.SO_SELECT_ERR_QUEUE, "SO_SELECT_ERR_QUEUE"}
+	SO_BUSY_POLL                     = SocketOptionArgument{unix.SO_BUSY_POLL, "SO_BUSY_POLL"}
+	SO_MAX_PACING_RATE               = SocketOptionArgument{unix.SO_MAX_PACING_RATE, "SO_MAX_PACING_RATE"}
+	SO_BPF_EXTENSIONS                = SocketOptionArgument{unix.SO_BPF_EXTENSIONS, "SO_BPF_EXTENSIONS"}
+	SO_INCOMING_CPU                  = SocketOptionArgument{unix.SO_INCOMING_CPU, "SO_INCOMING_CPU"}
+	SO_ATTACH_BPF                    = SocketOptionArgument{unix.SO_ATTACH_BPF, "SO_ATTACH_BPF"}
+	SO_ATTACH_REUSEPORT_CBPF         = SocketOptionArgument{unix.SO_ATTACH_REUSEPORT_CBPF, "SO_ATTACH_REUSEPORT_CBPF"}
+	SO_ATTACH_REUSEPORT_EBPF         = SocketOptionArgument{unix.SO_ATTACH_REUSEPORT_EBPF, "SO_ATTACH_REUSEPORT_EBPF"}
+	SO_CNX_ADVICE                    = SocketOptionArgument{unix.SO_CNX_ADVICE, "SO_CNX_ADVICE"}
+	SCM_TIMESTAMPING_OPT_STATS       = SocketOptionArgument{unix.SCM_TIMESTAMPING_OPT_STATS, "SCM_TIMESTAMPING_OPT_STATS"}
+	SO_MEMINFO                       = SocketOptionArgument{unix.SO_MEMINFO, "SO_MEMINFO"}
+	SO_INCOMING_NAPI_ID              = SocketOptionArgument{unix.SO_INCOMING_NAPI_ID, "SO_INCOMING_NAPI_ID"}
+	SO_COOKIE                        = SocketOptionArgument{unix.SO_COOKIE, "SO_COOKIE"}
+	SCM_TIMESTAMPING_PKTINFO         = SocketOptionArgument{unix.SCM_TIMESTAMPING_PKTINFO, "SCM_TIMESTAMPING_PKTINFO"}
+	SO_PEERGROUPS                    = SocketOptionArgument{unix.SO_PEERGROUPS, "SO_PEERGROUPS"}
+	SO_ZEROCOPY                      = SocketOptionArgument{unix.SO_ZEROCOPY, "SO_ZEROCOPY"}
+	SO_TXTIME                        = SocketOptionArgument{unix.SO_TXTIME, "SO_TXTIME"}
+	SO_BINDTOIFINDEX                 = SocketOptionArgument{unix.SO_BINDTOIFINDEX, "SO_BINDTOIFINDEX"}
+	SO_TIMESTAMP_NEW                 = SocketOptionArgument{unix.SO_TIMESTAMP_NEW, "SO_TIMESTAMP_NEW"}
+	SO_TIMESTAMPNS_NEW               = SocketOptionArgument{unix.SO_TIMESTAMPNS_NEW, "SO_TIMESTAMPNS_NEW"}
+	SO_TIMESTAMPING_NEW              = SocketOptionArgument{unix.SO_TIMESTAMPING_NEW, "SO_TIMESTAMPING_NEW"}
+	SO_RCVTIMEO_NEW                  = SocketOptionArgument{unix.SO_RCVTIMEO_NEW, "SO_RCVTIMEO_NEW"}
+	SO_SNDTIMEO_NEW                  = SocketOptionArgument{unix.SO_SNDTIMEO_NEW, "SO_SNDTIMEO_NEW"}
+	SO_DETACH_REUSEPORT_BPF          = SocketOptionArgument{unix.SO_DETACH_REUSEPORT_BPF, "SO_DETACH_REUSEPORT_BPF"}
+	SO_PREFER_BUSY_POLL              = SocketOptionArgument{unix.SO_PREFER_BUSY_POLL, "SO_PREFER_BUSY_POLL"}
+	SO_BUSY_POLL_BUDGET              = SocketOptionArgument{unix.SO_BUSY_POLL_BUDGET, "SO_BUSY_POLL_BUDGET"}
+	SO_TIMESTAMP                     = SocketOptionArgument{unix.SO_TIMESTAMP, "SO_TIMESTAMP"}
+	SO_TIMESTAMPNS                   = SocketOptionArgument{unix.SO_TIMESTAMPNS, "SO_TIMESTAMPNS"}
+	SO_TIMESTAMPING                  = SocketOptionArgument{unix.SO_TIMESTAMPING, "SO_TIMESTAMPING"}
+	SO_RCVTIMEO                      = SocketOptionArgument{unix.SO_RCVTIMEO, "SO_RCVTIMEO"}
+	SO_SNDTIMEO                      = SocketOptionArgument{unix.SO_SNDTIMEO, "SO_SNDTIMEO"}
 
 	// The following are newer, so aren't included in the unix package
-	SO_NETNS_COOKIE SocketOptionArgument = 71
-	SO_BUF_LOCK     SocketOptionArgument = 72
-	SO_RESERVE_MEM  SocketOptionArgument = 73
-	SO_TXREHASH     SocketOptionArgument = 74
+	SO_NETNS_COOKIE SocketOptionArgument = SocketOptionArgument{71, "SO_NETNS_COOKIE"}
+	SO_BUF_LOCK     SocketOptionArgument = SocketOptionArgument{72, "SO_BUF_LOCK"}
+	SO_RESERVE_MEM  SocketOptionArgument = SocketOptionArgument{73, "SO_RESERVE_MEM"}
+	SO_TXREHASH     SocketOptionArgument = SocketOptionArgument{74, "SO_TXREHASH"}
 )
 
-func (socketOption SocketOptionArgument) Value() uint64 { return uint64(socketOption) }
-
-var socketOptionStringMap = map[SocketOptionArgument]string{
-	SO_DEBUG:                         "SO_DEBUG",
-	SO_REUSEADDR:                     "SO_REUSEADDR",
-	SO_TYPE:                          "SO_TYPE",
-	SO_ERROR:                         "SO_ERROR",
-	SO_DONTROUTE:                     "SO_DONTROUTE",
-	SO_BROADCAST:                     "SO_BROADCAST",
-	SO_SNDBUF:                        "SO_SNDBUF",
-	SO_RCVBUF:                        "SO_RCVBUF",
-	SO_SNDBUFFORCE:                   "SO_SNDBUFFORCE",
-	SO_RCVBUFFORCE:                   "SO_RCVBUFFORCE",
-	SO_KEEPALIVE:                     "SO_KEEPALIVE",
-	SO_OOBINLINE:                     "SO_OOBINLINE",
-	SO_NO_CHECK:                      "SO_NO_CHECK",
-	SO_PRIORITY:                      "SO_PRIORITY",
-	SO_LINGER:                        "SO_LINGER",
-	SO_BSDCOMPAT:                     "SO_BSDCOMPAT",
-	SO_REUSEPORT:                     "SO_REUSEPORT",
-	SO_PASSCRED:                      "SO_PASSCRED",
-	SO_PEERCRED:                      "SO_PEERCRED",
-	SO_RCVLOWAT:                      "SO_RCVLOWAT",
-	SO_SNDLOWAT:                      "SO_SNDLOWAT",
-	SO_SECURITY_AUTHENTICATION:       "SO_SECURITY_AUTHENTICATION",
-	SO_SECURITY_ENCRYPTION_TRANSPORT: "SO_SECURITY_ENCRYPTION_TRANSPORT",
-	SO_SECURITY_ENCRYPTION_NETWORK:   "SO_SECURITY_ENCRYPTION_NETWORK",
-	SO_BINDTODEVICE:                  "SO_BINDTODEVICE",
-	SO_ATTACH_OR_GET_FILTER:          "SO_ATTACH_FILTER or SO_GET_FILTER",
-	SO_DETACH_FILTER_OR_BPF:          "SO_DETACH_FILTER or SO_DETACH_BPF",
-	SO_PEERNAME:                      "SO_PEERNAME",
-	SO_ACCEPTCONN:                    "SO_ACCEPTCONN",
-	SO_PEERSEC:                       "SO_PEERSEC",
-	SO_PASSSEC:                       "SO_PASSSEC",
-	SO_MARK:                          "SO_MARK",
-	SO_PROTOCOL:                      "SO_PROTOCOL",
-	SO_DOMAIN:                        "SO_DOMAIN",
-	SO_RXQ_OVFL:                      "SO_RXQ_OVFL",
-	SO_WIFI_STATUS:                   "SO_WIFI_STATUS",
-	SO_PEEK_OFF:                      "SO_PEEK_OFF",
-	SO_NOFCS:                         "SO_NOFCS",
-	SO_LOCK_FILTER:                   "SO_LOCK_FILTER",
-	SO_SELECT_ERR_QUEUE:              "SO_SELECT_ERR_QUEUE",
-	SO_BUSY_POLL:                     "SO_BUSY_POLL",
-	SO_MAX_PACING_RATE:               "SO_MAX_PACING_RATE",
-	SO_BPF_EXTENSIONS:                "SO_BPF_EXTENSIONS",
-	SO_INCOMING_CPU:                  "SO_INCOMING_CPU",
-	SO_ATTACH_BPF:                    "SO_ATTACH_BPF",
-	SO_ATTACH_REUSEPORT_CBPF:         "SO_ATTACH_REUSEPORT_CBPF",
-	SO_ATTACH_REUSEPORT_EBPF:         "SO_ATTACH_REUSEPORT_EBPF",
-	SO_CNX_ADVICE:                    "SO_CNX_ADVICE",
-	SCM_TIMESTAMPING_OPT_STATS:       "SCM_TIMESTAMPING_OPT_STATS",
-	SO_MEMINFO:                       "SO_MEMINFO",
-	SO_INCOMING_NAPI_ID:              "SO_INCOMING_NAPI_ID",
-	SO_COOKIE:                        "SO_COOKIE",
-	SCM_TIMESTAMPING_PKTINFO:         "SCM_TIMESTAMPING_PKTINFO",
-	SO_PEERGROUPS:                    "SO_PEERGROUPS",
-	SO_ZEROCOPY:                      "SO_ZEROCOPY",
-	SO_TXTIME:                        "SO_TXTIME",
-	SO_BINDTOIFINDEX:                 "SO_BINDTOIFINDEX",
-	SO_TIMESTAMP_NEW:                 "SO_TIMESTAMP_NEW",
-	SO_TIMESTAMPNS_NEW:               "SO_TIMESTAMPNS_NEW",
-	SO_TIMESTAMPING_NEW:              "SO_TIMESTAMPING_NEW",
-	SO_RCVTIMEO_NEW:                  "SO_RCVTIMEO_NEW",
-	SO_SNDTIMEO_NEW:                  "SO_SNDTIMEO_NEW",
-	SO_DETACH_REUSEPORT_BPF:          "SO_DETACH_REUSEPORT_BPF",
-	SO_PREFER_BUSY_POLL:              "SO_PREFER_BUSY_POLL",
-	SO_BUSY_POLL_BUDGET:              "SO_BUSY_POLL_BUDGET",
-	SO_NETNS_COOKIE:                  "SO_NETNS_COOKIE",
-	SO_BUF_LOCK:                      "SO_BUF_LOCK",
-	SO_RESERVE_MEM:                   "SO_RESERVE_MEM",
-	SO_TIMESTAMP:                     "SO_TIMESTAMP",
-	SO_TIMESTAMPNS:                   "SO_TIMESTAMPNS",
-	SO_TIMESTAMPING:                  "SO_TIMESTAMPING",
-	SO_RCVTIMEO:                      "SO_RCVTIMEO",
-	SO_SNDTIMEO:                      "SO_SNDTIMEO",
-	SO_TXREHASH:                      "SO_TXREHASH",
-}
+func (socketOption SocketOptionArgument) Value() uint64 { return socketOption.value }
 
 func (socketOption SocketOptionArgument) String() string {
-	var res string
-
-	if sdName, ok := socketOptionStringMap[socketOption]; ok {
-		res = sdName
-	} else {
-		res = strconv.Itoa(int(socketOption))
-	}
-
-	return res
+	return socketOption.name
 }
 
-var socketOptionMap = map[uint64]SocketOptionArgument{
+var setSocketOptionMap = map[uint64]SocketOptionArgument{
 	SO_DEBUG.Value():                         SO_DEBUG,
 	SO_REUSEADDR.Value():                     SO_REUSEADDR,
 	SO_TYPE.Value():                          SO_TYPE,
@@ -1704,8 +1623,8 @@ var socketOptionMap = map[uint64]SocketOptionArgument{
 	SO_SECURITY_ENCRYPTION_TRANSPORT.Value(): SO_SECURITY_ENCRYPTION_TRANSPORT,
 	SO_SECURITY_ENCRYPTION_NETWORK.Value():   SO_SECURITY_ENCRYPTION_NETWORK,
 	SO_BINDTODEVICE.Value():                  SO_BINDTODEVICE,
-	SO_ATTACH_OR_GET_FILTER.Value():          SO_ATTACH_OR_GET_FILTER,
-	SO_DETACH_FILTER_OR_BPF.Value():          SO_DETACH_FILTER_OR_BPF,
+	SO_ATTACH_FILTER.Value():                 SO_ATTACH_FILTER,
+	SO_DETACH_FILTER.Value():                 SO_DETACH_FILTER,
 	SO_PEERNAME.Value():                      SO_PEERNAME,
 	SO_ACCEPTCONN.Value():                    SO_ACCEPTCONN,
 	SO_PEERSEC.Value():                       SO_PEERSEC,
@@ -1755,14 +1674,34 @@ var socketOptionMap = map[uint64]SocketOptionArgument{
 	SO_TXREHASH.Value():                      SO_TXREHASH,
 }
 
-// ParseSocketOption parses the `optname` argument of the `setsockopt` and `getsockopt` syscalls.
+var getSocketOptionMap = func(m map[uint64]SocketOptionArgument) map[uint64]SocketOptionArgument {
+	newMap := make(map[uint64]SocketOptionArgument, len(m))
+	for k, v := range m {
+		newMap[k] = v
+	}
+	// Will override the value of SO_ATTACH_FILTER
+	newMap[SO_GET_FILTER.Value()] = SO_GET_FILTER
+	return newMap
+}(setSocketOptionMap)
+
+// ParseSetSocketOption parses the `optname` argument of the `setsockopt` syscall.
 // https://man7.org/linux/man-pages/man2/setsockopt.2.html
 // https://elixir.bootlin.com/linux/latest/source/include/uapi/asm-generic/socket.h
-func ParseSocketOption(rawValue uint64) (SocketOptionArgument, error) {
-
-	v, ok := socketOptionMap[rawValue]
+func ParseSetSocketOption(rawValue uint64) (SocketOptionArgument, error) {
+	v, ok := setSocketOptionMap[rawValue]
 	if !ok {
-		return 0, fmt.Errorf("not a valid argument: %d", rawValue)
+		return SocketOptionArgument{}, fmt.Errorf("not a valid argument: %d", rawValue)
+	}
+	return v, nil
+}
+
+// ParseGetSocketOption parses the `optname` argument of the `getsockopt` syscall.
+// https://man7.org/linux/man-pages/man2/getsockopt.2.html
+// https://elixir.bootlin.com/linux/latest/source/include/uapi/asm-generic/socket.h
+func ParseGetSocketOption(rawValue uint64) (SocketOptionArgument, error) {
+	v, ok := getSocketOptionMap[rawValue]
+	if !ok {
+		return SocketOptionArgument{}, fmt.Errorf("not a valid argument: %d", rawValue)
 	}
 	return v, nil
 }
