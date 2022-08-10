@@ -1,0 +1,30 @@
+name: Build Dependencies
+description: |
+  Install build dependencies to test and compile tracee artifacts
+inputs:
+  go-version:
+    description: Version of Go
+    required: true
+    default: "1.18"
+runs:
+  using: composite
+  steps:
+    - name: Setup Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ inputs.go-version }}
+    - name: Install Compilers & Formatters
+      run: |
+        sudo apt-get update
+        sudo apt-get install --yes bsdutils
+        sudo apt-get install --yes build-essential
+        sudo apt-get install --yes pkgconf
+        sudo apt-get install --yes llvm-12 clang-12
+        sudo apt-get install --yes clang-format-12
+        sudo apt-get install --yes zlib1g-dev libelf-dev
+        for tool in "clang" "llc" "llvm-strip" "clang-format"
+        do
+          sudo rm -f /usr/bin/$tool
+          sudo ln -s /usr/bin/$tool-12 /usr/bin/$tool
+        done
+      shell: bash
