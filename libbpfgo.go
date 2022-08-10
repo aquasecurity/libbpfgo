@@ -98,7 +98,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/libbpfgo/helpers/rwarray"
 )
 
 const (
@@ -1501,7 +1501,7 @@ func doAttachUprobe(prog *BPFProg, isUretprobe bool, pid int, path string, offse
 	return bpfLink, nil
 }
 
-var eventChannels = helpers.NewRWArray(maxEventChannels)
+var eventChannels = rwarray.NewRWArray(maxEventChannels)
 
 func (m *Module) InitRingBuf(mapName string, eventsChan chan []byte) (*RingBuffer, error) {
 	bpfMap, err := m.GetMap(mapName)
