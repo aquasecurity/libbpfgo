@@ -1,14 +1,13 @@
-name: pr
+name: PR
 on:
   workflow_dispatch: {}
   pull_request:
     branches:
       - main
   workflow_call:
-
 jobs:
   unit-tests:
-    name: unit test helpers
+    name: Unit Tests
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Code
@@ -17,11 +16,10 @@ jobs:
         uses: ./.github/actions/build-dependencies
         with:
           go-version: 1.18
-      - name: unit test helpers
+      - name: Test Helpers
         run: go test ./helpers
-
-  self-test:
-    name: selftest
+  self-tests:
+    name: Selftests
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Code
@@ -30,12 +28,11 @@ jobs:
         uses: ./.github/actions/build-dependencies
         with:
           go-version: 1.18
-      - name: selftest
+      - name: Static Selftests
         run: |
           sudo make selftest-static-run
-
   compile-trace:
-    name: compile against tracee
+    name: Compile Tracee
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Code
@@ -44,6 +41,6 @@ jobs:
         uses: ./.github/actions/build-dependencies
         with:
           go-version: 1.18
-      - name: compile against tracee
+      - name: Compile Tracee
         run: |
           sudo ./testing/compile-tracee.sh
