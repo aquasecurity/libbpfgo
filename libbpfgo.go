@@ -1159,6 +1159,8 @@ const (
 	BPFProgTypeSyscall
 )
 
+func (b BPFProgType) Value() uint64 { return uint64(b) }
+
 func (b BPFProgType) String() (str string) {
 	x := map[BPFProgType]string{
 		BPFProgTypeUnspec:                "BPF_PROG_TYPE_UNSPEC",

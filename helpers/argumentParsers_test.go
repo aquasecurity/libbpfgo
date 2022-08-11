@@ -3,6 +3,7 @@ package helpers
 import (
 	"testing"
 
+	"github.com/aquasecurity/libbpfgo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -138,6 +139,40 @@ func TestParseGetSocketOption(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			opt, err := ParseGetSocketOption(testCase.parseValue)
+			if testCase.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, testCase.expectedSting, opt.String())
+		})
+	}
+}
+
+func TestParseBPFProgType(t *testing.T) {
+	testCases := []struct {
+		name          string
+		parseValue    uint64
+		expectedSting string
+		expectedError bool
+	}{
+		{
+			name:          "Type tracepoint",
+			parseValue:    libbpfgo.BPFProgTypeTracepoint.Value(),
+			expectedSting: "BPF_PROG_TYPE_TRACEPOINT",
+			expectedError: false,
+		},
+		{
+			name:          "Non existing type",
+			parseValue:    10000000,
+			expectedSting: "BPF_PROG_TYPE_UNSPEC",
+			expectedError: true,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			opt, err := ParseBPFProgType(testCase.parseValue)
 			if testCase.expectedError {
 				assert.Error(t, err)
 			} else {
