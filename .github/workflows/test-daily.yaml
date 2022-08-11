@@ -4,9 +4,6 @@ on:
   schedule:
     # Daily at 03:00
     - cron: '0 3 * * *'
-  pull_request:
-    branches:
-      - main
   workflow_call:
 jobs:
   compile-trace:
