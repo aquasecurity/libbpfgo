@@ -67,3 +67,83 @@ func TestOptionsContainedInArgument(t *testing.T) {
 		})
 	}
 }
+
+func TestParseSetSocketOption(t *testing.T) {
+	testCases := []struct {
+		name          string
+		parseValue    uint64
+		expectedSting string
+		expectedError bool
+	}{
+		{
+			name:          "Normal value",
+			parseValue:    SO_DEBUG.Value(),
+			expectedSting: "SO_DEBUG",
+			expectedError: false,
+		},
+		{
+			name:          "Get changed value",
+			parseValue:    SO_ATTACH_FILTER.Value(),
+			expectedSting: "SO_ATTACH_FILTER",
+			expectedError: false,
+		},
+		{
+			name:          "Non existing value",
+			parseValue:    10000000,
+			expectedSting: "",
+			expectedError: true,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			opt, err := ParseSetSocketOption(testCase.parseValue)
+			if testCase.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, testCase.expectedSting, opt.String())
+		})
+	}
+}
+
+func TestParseGetSocketOption(t *testing.T) {
+	testCases := []struct {
+		name          string
+		parseValue    uint64
+		expectedSting string
+		expectedError bool
+	}{
+		{
+			name:          "Normal value",
+			parseValue:    SO_DEBUG.Value(),
+			expectedSting: "SO_DEBUG",
+			expectedError: false,
+		},
+		{
+			name:          "Get changed value",
+			parseValue:    SO_GET_FILTER.Value(),
+			expectedSting: "SO_GET_FILTER",
+			expectedError: false,
+		},
+		{
+			name:          "Non existing value",
+			parseValue:    10000000,
+			expectedSting: "",
+			expectedError: true,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			opt, err := ParseGetSocketOption(testCase.parseValue)
+			if testCase.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, testCase.expectedSting, opt.String())
+		})
+	}
+}

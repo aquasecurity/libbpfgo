@@ -2,6 +2,11 @@
 
 <img src="docs/images/aqua-tux.png" width="150" height="auto">
 
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/aquasecurity/libbpfgo)](https://github.com/aquasecurity/libbpfgo/releases)
+[![Go Report Card](https://goreportcard.com/badge/github.com/aquasecurity/libbpfgo)](https://goreportcard.com/report/github.com/aquasecurity/libbpfgo)
+[![License](https://img.shields.io/github/license/aquasecurity/libbpfgo)](https://github.com/aquasecurity/libbpfgo/blob/main/LICENSE)
+[![Tests (DAILY)](https://github.com/aquasecurity/libbpfgo/actions/workflows/test-daily.yaml/badge.svg)](https://github.com/aquasecurity/libbpfgo/actions/workflows/test-daily.yaml)
+
 ----
 
 * [Installing](#installing)
