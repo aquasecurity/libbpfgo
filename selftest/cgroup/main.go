@@ -4,13 +4,16 @@ import "C"
 
 import (
 	"encoding/binary"
+	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
-
-	"fmt"
+	"regexp"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 )
+
+var reCgroup2Mount = regexp.MustCompile(`(?m)^cgroup2\s+(\S+)\s+`)
 
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
@@ -26,17 +29,13 @@ func main() {
 		os.Exit(-1)
 	}
 
-	cgroupRootDir := "/sys/fs/cgroup/unified"
-	if _, err := os.Stat(cgroupRootDir); os.IsNotExist(err) {
-		cgroupRootDir = "/sys/fs/cgroup"
-	}
-
 	prog, err := bpfModule.GetProgram("cgroup__socket")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
 	}
 
+	cgroupRootDir := getCgroupV2RootDir()
 	link, err := prog.AttachCgroup(cgroupRootDir)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -56,10 +55,12 @@ func main() {
 	rb.Start()
 	numberOfEventsReceived := 0
 	go func() {
-		_, err := exec.Command("ping", "localhost", "-c 10").Output()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(-1)
+		for i := 0; i < 10; i++ {
+			_, err := exec.Command("ping", "localhost", "-c 1", "-w 1").Output()
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(-1)
+			}
 		}
 	}()
 
@@ -78,4 +79,18 @@ recvLoop:
 
 	rb.Stop()
 	rb.Close()
+}
+
+func getCgroupV2RootDir() string {
+	data, err := ioutil.ReadFile("/proc/mounts")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "read /proc/mounts failed: %+v\n", err)
+		os.Exit(-1)
+	}
+	items := reCgroup2Mount.FindStringSubmatch(string(data))
+	if len(items) < 2 {
+		fmt.Fprintln(os.Stderr, "cgroupv2 is not mounted")
+		os.Exit(-1)
+	}
+	return items[1]
 }
