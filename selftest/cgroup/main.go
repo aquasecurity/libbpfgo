@@ -13,7 +13,7 @@ import (
 	bpf "github.com/aquasecurity/libbpfgo"
 )
 
-var reCgroup2Mount = regexp.MustCompile(`(?m)^cgroup2\s+(\S+)\s+`)
+var reCgroup2Mount = regexp.MustCompile(`(?m)^cgroup2\s(/\S+)\scgroup2\s`)
 
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
