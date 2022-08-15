@@ -17,7 +17,8 @@ jobs:
         with:
           go-version: 1.18
       - name: Test Helpers
-        run: go test ./helpers
+        run: |
+          make helpers-test-static-run
   self-tests:
     name: Selftests
     runs-on: ubuntu-20.04
@@ -30,4 +31,4 @@ jobs:
           go-version: 1.18
       - name: Static Selftests
         run: |
-          sudo make selftest-static-run
+          make selftest-static-run

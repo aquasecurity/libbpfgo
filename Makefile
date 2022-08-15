@@ -2,6 +2,7 @@ BASEDIR = $(abspath ./)
 
 OUTPUT = ./output
 SELFTEST = ./selftest
+HELPERS = ./helpers
 
 CC = gcc
 CLANG = clang
@@ -161,6 +162,23 @@ selftest-dynamic-run:
 
 selftest-clean:
 	$(call FOREACH, clean)
+
+# helpers test
+
+.PHONY: helpers-test-run
+.PHONY: helpers-test-static-run
+.PHONY: helpers-test-dynamic-run
+
+helpers-test-run: helpers-test-static-run
+
+helpers-test-static-run: libbpfgo-static
+	CC=$(CLANG) \
+		CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
+		CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
+		sudo $(GO) test -v $(HELPERS)/...
+
+helpers-test-dynamic-run: libbpfgo-dynamic
+	sudo $(GO) test -v $(HELPERS)/...
 
 # output
 
