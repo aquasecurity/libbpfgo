@@ -130,7 +130,7 @@ define FOREACH
 	SELFTESTERR=0; \
 	for DIR in $(SELFTESTS); do \
 	      echo "INFO: entering $$DIR..."; \
-		$(MAKE) -j8 -C $$DIR $(1) || SELFTESTERR=1; \
+		$(MAKE) -j1 -C $$DIR $(1) || SELFTESTERR=1; \
 	done; \
 	if [ $$SELFTESTERR -eq 1 ]; then \
 		exit 1; \
