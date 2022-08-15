@@ -61,7 +61,7 @@ ctest:
 
 .PHONY: gotest
 gotest:
-	@if [ ! -x ctest ]; then \
+	@if [ ! -x gotest ]; then \
 		$(GO) build -o gotest test.go; \
 	 fi
 
