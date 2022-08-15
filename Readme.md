@@ -48,7 +48,7 @@ Currently you will find the following GNU Makefile rules:
 | libbpfgo-dynamic-test    | 'go test' with dynamic libbpfgo   |
 | selftest-dynamic         | build tests with dynamic libbpfgo |
 | selftest-dynamic-run     | run tests using dynamic libbpfgo  |
-| helpers-test-dynamic-run | run tests using dynamic libbpfgo  |
+| helpers-test-dynamic-run | run helpers package unit tests using dynamic libbpfgo  |
 
 * statically compiled (libbpf submodule)
 
@@ -58,7 +58,7 @@ Currently you will find the following GNU Makefile rules:
 | libbpfgo-static-test     | 'go test' with static libbpfgo    |
 | selftest-static          | build tests with static libbpfgo  |
 | selftest-static-run      | run tests using static libbpfgo   |
-| helpers-test-static-run  | run tests using static libbpfgo   |
+| helpers-test-static-run  | run helpers package unit tests using static libbpfgo   |
 
 * examples
 
