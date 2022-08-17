@@ -1,12 +1,11 @@
 //+build ignore
 #include "vmlinux.h"
-#include <bpf/bpf_helpers.h>  
+#include <bpf/bpf_helpers.h>
 
 #ifdef asm_inline
 #undef asm_inline
 #define asm_inline asm
 #endif
-
 
 struct {
 	__uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
@@ -27,7 +26,7 @@ int mmap_fentry(struct pt_regs *ctx)
     }
 
     bpf_printk("nothing");
-
     return 0;
 }
+
 char LICENSE[] SEC("license") = "GPL";

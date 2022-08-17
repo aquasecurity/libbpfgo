@@ -523,7 +523,7 @@ func bpfMapCreateOptsToC(createOpts *BPFMapCreateOpts) *C.struct_bpf_map_create_
 // and therefore do not have access to libbpf high level bpf_map__* APIS
 // which causes different behavior from maps created in the kernel side code
 //
-// See usage of `bpf_map_create()` in kernel selftests for more info
+// See usage of `bpf_map_create()` in kernel selftests for more info.
 func CreateMap(mapType MapType, mapName string, keySize, valueSize, maxEntries int, opts *BPFMapCreateOpts) (*BPFMap, error) {
 	cs := C.CString(mapName)
 	fdOrError := C.bpf_map_create(uint32(mapType), cs, C.uint(keySize), C.uint(valueSize), C.uint(maxEntries), bpfMapCreateOptsToC(opts))
@@ -534,6 +534,27 @@ func CreateMap(mapType MapType, mapName string, keySize, valueSize, maxEntries i
 
 	return &BPFMap{
 		name:   mapName,
+		fd:     fdOrError,
+		module: nil,
+		bpfMap: nil,
+	}, nil
+}
+
+// GetMapByID returns a BPF map by ID. This can be used for reaching the maps
+// from a BPF array of maps or hash of maps. However, this function uses a low-level
+// libbpf API; maps loaded in this way do not conform to libbpf map formats,
+// and therefore do not have access to libbpf high level bpf_map__* APIS
+// which causes different behavior from maps created in the kernel side code.
+//
+// See usage of `bpf_map_get_fd_by_id()` in kernel selftests for more info.
+func (m *Module) GetMapByID(id uint32) (*BPFMap, error) {
+	fdOrError := C.bpf_map_get_fd_by_id(C.uint(id))
+	if fdOrError < 0 {
+		return nil, fmt.Errorf("could not find map: %w", syscall.Errno(-fdOrError))
+	}
+
+	return &BPFMap{
+		name:   "unknown",
 		fd:     fdOrError,
 		module: nil,
 		bpfMap: nil,
@@ -606,6 +627,17 @@ func (b *BPFMap) SetPinPath(pinPath string) error {
 	C.free(unsafe.Pointer(path))
 	if ret != 0 {
 		return fmt.Errorf("failed to set pin for map %s to path %s: %w", b.name, pinPath, errC)
+	}
+	return nil
+}
+
+// SetInnerMap is used to set the inner map of a hash of map or an array of map.
+// This is only to satify the eBPF verifier and needs to be called before loading the module.
+func (b *BPFMap) SetInnerMap(innerMap *BPFMap) error {
+	// b is the outer map.
+	errC := C.bpf_map__set_inner_map_fd(b.bpfMap, C.int(innerMap.fd))
+	if errC != 0 {
+		return fmt.Errorf("failed to set inner map for %s fd: %w", b.name, syscall.Errno(-errC))
 	}
 	return nil
 }
@@ -924,12 +956,11 @@ func (b *BPFMap) DeleteKey(key unsafe.Pointer) error {
 //
 // For example:
 //
-//  key := 1
-//  value := []byte{'a', 'b', 'c'}
-//  keyPtr := unsafe.Pointer(&key)
-//  valuePtr := unsafe.Pointer(&value[0])
-//  bpfmap.Update(keyPtr, valuePtr)
-//
+//	key := 1
+//	value := []byte{'a', 'b', 'c'}
+//	keyPtr := unsafe.Pointer(&key)
+//	valuePtr := unsafe.Pointer(&value[0])
+//	bpfmap.Update(keyPtr, valuePtr)
 func (b *BPFMap) Update(key, value unsafe.Pointer) error {
 	return b.UpdateValueFlags(key, value, MapFlagUpdateAny)
 }
