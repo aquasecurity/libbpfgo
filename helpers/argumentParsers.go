@@ -7,6 +7,8 @@ import (
 	"net"
 	"strconv"
 	"strings"
+
+	"github.com/aquasecurity/libbpfgo"
 )
 
 type SystemFunctionArgument interface {
@@ -1702,6 +1704,49 @@ func ParseGetSocketOption(rawValue uint64) (SocketOptionArgument, error) {
 	v, ok := getSocketOptionMap[rawValue]
 	if !ok {
 		return SocketOptionArgument{}, fmt.Errorf("not a valid argument: %d", rawValue)
+	}
+	return v, nil
+}
+
+var bpfProgTypeMap = map[uint64]libbpfgo.BPFProgType{
+	libbpfgo.BPFProgTypeUnspec.Value():                libbpfgo.BPFProgTypeUnspec,
+	libbpfgo.BPFProgTypeSocketFilter.Value():          libbpfgo.BPFProgTypeSocketFilter,
+	libbpfgo.BPFProgTypeKprobe.Value():                libbpfgo.BPFProgTypeKprobe,
+	libbpfgo.BPFProgTypeSchedCls.Value():              libbpfgo.BPFProgTypeSchedCls,
+	libbpfgo.BPFProgTypeSchedAct.Value():              libbpfgo.BPFProgTypeSchedAct,
+	libbpfgo.BPFProgTypeTracepoint.Value():            libbpfgo.BPFProgTypeTracepoint,
+	libbpfgo.BPFProgTypeXdp.Value():                   libbpfgo.BPFProgTypeXdp,
+	libbpfgo.BPFProgTypePerfEvent.Value():             libbpfgo.BPFProgTypePerfEvent,
+	libbpfgo.BPFProgTypeCgroupSkb.Value():             libbpfgo.BPFProgTypeCgroupSkb,
+	libbpfgo.BPFProgTypeCgroupSock.Value():            libbpfgo.BPFProgTypeCgroupSock,
+	libbpfgo.BPFProgTypeLwtIn.Value():                 libbpfgo.BPFProgTypeLwtIn,
+	libbpfgo.BPFProgTypeLwtOut.Value():                libbpfgo.BPFProgTypeLwtOut,
+	libbpfgo.BPFProgTypeLwtXmit.Value():               libbpfgo.BPFProgTypeLwtXmit,
+	libbpfgo.BPFProgTypeSockOps.Value():               libbpfgo.BPFProgTypeSockOps,
+	libbpfgo.BPFProgTypeSkSkb.Value():                 libbpfgo.BPFProgTypeSkSkb,
+	libbpfgo.BPFProgTypeCgroupDevice.Value():          libbpfgo.BPFProgTypeCgroupDevice,
+	libbpfgo.BPFProgTypeSkMsg.Value():                 libbpfgo.BPFProgTypeSkMsg,
+	libbpfgo.BPFProgTypeRawTracepoint.Value():         libbpfgo.BPFProgTypeRawTracepoint,
+	libbpfgo.BPFProgTypeCgroupSockAddr.Value():        libbpfgo.BPFProgTypeCgroupSockAddr,
+	libbpfgo.BPFProgTypeLwtSeg6Local.Value():          libbpfgo.BPFProgTypeLwtSeg6Local,
+	libbpfgo.BPFProgTypeLircMode2.Value():             libbpfgo.BPFProgTypeLircMode2,
+	libbpfgo.BPFProgTypeSkReuseport.Value():           libbpfgo.BPFProgTypeSkReuseport,
+	libbpfgo.BPFProgTypeFlowDissector.Value():         libbpfgo.BPFProgTypeFlowDissector,
+	libbpfgo.BPFProgTypeCgroupSysctl.Value():          libbpfgo.BPFProgTypeCgroupSysctl,
+	libbpfgo.BPFProgTypeRawTracepointWritable.Value(): libbpfgo.BPFProgTypeRawTracepointWritable,
+	libbpfgo.BPFProgTypeCgroupSockopt.Value():         libbpfgo.BPFProgTypeCgroupSockopt,
+	libbpfgo.BPFProgTypeTracing.Value():               libbpfgo.BPFProgTypeTracing,
+	libbpfgo.BPFProgTypeStructOps.Value():             libbpfgo.BPFProgTypeStructOps,
+	libbpfgo.BPFProgTypeExt.Value():                   libbpfgo.BPFProgTypeExt,
+	libbpfgo.BPFProgTypeLsm.Value():                   libbpfgo.BPFProgTypeLsm,
+	libbpfgo.BPFProgTypeSkLookup.Value():              libbpfgo.BPFProgTypeSkLookup,
+	libbpfgo.BPFProgTypeSyscall.Value():               libbpfgo.BPFProgTypeSyscall,
+}
+
+func ParseBPFProgType(rawValue uint64) (libbpfgo.BPFProgType, error) {
+	v, ok := bpfProgTypeMap[rawValue]
+	if !ok {
+		return libbpfgo.BPFProgType(0), fmt.Errorf("not a valid argument: %d", rawValue)
 	}
 	return v, nil
 }
