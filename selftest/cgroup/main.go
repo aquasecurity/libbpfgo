@@ -29,7 +29,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	prog, err := bpfModule.GetProgram("cgroup__socket")
+	prog, err := bpfModule.GetProgram("cgroup__sock")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)

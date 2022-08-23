@@ -25,7 +25,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	prog, err := bpfModule.GetProgram("sk_lookup__lookup_pass")
+	prog, err := bpfModule.GetProgram("sk_lookup__lookup")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)

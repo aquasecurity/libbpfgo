@@ -1047,7 +1047,7 @@ func (it *BPFMapIterator) Next() bool {
 	nextPtr := unsafe.Pointer(&next[0])
 
 	errC, err := C.bpf_map_get_next_key(it.b.fd, prevPtr, nextPtr)
-	if errno, ok := err.(syscall.Errno); errC == -1 && ok && errno == C.ENOENT {
+	if errno, ok := err.(syscall.Errno); errC == -2 && ok && errno == C.ENOENT {
 		return false
 	}
 	if err != nil {
