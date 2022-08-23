@@ -1,18 +1,13 @@
 name: Build Dependencies
 description: |
   Install build dependencies to test and compile tracee artifacts
-inputs:
-  go-version:
-    description: Version of Go
-    required: true
-    default: "1.18"
 runs:
   using: composite
   steps:
     - name: Setup Go
       uses: actions/setup-go@v2
       with:
-        go-version: ${{ inputs.go-version }}
+        go-version: "1.17"
     - name: Install Compilers & Formatters
       run: |
         sudo apt-get update
