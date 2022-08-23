@@ -5,7 +5,9 @@ package libbpfgo
 
 #include <errno.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <sys/resource.h>
+#include <sys/syscall.h>
 
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
@@ -30,26 +32,40 @@ static inline long PTR_ERR(const void *ptr)
 }
 #endif
 
-int libbpf_print_fn(enum libbpf_print_level level, const char *format,
+int libbpf_print_fn(enum libbpf_print_level level,
+					const char *format,
                     va_list args)
 {
-    if (level != LIBBPF_WARN)
-        return 0;
+	if (level != LIBBPF_WARN)
+		return 0;
+
+	va_list check;
+	va_copy(check, args);
+	char *str = va_arg(check, char *);
 
 	// BUG: https://github.com/aquasecurity/tracee/issues/1676
 
-	va_list check; va_copy(check, args);
-	char *str = va_arg(check, char *);
 	if (strstr(str, "Exclusivity flag on") != NULL) {
 		va_end(check);
 		return 0;
 	}
-	va_end(check);
 
-    return vfprintf(stderr, format, args);
+	// AttachCgroupLegacy() will first try AttachCgroup() and it
+	// might fail. This is not an error and is the best way of
+	// probing for eBPF cgroup attachment link existence.
+
+	str = va_arg(check, char *);
+	if (strstr(str, "cgroup") != NULL) {
+		str = va_arg(check, char *);
+		if (strstr(str, "Invalid argument") != NULL)
+			return 0;
+	}
+
+	return vfprintf(stderr, format, args);
 }
 
-void set_print_fn() {
+void set_print_fn()
+{
     libbpf_set_print(libbpf_print_fn);
 }
 
@@ -85,6 +101,35 @@ struct perf_buffer * init_perf_buf(int map_fd, int page_cnt, uintptr_t ctx)
     }
 
     return pb;
+}
+
+int bpf_prog_attach_cgroup_legacy(
+	int prog_fd,          // eBPF program file descriptor
+	int target_fd,        // cgroup directory file descriptor
+	int type)             // BPF_CGROUP_INET_{INGRESS,EGRESS}, ...
+{
+	union bpf_attr attr;
+	memset(&attr, 0, sizeof(attr));
+	attr.target_fd = target_fd;
+	attr.attach_bpf_fd = prog_fd;
+	attr.attach_type = type;
+	attr.attach_flags = BPF_F_ALLOW_MULTI; // or BPF_F_ALLOW_OVERRIDE
+
+	return syscall(__NR_bpf, BPF_PROG_ATTACH, &attr, sizeof(attr));
+}
+
+int bpf_prog_detach_cgroup_legacy(
+	int prog_fd,          // eBPF program file descriptor
+	int target_fd,        // cgroup directory file descriptor
+	int type)             // BPF_CGROUP_INET_{INGRESS,EGRESS}, ...
+{
+	union bpf_attr attr;
+	memset(&attr, 0, sizeof(attr));
+	attr.target_fd = target_fd;
+	attr.attach_bpf_fd = prog_fd;
+	attr.attach_type = type;
+
+	return syscall(__NR_bpf, BPF_PROG_DETACH, &attr, sizeof(attr));
 }
 */
 import "C"
@@ -239,23 +284,42 @@ const (
 	Tracing
 	XDP
 	Cgroup
+	CgroupLegacy
 	Netns
 )
+
+type BPFLinkLegacy struct {
+	attachType BPFAttachType
+	cgroupDir  string
+}
 
 type BPFLink struct {
 	link      *C.struct_bpf_link
 	prog      *BPFProg
 	linkType  LinkType
 	eventName string
+	legacy    *BPFLinkLegacy // if set, this is a fake BPFLink
+}
+
+func (l *BPFLink) DestroyLegacy(linkType LinkType) error {
+	switch l.linkType {
+	case CgroupLegacy:
+		return l.prog.DetachCgroupLegacy(
+			l.legacy.cgroupDir,
+			l.legacy.attachType,
+		)
+	}
+	return fmt.Errorf("unable to destroy legacy link")
 }
 
 func (l *BPFLink) Destroy() error {
-	ret := C.bpf_link__destroy(l.link)
-	if ret < 0 {
+	if l.legacy != nil {
+		return l.DestroyLegacy(l.linkType)
+	}
+	if ret := C.bpf_link__destroy(l.link); ret < 0 {
 		return syscall.Errno(-ret)
 	}
 	l.link = nil
-
 	return nil
 }
 
@@ -929,7 +993,6 @@ func (b *BPFMap) DeleteKey(key unsafe.Pointer) error {
 //  keyPtr := unsafe.Pointer(&key)
 //  valuePtr := unsafe.Pointer(&value[0])
 //  bpfmap.Update(keyPtr, valuePtr)
-//
 func (b *BPFMap) Update(key, value unsafe.Pointer) error {
 	return b.UpdateValueFlags(key, value, MapFlagUpdateAny)
 }
@@ -1301,20 +1364,30 @@ func (p *BPFProg) SetAttachType(attachType BPFAttachType) {
 	C.bpf_program__set_expected_attach_type(p.prog, C.enum_bpf_attach_type(int(attachType)))
 }
 
-func (p *BPFProg) AttachCgroup(cgroupV2DirPath string) (*BPFLink, error) {
+// getCgroupDirFD returns a file descriptor for a given cgroup2 directory path
+func getCgroupDirFD(cgroupV2DirPath string) (int, error) {
 	const (
 		O_DIRECTORY int = 0200000
 		O_RDONLY    int = 00
 	)
 	fd, err := syscall.Open(cgroupV2DirPath, O_DIRECTORY|O_RDONLY, 0)
 	if fd < 0 {
-		return nil, fmt.Errorf("failed to open cgroupv2 directory path %s: %w", cgroupV2DirPath, err)
+		return 0, fmt.Errorf("failed to open cgroupv2 directory path %s: %w", cgroupV2DirPath, err)
 	}
-	link := C.bpf_program__attach_cgroup(p.prog, C.int(fd))
+	return fd, nil
+}
+
+// AttachCgroup attaches the BPFProg to a cgroup described by given fd.
+func (p *BPFProg) AttachCgroup(cgroupV2DirPath string) (*BPFLink, error) {
+	cgroupDirFD, err := getCgroupDirFD(cgroupV2DirPath)
+	if err != nil {
+		return nil, err
+	}
+	defer syscall.Close(cgroupDirFD)
+	link := C.bpf_program__attach_cgroup(p.prog, C.int(cgroupDirFD))
 	if C.IS_ERR_OR_NULL(unsafe.Pointer(link)) {
 		return nil, errptrError(unsafe.Pointer(link), "failed to attach cgroup on cgroupv2 %s to program %s", cgroupV2DirPath, p.name)
 	}
-
 	// dirName will be used in bpfLink.eventName. eventName follows a format
 	// convention and is used to better identify link types and what they are
 	// linked with in case of errors or similar needs. Having eventName as:
@@ -1329,6 +1402,68 @@ func (p *BPFProg) AttachCgroup(cgroupV2DirPath string) (*BPFLink, error) {
 	}
 	p.module.links = append(p.module.links, bpfLink)
 	return bpfLink, nil
+}
+
+// AttachCgroupLegacy attaches the BPFProg to a cgroup described by the given
+// fd. It first tries to use the most recent attachment method and, if that does
+// not work, instead of failing, it tries the legacy way: to attach the cgroup
+// eBPF program without previously creating a link. This allows attaching cgroup
+// eBPF ingress/egress in older kernels. Note: the first attempt error message
+// is filtered out inside libbpf_print_fn() as it is actually a feature probe
+// attempt as well.
+//
+// Related kernel commit: https://github.com/torvalds/linux/commit/af6eea57437a
+func (p *BPFProg) AttachCgroupLegacy(cgroupV2DirPath string, attachType BPFAttachType) (*BPFLink, error) {
+	bpfLink, err := p.AttachCgroup(cgroupV2DirPath)
+	if err == nil {
+		return bpfLink, nil
+	}
+	// Try the legacy attachment method before fully failing
+	cgroupDirFD, err := getCgroupDirFD(cgroupV2DirPath)
+	if err != nil {
+		return nil, err
+	}
+	defer syscall.Close(cgroupDirFD)
+	progFD := C.bpf_program__fd(p.prog)
+	ret := C.bpf_prog_attach_cgroup_legacy(progFD, C.int(cgroupDirFD), C.int(attachType))
+	if ret < 0 {
+		return nil, fmt.Errorf("failed to attach (legacy) program %s to cgroupv2 %s", p.name, cgroupV2DirPath)
+	}
+	dirName := strings.ReplaceAll(cgroupV2DirPath[1:], "/", "-")
+
+	bpfLinkLegacy := &BPFLinkLegacy{
+		attachType: attachType,
+		cgroupDir:  cgroupV2DirPath,
+	}
+	fakeBpfLink := &BPFLink{
+		link:      nil, // detach/destroy made with progfd
+		prog:      p,
+		eventName: fmt.Sprintf("cgroup-%s-%s", p.name, dirName),
+		// info bellow needed for detach (there isn't a real ebpf link)
+		linkType: CgroupLegacy,
+		legacy:   bpfLinkLegacy,
+	}
+	return fakeBpfLink, nil
+}
+
+// DetachCgroupLegacy detaches the BPFProg from a cgroup described by the given
+// fd. This is needed because in legacy attachment there is no BPFLink, just a
+// fake one (kernel did not support it, nor libbpf). This function should be
+// called by the (*BPFLink)->Destroy() function, since BPFLink is emulated (so
+// users don´t need to distinguish between regular and legacy cgroup
+// detachments).
+func (p *BPFProg) DetachCgroupLegacy(cgroupV2DirPath string, attachType BPFAttachType) error {
+	cgroupDirFD, err := getCgroupDirFD(cgroupV2DirPath)
+	if err != nil {
+		return err
+	}
+	defer syscall.Close(cgroupDirFD)
+	progFD := C.bpf_program__fd(p.prog)
+	ret := C.bpf_prog_detach_cgroup_legacy(progFD, C.int(cgroupDirFD), C.int(attachType))
+	if ret < 0 {
+		return fmt.Errorf("failed to detach (legacy) program %s from cgroupv2 %s", p.name, cgroupV2DirPath)
+	}
+	return nil
 }
 
 func (p *BPFProg) AttachXDP(deviceName string) (*BPFLink, error) {
