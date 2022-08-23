@@ -2,6 +2,7 @@
 
 GREEN='\033[0;01;32m'
 RED='\033[0;01;31m'
+YELLOW='\033[0;01;33m'
 NC='\033[0m'
 
 ## error handling
@@ -10,22 +11,27 @@ error() {
   echo -e "${RED}[!] ERROR: $1${NC}";
 }
 
+warn() {
+  echo -e "${YELLOW}[!] WARNING: $1${NC}";
+}
+
 okay() {
   echo -e "${GREEN}[*] SUCCESS: $1${NC}";
 }
 
-errexit()     { error "$1"; exit 1; }
-errnull()     {             exit 2; } # reserved for 'make' (always ret 2 on errors)
-errtimeout()  { error "$1"; exit 3; }
-errfailure()  { error "$1"; exit 4; }
-okexit()      { okay  "$1"; exit 0; }
-okcontinue()  { okay  "$1";         }
+errexit()      { error "$1"; exit 1; }
+warnexit()     { warn  "$1"; exit 0; }
+warncontinue() { warn "$1"; }
+errnull()      {             exit 2; } # reserved for 'make' (always ret 2 on errors)
+errtimeout()   { error "$1"; exit 3; }
+errfailure()   { error "$1"; exit 4; }
+okexit()       { okay  "$1"; exit 0; }
+okcontinue()   { okay  "$1";         }
 
 ## kernel version checks
 
 kern_version() {
-
-  _oper=$1; _version=$2;
+  _oper=$1; _version=$2; _notfatal=$3;
   _given=$(($(echo $_version | sed 's:\.::g')))
   _current=$(($(uname -r | cut -d'.' -f1,2 | sed 's:\.::g')))
 
@@ -52,9 +58,12 @@ kern_version() {
   esac
 
   if [[ $_opergood -ne 1 ]]; then
-    errexit "kernel $_current not $_oper than $_given"
+    if [[ $_notfatal -eq 1 ]]; then
+        warncontinue "kernel $_current not $_oper than $_given"
+    else
+        errexit "kernel $_current not $_oper than $_given"
+    fi
   fi
-
 }
 
 ## checks
@@ -65,10 +74,15 @@ check_build() {
 }
 
 check_ppid() {
-  _ppid=$(ps -o ppid= $$); _pppid=$(ps -o ppid= $_ppid);
-  _comm=$(ps -o comm= $_ppid); _pcomm=$(ps -o comm= $_pppid);
+  _ppid=$(ps -o ppid= $$);
+  _pppid=$(ps -o ppid= $_ppid);
+  _ppppid=$(ps -o ppid= $_pppid);
 
-  if [ "$_comm" != "make" ] && [ "$_pcomm" != "make" ]; then
+  _comm=$(ps -o comm= $_ppid);
+  _pcomm=$(ps -o comm= $_pppid);
+  _ppcomm=$(ps -o comm= $_ppppid);
+
+  if [[ $_comm != make && $_pcomm != make && $_ppcomm != make ]]; then
     errexit "do a 'make run' instead";
   fi
 }
