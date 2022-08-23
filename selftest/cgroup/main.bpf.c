@@ -14,8 +14,8 @@ struct {
 } events SEC(".maps");
 long ringbuffer_flags = 0;
 
-SEC("cgroup/socket")
-int cgroup__socket(struct bpf_sock *sk)
+SEC("cgroup/sock")
+int cgroup__sock(struct bpf_sock *sk)
 {
     int *process;
 

@@ -65,7 +65,7 @@ func main() {
 		testMap[key] = checked
 	}
 	if iterator.Err() != nil {
-		fmt.Fprintln(os.Stderr, iterator.Err())
+		fmt.Fprintf(os.Stderr, "iterator error: %v\n", iterator.Err())
 		os.Exit(-1)
 	}
 

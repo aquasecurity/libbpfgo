@@ -14,8 +14,8 @@ struct {
 } events SEC(".maps");
 long ringbuffer_flags = 0;
 
-SEC("sk_lookup/lookup_pass")
-int sk_lookup__lookup_pass(struct bpf_sk_lookup *ctx)
+SEC("sk_lookup")
+int sk_lookup__lookup(struct bpf_sk_lookup *ctx)
 {
     int *process;
 
