@@ -988,11 +988,11 @@ func (b *BPFMap) DeleteKey(key unsafe.Pointer) error {
 //
 // For example:
 //
-//  key := 1
-//  value := []byte{'a', 'b', 'c'}
-//  keyPtr := unsafe.Pointer(&key)
-//  valuePtr := unsafe.Pointer(&value[0])
-//  bpfmap.Update(keyPtr, valuePtr)
+// key := 1
+// value := []byte{'a', 'b', 'c'}
+// keyPtr := unsafe.Pointer(&key)
+// valuePtr := unsafe.Pointer(&value[0])
+// bpfmap.Update(keyPtr, valuePtr)
 func (b *BPFMap) Update(key, value unsafe.Pointer) error {
 	return b.UpdateValueFlags(key, value, MapFlagUpdateAny)
 }
