@@ -367,19 +367,6 @@ type RingBuffer struct {
 	wg     sync.WaitGroup
 }
 
-// BPF is using locked memory for BPF maps and various other things.
-// By default, this limit is very low - increase to avoid failures
-func bumpMemlockRlimit() error {
-	var rLimit syscall.Rlimit
-	rLimit.Max = 512 << 20 /* 512 MBs */
-	rLimit.Cur = 512 << 20 /* 512 MBs */
-	err := syscall.Setrlimit(C.RLIMIT_MEMLOCK, &rLimit)
-	if err != nil {
-		return fmt.Errorf("error setting rlimit: %v", err)
-	}
-	return nil
-}
-
 func errptrError(ptr unsafe.Pointer, format string, args ...interface{}) error {
 	negErrno := C.PTR_ERR(ptr)
 	errno := syscall.Errno(-int64(negErrno))
@@ -445,9 +432,7 @@ func SetStrictMode(mode LibbpfStrictMode) {
 
 func NewModuleFromFileArgs(args NewModuleArgs) (*Module, error) {
 	C.set_print_fn()
-	if err := bumpMemlockRlimit(); err != nil {
-		return nil, err
-	}
+
 	opts := C.struct_bpf_object_open_opts{}
 	opts.sz = C.sizeof_struct_bpf_object_open_opts
 
@@ -488,9 +473,7 @@ func NewModuleFromBuffer(bpfObjBuff []byte, bpfObjName string) (*Module, error) 
 
 func NewModuleFromBufferArgs(args NewModuleArgs) (*Module, error) {
 	C.set_print_fn()
-	if err := bumpMemlockRlimit(); err != nil {
-		return nil, err
-	}
+
 	if args.BTFObjPath == "" {
 		args.BTFObjPath = "/sys/kernel/btf/vmlinux"
 	}
