@@ -304,8 +304,13 @@ func (l *BPFLink) Destroy() error {
 	return nil
 }
 
-func (l *BPFLink) GetFd() int {
+func (l *BPFLink) FileDescriptor() int {
 	return int(C.bpf_link__fd(l.link))
+}
+
+// Deprecated: use BPFLink.FileDescriptor() instead.
+func (l *BPFLink) GetFd() int {
+	return l.FileDescriptor()
 }
 
 func (l *BPFLink) Pin(pinPath string) error {
@@ -648,21 +653,31 @@ func (b *BPFMap) GetMaxEntries() uint32 {
 	return uint32(maxEntries)
 }
 
-func (b *BPFMap) GetFd() int {
-	return int(b.fd)
+func (b *BPFMap) FileDescriptor() int {
+	return int(C.bpf_map__fd(b.bpfMap))
 }
 
+// Deprecated: use BPFMap.FileDescriptor() instead.
+func (b *BPFMap) GetFd() int {
+	return b.FileDescriptor()
+}
+
+// Deprecated: use BPFMap.Name() instead.
 func (b *BPFMap) GetName() string {
-	return b.name
+	return b.Name()
 }
 
 func (b *BPFMap) GetModule() *Module {
 	return b.module
 }
 
+func (b *BPFMap) PinPath() string {
+	return C.GoString(C.bpf_map__pin_path(b.bpfMap))
+}
+
+// Deprecated: use BPFMap.PinPath() instead.
 func (b *BPFMap) GetPinPath() string {
-	pinPathGo := C.GoString(C.bpf_map__get_pin_path(b.bpfMap))
-	return pinPathGo
+	return b.PinPath()
 }
 
 func (b *BPFMap) IsPinned() bool {
@@ -1087,8 +1102,13 @@ func (m *Module) GetProgram(progName string) (*BPFProg, error) {
 	}, nil
 }
 
-func (p *BPFProg) GetFd() int {
+func (p *BPFProg) FileDescriptor() int {
 	return int(C.bpf_program__fd(p.prog))
+}
+
+// Deprecated: use BPFProg.FileDescriptor() instead.
+func (p *BPFProg) GetFd() int {
+	return p.FileDescriptor()
 }
 
 func (p *BPFProg) Pin(path string) error {
@@ -1123,18 +1143,31 @@ func (p *BPFProg) GetModule() *Module {
 	return p.module
 }
 
+func (p *BPFProg) Name() string {
+	return C.GoString(C.bpf_program__name(p.prog))
+}
+
+// Deprecated: use BPFProg.Name() instead.
 func (p *BPFProg) GetName() string {
-	return p.name
+	return p.Name()
 }
 
+func (p *BPFProg) SectionName() string {
+	return C.GoString(C.bpf_program__section_name(p.prog))
+}
+
+// Deprecated: use BPFProg.SectionName() instead.
 func (p *BPFProg) GetSectionName() string {
-	cs := C.bpf_program__section_name(p.prog)
-	gs := C.GoString(cs)
-	return gs
+	return p.SectionName()
 }
 
+func (p *BPFProg) PinPath() string {
+	return p.pinnedPath // There's no LIBBPF_API for bpf program
+}
+
+// Deprecated: use BPFProg.PinPath() instead.
 func (p *BPFProg) GetPinPath() string {
-	return p.pinnedPath
+	return p.PinPath()
 }
 
 // BPFProgType is an enum as defined in https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/bpf.h
