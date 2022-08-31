@@ -60,9 +60,23 @@ func UnameMachine() (string, error) {
 	return arch, nil
 }
 
+type KernelVersionComparison int
+
+const (
+	KernelVersionInvalid KernelVersionComparison = iota - 1
+	KernelVersionEqual
+	KernelVersionOlder
+	KernelVersionNewer
+)
+
 // CompareKernelRelease will compare two given kernel version/release
-// strings and return -1, 0 or 1 if given version is less, equal or bigger,
-// respectively, than the given one
+// strings and returns a KernelVersionComparison constant that shows
+// the comparsion of the given kernel version to the base.
+// For example CompareKernelRelease("5.8.1", "4.12.3") == KernelVersionOlder
+// It also returns an error incase of a malformed kernel version.
+//
+// Consumers should use the constants defined in this package for checking
+// the results: KernelVersionOlder, KernelVersionEqual, KernelVersionNewer
 //
 // Examples of $(uname -r):
 //
@@ -72,26 +86,44 @@ func UnameMachine() (string, error) {
 // 4.18.0-305.7.1.el8_4.centos.x86_64 (centos)
 // 4.18.0-305.7.1.el8_4.centos.plus.x86_64 (centos + plus repo)
 // 5.13.13-arch1-1 (archlinux)
-//
-func CompareKernelRelease(base, given string) int {
+func CompareKernelRelease(base, given string) (KernelVersionComparison, error) {
 	b := strings.Split(base, "-") // [base]-xxx
 	b = strings.Split(b[0], ".")  // [major][minor][patch]
 
+	for len(b) < 3 {
+		b = append(b, "0")
+	}
+	if len(b) != 3 {
+		return KernelVersionInvalid, fmt.Errorf("invalid base kernel version format: %s", base)
+	}
+
 	g := strings.Split(given, "-")
 	g = strings.Split(g[0], ".")
+	for len(g) < 3 {
+		g = append(b, "0")
+	}
+	if len(g) != 3 {
+		return KernelVersionInvalid, fmt.Errorf("invalid given kernel version format: %s", given)
+	}
 
 	for n := 0; n <= 2; n++ {
-		i, _ := strconv.Atoi(g[n])
-		j, _ := strconv.Atoi(b[n])
+		i, err := strconv.Atoi(g[n])
+		if err != nil {
+			return KernelVersionInvalid, fmt.Errorf("invalid given kernel version value: %s issue with: %s", given, g[n])
+		}
+		j, err := strconv.Atoi(b[n])
+		if err != nil {
+			return KernelVersionInvalid, fmt.Errorf("invalid base kernel version value: %s issue with: %s", base, b[n])
+		}
 
 		if i > j {
-			return 1 // given is bigger
+			return KernelVersionNewer, nil
 		} else if i < j {
-			return -1 // given is less
+			return KernelVersionOlder, nil
 		} else {
-			continue // equal
+			continue
 		}
 	}
 
-	return 0 // equal
+	return KernelVersionEqual, nil
 }
