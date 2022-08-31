@@ -5,6 +5,7 @@ package libbpfgo
 
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/resource.h>
 #include <sys/syscall.h>
@@ -60,7 +61,7 @@ struct ring_buffer * init_ring_buf(int map_fd, uintptr_t ctx)
 
     rb = ring_buffer__new(map_fd, ringbufferCallback, (void*)ctx, NULL);
     if (!rb) {
-        fprintf(stderr, "Failed to initialize ring buffer\n");
+        fprintf(stderr, "Failed to initialize ring buffer: %s\n", strerror(errno));
         return NULL;
     }
 
@@ -76,8 +77,8 @@ struct perf_buffer * init_perf_buf(int map_fd, int page_cnt, uintptr_t ctx)
 
     pb = perf_buffer__new(map_fd, page_cnt, perfCallback, perfLostCallback,
                           (void *) ctx, &pb_opts);
-    if (libbpf_get_error(pb)) {
-        fprintf(stderr, "Failed to initialize perf buffer!\n");
+    if (!pb) {
+        fprintf(stderr, "Failed to initialize perf buffer: %s\n", strerror(errno));
         return NULL;
     }
 
