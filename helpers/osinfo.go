@@ -152,7 +152,6 @@ func GetOSInfo() (*OSInfo, error) {
 // OSRelease is relevant to examples such as:
 // 1) OSInfo.OSReleaseInfo[helpers.OS_KERNEL_RELEASE] => will provide $(uname -r) string
 // 2) if OSInfo.GetReleaseID() == helpers.UBUNTU => {} will allow running code in specific distribution
-//
 type OSInfo struct {
 	osReleaseFieldValues map[OSReleaseField]string
 	osReleaseID          OSReleaseID
@@ -190,9 +189,11 @@ func (btfi *OSInfo) GetOSReleaseAllFieldValues() map[OSReleaseField]string {
 // to the current running version and return -1, 0 or 1 if given version is less,
 // equal or bigger, respectively, than running one. Example:
 //
-// OSInfo.CompareOSBaseKernelRelease("5.11.0"))
+// Consumers should use the constants defined in this package for checking
+// the results: KernelVersionOlder, KernelVersionEqual, KernelVersionNewer
 //
-func (btfi *OSInfo) CompareOSBaseKernelRelease(version string) int {
+// OSInfo.CompareOSBaseKernelRelease("5.11.0"))
+func (btfi *OSInfo) CompareOSBaseKernelRelease(version string) (KernelVersionComparison, error) {
 	return CompareKernelRelease(btfi.osReleaseFieldValues[OS_KERNEL_RELEASE], version)
 }
 
