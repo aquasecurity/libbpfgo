@@ -89,7 +89,6 @@ const (
 func CompareKernelRelease(base, given string) (KernelVersionComparison, error) {
 	b := strings.Split(base, "-") // [base]-xxx
 	b = strings.Split(b[0], ".")  // [major][minor][patch]
-
 	for len(b) < 3 {
 		b = append(b, "0")
 	}
@@ -100,7 +99,7 @@ func CompareKernelRelease(base, given string) (KernelVersionComparison, error) {
 	g := strings.Split(given, "-")
 	g = strings.Split(g[0], ".")
 	for len(g) < 3 {
-		g = append(b, "0")
+		g = append(g, "0")
 	}
 	if len(g) != 3 {
 		return KernelVersionInvalid, fmt.Errorf("invalid given kernel version format: %s", given)
