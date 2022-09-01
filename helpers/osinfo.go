@@ -186,13 +186,14 @@ func (btfi *OSInfo) GetOSReleaseAllFieldValues() map[OSReleaseField]string {
 }
 
 // CompareOSBaseKernelRelease will compare a given kernel version/release string
-// to the current running version and return -1, 0 or 1 if given version is less,
-// equal or bigger, respectively, than running one. Example:
+// to the current running version and returns a KernelVersionComparison constant
+// that shows the relationship of the given kernel version to the running kernel.
+//
+// For example, if the running kernel is 5.18.0 and pass "4.3.2", the result
+// would be KernelVersionOlder because 4.3.2 is older than the running kernel
 //
 // Consumers should use the constants defined in this package for checking
 // the results: KernelVersionOlder, KernelVersionEqual, KernelVersionNewer
-//
-// OSInfo.CompareOSBaseKernelRelease("5.11.0"))
 func (btfi *OSInfo) CompareOSBaseKernelRelease(version string) (KernelVersionComparison, error) {
 	return CompareKernelRelease(btfi.osReleaseFieldValues[OS_KERNEL_RELEASE], version)
 }

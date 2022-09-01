@@ -71,8 +71,10 @@ const (
 
 // CompareKernelRelease will compare two given kernel version/release
 // strings and returns a KernelVersionComparison constant that shows
-// the comparsion of the given kernel version to the base.
+// the relationship of the given kernel version to the base.
 // For example CompareKernelRelease("5.8.1", "4.12.3") == KernelVersionOlder
+// because 4.12.3 is older than 5.8.1
+//
 // It also returns an error incase of a malformed kernel version.
 //
 // Consumers should use the constants defined in this package for checking
@@ -106,23 +108,23 @@ func CompareKernelRelease(base, given string) (KernelVersionComparison, error) {
 	}
 
 	for n := 0; n <= 2; n++ {
-		i, err := strconv.Atoi(g[n])
+		givenValue, err := strconv.Atoi(g[n])
 		if err != nil {
 			return KernelVersionInvalid, fmt.Errorf("invalid given kernel version value: %s issue with: %s", given, g[n])
 		}
-		j, err := strconv.Atoi(b[n])
+		baseValue, err := strconv.Atoi(b[n])
 		if err != nil {
 			return KernelVersionInvalid, fmt.Errorf("invalid base kernel version value: %s issue with: %s", base, b[n])
 		}
 
-		if i > j {
+		if givenValue > baseValue {
 			return KernelVersionNewer, nil
-		} else if i < j {
+		} else if givenValue < baseValue {
 			return KernelVersionOlder, nil
 		} else {
 			continue
 		}
 	}
-
+	fmt.Printf("equal")
 	return KernelVersionEqual, nil
 }
