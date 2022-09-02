@@ -31,7 +31,7 @@ CGO_CFLAGS_STATIC = "-I$(abspath $(OUTPUT))"
 CGO_LDFLAGS_STATIC = "-lelf -lz $(LIBBPF_OBJ)"
 CGO_EXTLDFLAGS_STATIC = '-w -extldflags "-static"'
 
-CGO_CFGLAGS_DYN = "-I. -I/usr/include/"
+CGO_CFLAGS_DYN = "-I. -I/usr/include/"
 CGO_LDFLAGS_DYN = "-lelf -lz -lbpf"
 
 # default == shared lib from OS package
