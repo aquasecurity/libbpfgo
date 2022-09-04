@@ -125,6 +125,5 @@ func CompareKernelRelease(base, given string) (KernelVersionComparison, error) {
 			continue
 		}
 	}
-	fmt.Printf("equal")
 	return KernelVersionEqual, nil
 }
