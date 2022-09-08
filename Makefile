@@ -95,14 +95,17 @@ $(VMLINUXH): $(OUTPUT)
 		echo "ERROR: kernel does not seem to support BTF"; \
 		exit 1; \
 	fi
-	@if [ ! -f $(VMLINUXH) ]; then \
-		if [ ! $(BPFTOOL) ]; then \
-			echo "ERROR: could not find bpftool"; \
-			exit 1; \
-		fi; \
-		echo "INFO: generating $(VMLINUXH) from $(BTFFILE)"; \
-		$(BPFTOOL) btf dump file $(BTFFILE) format c > $(VMLINUXH); \
-	fi
+	@if [ ! $(BPFTOOL) ]; then \
+		echo "ERROR: could not find bpftool"; \
+		exit 1; \
+	fi;
+
+	@echo "INFO: generating $(VMLINUXH) from $(BTFFILE)"; \
+	if ! $(BPFTOOL) btf dump file $(BTFFILE) format c > $(VMLINUXH); then \
+		echo "ERROR: could not create $(VMLINUXH)"; \
+		rm -f "$(VMLINUXH)"; \
+		exit 1; \
+	fi;
 
 # static libbpf generation for the git submodule
 
