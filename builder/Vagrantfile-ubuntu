@@ -1,0 +1,70 @@
+ARCH = ENV["ARCH"] || "amd64"
+HOSTOS = ENV["HOSTOS"] || "undefined"
+
+if ! %w(amd64 arm64).include?(ARCH) then
+    puts "ERROR: ARCH #{ARCH} not supported"
+    abort
+end
+
+if ! %w(Linux Darwin).include?(HOSTOS) then
+    puts "ERROR: HOSTOS #{HOSTOS} not supported"
+    abort
+end
+
+VM_NAME = "libbpfgo-#{ARCH}-vm"
+VM_SOURCE = "/vagrant"
+
+Vagrant.configure("2") do |config|
+  case ARCH
+  when "amd64"
+    config.vm.box = "generic/ubuntu2204"
+  when "arm64"
+    # unique 22.04 arm64 box available to date
+    # sha256sum c209ab013280d3cd26a344def60b7b19fbb427de904ea285057d94ca6ac82dd5
+    # - http://old-releases.ubuntu.com/releases/jammy/SHA256SUMS
+    # - http://old-releases.ubuntu.com/releases/jammy/ubuntu-22.04-live-server-arm64.iso
+    # - https://gitlab.com/jnh3/m1-baseboxes/-/blob/main/ubuntu/ubuntu-22.04-arm64.pkr.hcl#L11-16
+    config.vm.box = "jharoian3/ubuntu-22.04-arm64"
+  end
+  
+  config.vm.hostname = VM_NAME
+  config.vm.synced_folder "./", "#{VM_SOURCE}"
+  
+  case HOSTOS
+  when "Linux"
+    config.vm.provider "virtualbox" do |vb|
+      vb.name = VM_NAME
+      vb.cpus = "4"
+      vb.memory = "2048"
+    end
+  when "Darwin"
+    config.vm.provider "parallels" do |prl|
+      prl.name = VM_NAME
+    end
+  end
+  
+  setup_ssh(config)
+    
+  config.vm.provision :shell, inline: "echo INFO: Starting Provision"
+
+  config.vm.provision :shell, inline: "ARCH=#{ARCH} #{VM_SOURCE}/builder/prepare-ubuntu.sh"
+
+  config.vm.provision :shell, inline: "echo INFO: Provision finished, now connect via ssh"
+end
+
+def setup_ssh(config)
+  config.ssh.extra_args = ["-t", "cd #{VM_SOURCE}; bash --login"]
+
+  # workaround for ubuntu 22.04 disabled ssh-rsa support
+  # - https://it-jog.com/khow/vag/vaguperror-ubuntu2204
+  if ARGV[0] == "up" then
+    config.ssh.insert_key = false
+    config.ssh.private_key_path = nil
+    config.ssh.username = "vagrant"
+    config.ssh.password = "vagrant"
+  end
+  config.vm.provision "shell", inline: <<-SHELL
+     sudo echo PubkeyAcceptedAlgorithms +ssh-rsa >> /etc/ssh/sshd_config
+     sudo sudo systemctl restart sshd
+  SHELL
+end

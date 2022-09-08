@@ -7,8 +7,10 @@ HELPERS = ./helpers
 CC = gcc
 CLANG = clang
 GO = go
+VAGRANT = vagrant
 
-ARCH := $(shell uname -m | sed 's/x86_64/amd64/g; s/aarch64/arm64/g')
+HOSTOS = $(shell uname)
+ARCH ?= $(shell uname -m | sed 's/x86_64/amd64/g; s/aarch64/arm64/g')
 
 BTFFILE = /sys/kernel/btf/vmlinux
 BPFTOOL = $(shell which bpftool || /bin/false)
@@ -182,6 +184,26 @@ helpers-test-static-run: libbpfgo-static
 
 helpers-test-dynamic-run: libbpfgo-dynamic
 	sudo $(GO) test -v $(HELPERS)/...
+
+# vagrant
+
+VAGRANT_DIR = $(abspath ./builder)
+
+.PHONY: vagrant-up
+.PHONY: vagrant-destroy
+.PHONY: vagrant-halt
+.PHONY: vagrant-ssh
+
+vagrant-up: .vagrant-up
+vagrant-destroy: .vagrant-destroy
+vagrant-halt: .vagrant-halt
+vagrant-ssh: .vagrant-ssh
+
+.vagrant-%:
+	VAGRANT_VAGRANTFILE=$(VAGRANT_DIR)/Vagrantfile-ubuntu \
+		ARCH=$(ARCH) \
+		HOSTOS=$(HOSTOS) \
+		$(VAGRANT) $*
 
 # output
 
