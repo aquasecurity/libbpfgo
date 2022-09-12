@@ -20,8 +20,9 @@ import (
  */
 
 type KernelSymbolTable struct {
-	symbolMap   map[string]KernelSymbol
-	initialized bool
+	symbolMap     map[string]KernelSymbol
+	symbolAddrMap map[uint64]KernelSymbol
+	initialized   bool
 }
 
 type KernelSymbol struct {
@@ -38,6 +39,7 @@ type KernelSymbol struct {
 func NewKernelSymbolsMap() (*KernelSymbolTable, error) {
 	var KernelSymbols = KernelSymbolTable{}
 	KernelSymbols.symbolMap = make(map[string]KernelSymbol)
+	KernelSymbols.symbolAddrMap = make(map[uint64]KernelSymbol)
 	file, err := os.Open("/proc/kallsyms")
 	if err != nil {
 		return nil, fmt.Errorf("could not open /proc/kallsyms: %w", err)
@@ -68,7 +70,9 @@ func NewKernelSymbolsMap() (*KernelSymbolTable, error) {
 		}
 
 		symbolKey := fmt.Sprintf("%s_%s", symbolOwner, symbolName)
-		KernelSymbols.symbolMap[symbolKey] = KernelSymbol{symbolName, symbolType, symbolAddr, symbolOwner}
+		symbol := KernelSymbol{symbolName, symbolType, symbolAddr, symbolOwner}
+		KernelSymbols.symbolMap[symbolKey] = symbol
+		KernelSymbols.symbolAddrMap[symbolAddr] = symbol
 	}
 	KernelSymbols.initialized = true
 	return &KernelSymbols, nil
@@ -109,10 +113,9 @@ func (k *KernelSymbolTable) GetSymbolByAddr(addr uint64) (*KernelSymbol, error) 
 	if !k.initialized {
 		return nil, errors.New("kernel symbols map isnt initialized")
 	}
-	for _, Symbol := range k.symbolMap {
-		if Symbol.Address == addr {
-			return &Symbol, nil
-		}
+	symbol, exist := k.symbolAddrMap[addr]
+	if exist {
+		return &symbol, nil
 	}
 	return nil, fmt.Errorf("symbol not found at address: 0x%x", addr)
 }
