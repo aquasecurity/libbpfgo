@@ -113,6 +113,30 @@ int bpf_prog_detach_cgroup_legacy(
 
 	return syscall(__NR_bpf, BPF_PROG_DETACH, &attr, sizeof(attr));
 }
+
+struct bpf_object * open_bpf_object(
+	char* btf_file_path,
+	char* kconfig_path,
+	char* bpf_obj_name,
+	const void* obj_buf,
+	size_t obj_buf_size)
+{
+	struct bpf_object_open_opts opts = {};
+	opts.btf_custom_path = btf_file_path;
+	opts.kconfig = kconfig_path;
+	opts.object_name = bpf_obj_name;
+	opts.sz = sizeof(opts);
+
+	struct bpf_object *obj = bpf_object__open_mem(obj_buf, obj_buf_size, &opts);
+	if (obj == NULL) {
+		int saved_errno = errno;
+		fprintf(stderr, "Failed to open bpf object: %s\n", strerror(errno));
+		errno = saved_errno;
+		return NULL;
+	}
+
+	return obj;
+}
 */
 import "C"
 
@@ -453,30 +477,26 @@ func NewModuleFromBufferArgs(args NewModuleArgs) (*Module, error) {
 	if args.BTFObjPath == "" {
 		args.BTFObjPath = "/sys/kernel/btf/vmlinux"
 	}
-	btfFile := C.CString(args.BTFObjPath)
-	bpfName := C.CString(args.BPFObjName)
-	bpfBuff := unsafe.Pointer(C.CBytes(args.BPFObjBuff))
-	bpfBuffSize := C.size_t(len(args.BPFObjBuff))
 
-	opts := C.struct_bpf_object_open_opts{}
-	opts.object_name = bpfName
-	opts.sz = C.sizeof_struct_bpf_object_open_opts
-	opts.btf_custom_path = btfFile // instruct libbpf to use user provided kernel BTF file
+	CBTFFilePath := C.CString(args.BTFObjPath)
+	CKconfigPath := C.CString(args.KConfigFilePath)
+	CBPFObjName := C.CString(args.BPFObjName)
+	CBPFBuff := unsafe.Pointer(C.CBytes(args.BPFObjBuff))
+	CBPFBuffSize := C.size_t(len(args.BPFObjBuff))
 
-	if len(args.KConfigFilePath) > 2 {
-		kConfigFile := C.CString(args.KConfigFilePath)
-		opts.kconfig = kConfigFile // instruct libbpf to use user provided KConfigFile
-		defer C.free(unsafe.Pointer(kConfigFile))
+	if len(args.KConfigFilePath) <= 2 {
+		C.free(unsafe.Pointer(CKconfigPath))
+		CKconfigPath = nil
 	}
 
-	obj, errno := C.bpf_object__open_mem(bpfBuff, bpfBuffSize, &opts)
+	obj, errno := C.open_bpf_object(CBTFFilePath, CKconfigPath, CBPFObjName, CBPFBuff, CBPFBuffSize)
 	if obj == nil {
 		return nil, fmt.Errorf("failed to open BPF object %s: %w", args.BPFObjName, errno)
 	}
 
-	C.free(bpfBuff)
-	C.free(unsafe.Pointer(bpfName))
-	C.free(unsafe.Pointer(btfFile))
+	C.free(CBPFBuff)
+	C.free(unsafe.Pointer(CBPFObjName))
+	C.free(unsafe.Pointer(CBTFFilePath))
 
 	return &Module{
 		obj: obj,
