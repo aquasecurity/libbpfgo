@@ -1,4 +1,4 @@
-package rwarray
+package libbpfgo
 
 import (
 	"sync"
@@ -6,12 +6,12 @@ import (
 )
 
 func TestRWArrayWrite(t *testing.T) {
-	a := NewRWArray(1024)
+	a := newRWArray(1024)
 
 	last := 0
 
 	for i := 0; i < 1000; i++ {
-		slot1 := a.Put(&i)
+		slot1 := a.put(&i)
 		if slot1 < 0 {
 			t.Errorf("failed to put")
 		}
@@ -20,7 +20,7 @@ func TestRWArrayWrite(t *testing.T) {
 			t.Fatalf("Put didn't occupy first available; expected=%v, got=%v", last, slot1)
 		}
 
-		slot2 := a.Put(&i)
+		slot2 := a.put(&i)
 		if slot2 < 0 {
 			t.Fatalf("failed to put")
 		}
@@ -36,16 +36,16 @@ func TestRWArrayWrite(t *testing.T) {
 }
 
 func TestRWArrayExhaust(t *testing.T) {
-	a := NewRWArray(1024)
+	a := newRWArray(1024)
 
 	last := -1
 
 	for {
 		v := 123
-		slot := a.Put(&v)
+		slot := a.put(&v)
 
 		if slot < 0 {
-			if uint(last) != a.Capacity()-1 {
+			if uint(last) != a.capacity()-1 {
 				t.Fatalf("failed to put, last=%v", last)
 			}
 			return
@@ -60,11 +60,11 @@ func TestRWArrayExhaust(t *testing.T) {
 }
 
 func TestRWArrayRead(t *testing.T) {
-	a := NewRWArray(1024)
+	a := newRWArray(1024)
 
 	for i := 0; i < 1000; i++ {
 		v := i
-		slot := a.Put(&v)
+		slot := a.put(&v)
 		if slot != i {
 			t.Errorf("Put returned non-sequential slot; expected=%v, got=%v", i, slot)
 		}
@@ -80,8 +80,8 @@ func TestRWArrayRead(t *testing.T) {
 
 // Designed to be run under race detector
 func TestRWArrayConcurrent(t *testing.T) {
-	a := NewRWArray(16 * 1024)
-	capacity := a.Capacity()
+	a := newRWArray(16 * 1024)
+	capacity := a.capacity()
 
 	stop := make(chan struct{})
 	wg := sync.WaitGroup{}
@@ -89,7 +89,7 @@ func TestRWArrayConcurrent(t *testing.T) {
 	// Populate every other slot
 	v := 123
 	for i := uint(0); i < capacity; i++ {
-		a.Put(&v)
+		a.put(&v)
 	}
 	for i := uint(1); i < capacity; i += 2 {
 		a.Remove(i)
@@ -99,7 +99,7 @@ func TestRWArrayConcurrent(t *testing.T) {
 		for {
 			// fill the holes
 			for i := uint(0); i < capacity/2; i++ {
-				a.Put(&v)
+				a.put(&v)
 			}
 
 			// make some holes

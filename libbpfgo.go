@@ -148,8 +148,6 @@ import (
 	"sync"
 	"syscall"
 	"unsafe"
-
-	"github.com/aquasecurity/libbpfgo/helpers/rwarray"
 )
 
 const (
@@ -1675,7 +1673,7 @@ func doAttachUprobe(prog *BPFProg, isUretprobe bool, pid int, path string, offse
 	return bpfLink, nil
 }
 
-var eventChannels = rwarray.NewRWArray(maxEventChannels)
+var eventChannels = newRWArray(maxEventChannels)
 
 func (m *Module) InitRingBuf(mapName string, eventsChan chan []byte) (*RingBuffer, error) {
 	bpfMap, err := m.GetMap(mapName)
@@ -1687,7 +1685,7 @@ func (m *Module) InitRingBuf(mapName string, eventsChan chan []byte) (*RingBuffe
 		return nil, fmt.Errorf("events channel can not be nil")
 	}
 
-	slot := eventChannels.Put(eventsChan)
+	slot := eventChannels.put(eventsChan)
 	if slot == -1 {
 		return nil, fmt.Errorf("max ring buffers reached")
 	}
@@ -1792,7 +1790,7 @@ func (m *Module) InitPerfBuf(mapName string, eventsChan chan []byte, lostChan ch
 		lostChan:   lostChan,
 	}
 
-	slot := eventChannels.Put(perfBuf)
+	slot := eventChannels.put(perfBuf)
 	if slot == -1 {
 		return nil, fmt.Errorf("max number of ring/perf buffers reached")
 	}
