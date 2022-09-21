@@ -21,28 +21,39 @@ int libbpf_print_fn(enum libbpf_print_level level,
 	if (level != LIBBPF_WARN)
 		return 0;
 
-	va_list check;
-	va_copy(check, args);
-	char *str = va_arg(check, char *);
+	va_list exclusivity_check, cgroup_check;
+	va_copy(exclusivity_check, args);
+	va_copy(cgroup_check, args);
+	char *str = va_arg(exclusivity_check, char *);
 
 	// BUG: https://github.com/aquasecurity/tracee/issues/1676
 
 	if (strstr(str, "Exclusivity flag on") != NULL) {
-		va_end(check);
+		va_end(exclusivity_check);
 		return 0;
 	}
+	va_end(exclusivity_check);
 
 	// AttachCgroupLegacy() will first try AttachCgroup() and it
 	// might fail. This is not an error and is the best way of
 	// probing for eBPF cgroup attachment link existence.
 
-	str = va_arg(check, char *);
+	str = va_arg(cgroup_check, char *);
 	if (strstr(str, "cgroup") != NULL) {
-		str = va_arg(check, char *);
-		if (strstr(str, "Invalid argument") != NULL)
+		str = va_arg(cgroup_check, char *);
+		if (strstr(str, "Invalid argument") != NULL) {
+			va_end(cgroup_check);
 			return 0;
+		}
 	}
 
+	va_end(cgroup_check);
+	// `args` is initialised and cleared in the call-site [1], as per the UNIX
+	// spec [2]:
+	// > Corresponding va_start() and va_end() macro calls must be in the same function.
+	//
+	// [1]: https://github.com/libbpf/libbpf/blob/a0d1e22c7790f22809d33b3c5c1e3ded89157cc8/src/libbpf.c#L233-L235
+	// [2]: https://www.ibm.com/docs/en/zos/2.3.0?topic=lf-va-arg-va-copy-va-end-va-start-access-function-arguments
 	return vfprintf(stderr, format, args);
 }
 
