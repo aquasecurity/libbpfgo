@@ -21,13 +21,15 @@ int libbpf_print_fn(enum libbpf_print_level level,
 	if (level != LIBBPF_WARN)
 		return 0;
 
+	// NOTE: va_list args is managed in libbpf caller
+	// however, these copies must be matched with va_end() in this function
 	va_list exclusivity_check, cgroup_check;
 	va_copy(exclusivity_check, args);
 	va_copy(cgroup_check, args);
-	char *str = va_arg(exclusivity_check, char *);
 
 	// BUG: https://github.com/aquasecurity/tracee/issues/1676
 
+	char *str = va_arg(exclusivity_check, char *);
 	if (strstr(str, "Exclusivity flag on") != NULL) {
 		va_end(exclusivity_check);
 		return 0;
