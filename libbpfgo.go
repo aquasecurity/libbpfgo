@@ -21,13 +21,15 @@ int libbpf_print_fn(enum libbpf_print_level level,
 	if (level != LIBBPF_WARN)
 		return 0;
 
+	// NOTE: va_list args is managed in libbpf caller
+	// however, these copies must be matched with va_end() in this function
 	va_list exclusivity_check, cgroup_check;
 	va_copy(exclusivity_check, args);
 	va_copy(cgroup_check, args);
-	char *str = va_arg(exclusivity_check, char *);
 
 	// BUG: https://github.com/aquasecurity/tracee/issues/1676
 
+	char *str = va_arg(exclusivity_check, char *);
 	if (strstr(str, "Exclusivity flag on") != NULL) {
 		va_end(exclusivity_check);
 		return 0;
@@ -46,19 +48,8 @@ int libbpf_print_fn(enum libbpf_print_level level,
 			return 0;
 		}
 	}
-
 	va_end(cgroup_check);
-	// `args` is initialised and cleared in the call-site [1], as per the specs:
-	// [2]:
-	// > Each invocation of va_start() must be matched by a corresponding
-	// > invocation of va_end() in the same function. After the call
-	// > va_end(ap) the variable ap is undefined.
-	// [3]:
-	// > Corresponding va_start() and va_end() macro calls must be in the same function.
-	//
-	// [1]: https://github.com/libbpf/libbpf/blob/a0d1e22c7790f22809d33b3c5c1e3ded89157cc8/src/libbpf.c#L233-L235
-	// [2]: https://man7.org/linux/man-pages/man3/va_arg.3.html
-	// [3]: https://www.ibm.com/docs/en/zos/2.3.0?topic=lf-va-arg-va-copy-va-end-va-start-access-function-arguments
+
 	return vfprintf(stderr, format, args);
 }
 
