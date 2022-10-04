@@ -47,7 +47,7 @@ func (a *rwArray) put(v interface{}) int {
 	return -1
 }
 
-func (a *rwArray) Remove(index uint) {
+func (a *rwArray) remove(index uint) {
 	a.mux.Lock()
 	defer a.mux.Unlock()
 
@@ -59,7 +59,7 @@ func (a *rwArray) Remove(index uint) {
 	a.slots[index].used = false
 }
 
-func (a *rwArray) Get(index uint) interface{} {
+func (a *rwArray) get(index uint) interface{} {
 	if int(index) >= len(a.slots) {
 		return nil
 	}
