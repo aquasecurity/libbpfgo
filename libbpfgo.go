@@ -155,8 +155,6 @@ import (
 	"sync"
 	"syscall"
 	"unsafe"
-
-	"github.com/aquasecurity/libbpfgo/helpers/rwarray"
 )
 
 const (
@@ -1682,7 +1680,7 @@ func doAttachUprobe(prog *BPFProg, isUretprobe bool, pid int, path string, offse
 	return bpfLink, nil
 }
 
-var eventChannels = rwarray.NewRWArray(maxEventChannels)
+var eventChannels = newRWArray(maxEventChannels)
 
 func (m *Module) InitRingBuf(mapName string, eventsChan chan []byte) (*RingBuffer, error) {
 	bpfMap, err := m.GetMap(mapName)
@@ -1694,7 +1692,7 @@ func (m *Module) InitRingBuf(mapName string, eventsChan chan []byte) (*RingBuffe
 		return nil, fmt.Errorf("events channel can not be nil")
 	}
 
-	slot := eventChannels.Put(eventsChan)
+	slot := eventChannels.put(eventsChan)
 	if slot == -1 {
 		return nil, fmt.Errorf("max ring buffers reached")
 	}
@@ -1728,7 +1726,7 @@ func (rb *RingBuffer) Stop() {
 		// may have stopped at this point. Failure to drain it will
 		// result in a deadlock: the channel will fill up and the poll
 		// goroutine will block in the callback.
-		eventChan := eventChannels.Get(rb.slot).(chan []byte)
+		eventChan := eventChannels.get(rb.slot).(chan []byte)
 		go func() {
 			for range eventChan {
 			}
@@ -1752,7 +1750,7 @@ func (rb *RingBuffer) Close() {
 	}
 	rb.Stop()
 	C.ring_buffer__free(rb.rb)
-	eventChannels.Remove(rb.slot)
+	eventChannels.remove(rb.slot)
 	rb.closed = true
 }
 
@@ -1799,14 +1797,14 @@ func (m *Module) InitPerfBuf(mapName string, eventsChan chan []byte, lostChan ch
 		lostChan:   lostChan,
 	}
 
-	slot := eventChannels.Put(perfBuf)
+	slot := eventChannels.put(perfBuf)
 	if slot == -1 {
 		return nil, fmt.Errorf("max number of ring/perf buffers reached")
 	}
 
 	pb := C.init_perf_buf(bpfMap.fd, C.int(pageCnt), C.uintptr_t(slot))
 	if pb == nil {
-		eventChannels.Remove(uint(slot))
+		eventChannels.remove(uint(slot))
 		return nil, fmt.Errorf("failed to initialize perf buffer")
 	}
 
@@ -1863,7 +1861,7 @@ func (pb *PerfBuffer) Close() {
 	}
 	pb.Stop()
 	C.perf_buffer__free(pb.pb)
-	eventChannels.Remove(pb.slot)
+	eventChannels.remove(pb.slot)
 	pb.closed = true
 }
 
