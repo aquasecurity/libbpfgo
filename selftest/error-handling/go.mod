@@ -1,6 +1,6 @@
 module github.com/aquasecurity/libbpfgo/selftest/map-update
 
-go 1.18
+go 1.19
 
 require github.com/aquasecurity/libbpfgo v0.2.1-libbpf-0.4.0
 
