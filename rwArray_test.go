@@ -29,7 +29,7 @@ func TestRWArrayWrite(t *testing.T) {
 			t.Fatalf("slot1 (%v) < slot2 (%v)", slot1, slot2)
 		}
 
-		a.Remove(uint(slot2))
+		a.remove(uint(slot2))
 
 		last = slot2
 	}
@@ -71,7 +71,7 @@ func TestRWArrayRead(t *testing.T) {
 	}
 
 	for i := 0; i < 1000; i++ {
-		v := a.Get(uint(i)).(*int)
+		v := a.get(uint(i)).(*int)
 		if *v != i {
 			t.Errorf("Get returned wrong valuue; expected=%v, got=%v", i, *v)
 		}
@@ -92,7 +92,7 @@ func TestRWArrayConcurrent(t *testing.T) {
 		a.put(&v)
 	}
 	for i := uint(1); i < capacity; i += 2 {
-		a.Remove(i)
+		a.remove(i)
 	}
 
 	writer := func() {
@@ -104,7 +104,7 @@ func TestRWArrayConcurrent(t *testing.T) {
 
 			// make some holes
 			for i := uint(1); i < capacity; i += 2 {
-				a.Remove(i)
+				a.remove(i)
 			}
 
 			// time to exit?
@@ -119,7 +119,7 @@ func TestRWArrayConcurrent(t *testing.T) {
 	reader := func() {
 		for rounds := 0; rounds < 10; rounds++ {
 			for i := uint(0); i < capacity; i += 2 {
-				a.Get(i)
+				a.get(i)
 			}
 		}
 
