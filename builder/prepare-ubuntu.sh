@@ -7,7 +7,7 @@
 
 # variables
 
-[ -z "${GO_VERSION}" ] && GO_VERSION="1.19"
+[ -z "${GO_VERSION}" ] && GO_VERSION="1.18"
 [ -z "${CLANG_VERSION}" ] && CLANG_VERSION="12"
 [ -z "${ARCH}" ] && ARCH="amd64"
 

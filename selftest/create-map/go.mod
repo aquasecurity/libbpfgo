@@ -1,6 +1,6 @@
 module github.com/aquasecurity/libbpfgo/selftest/map-pin-info
 
-go 1.19
+go 1.18
 
 replace github.com/aquasecurity/libbpfgo => ../../
 
