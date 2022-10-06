@@ -776,6 +776,15 @@ func (b *BPFMap) GetValueReadInto(key unsafe.Pointer, value *[]byte) error {
 	return nil
 }
 
+func (b *BPFMap) SetInitialValue(value unsafe.Pointer) error {
+	sz := b.ValueSize()
+	ret := C.bpf_map__set_initial_value(b.bpfMap, value, C.ulong(sz))
+	if ret != 0 {
+		return fmt.Errorf("failed to set inital value for map %s: %w", b.name, syscall.Errno(-ret))
+	}
+	return nil
+}
+
 // BPFMapBatchOpts mirrors the C structure bpf_map_batch_opts.
 type BPFMapBatchOpts struct {
 	Sz        uint64
