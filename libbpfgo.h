@@ -12,6 +12,7 @@
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
 
+
 int libbpf_print_fn(enum libbpf_print_level level,
                     const char *format,
                     va_list args)
@@ -66,7 +67,9 @@ struct ring_buffer * init_ring_buf(int map_fd, uintptr_t ctx)
 
     rb = ring_buffer__new(map_fd, ringbufferCallback, (void*)ctx, NULL);
     if (!rb) {
+        int saved_errno = errno;
         fprintf(stderr, "Failed to initialize ring buffer: %s\n", strerror(errno));
+        errno = saved_errno;
         return NULL;
     }
 
@@ -83,7 +86,9 @@ struct perf_buffer * init_perf_buf(int map_fd, int page_cnt, uintptr_t ctx)
     pb = perf_buffer__new(map_fd, page_cnt, perfCallback, perfLostCallback,
                           (void *) ctx, &pb_opts);
     if (!pb) {
+        int saved_errno = errno;
         fprintf(stderr, "Failed to initialize perf buffer: %s\n", strerror(errno));
+        errno = saved_errno;
         return NULL;
     }
 
