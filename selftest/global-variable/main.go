@@ -1,12 +1,5 @@
 package main
 
-/*
-struct config_t {
-    int a;
-    int b;
-    int c;
-};
-*/
 import "C"
 import (
 	"encoding/binary"
@@ -24,16 +17,13 @@ func exitWithErr(err error) {
 	os.Exit(-1)
 }
 
-func initGlobalVariable(bpfModule *bpf.Module) {
-	rodata, err := bpfModule.GetMap(".rodata")
+func initGlobalVariable(bpfModule *bpf.Module, name string, value int) {
+	bmap, err := bpfModule.GetMap(name)
 	if err != nil {
 		exitWithErr(err)
 	}
-	conf := C.struct_config_t{}
-	conf.a = C.int(2000)
-	conf.b = C.int(20)
-	conf.c = C.int(1)
-	if err := rodata.SetInitialValue(unsafe.Pointer(&conf)); err != nil {
+	val := C.int(value)
+	if err := bmap.SetInitialValue(unsafe.Pointer(&val)); err != nil {
 		exitWithErr(err)
 	}
 }
@@ -45,7 +35,11 @@ func main() {
 	}
 	defer bpfModule.Close()
 
-	initGlobalVariable(bpfModule)
+	initGlobalVariable(bpfModule, ".rodata", 2000)
+	initGlobalVariable(bpfModule, ".rodata.foo", 10)
+	initGlobalVariable(bpfModule, ".rodata.bar", 8)
+	initGlobalVariable(bpfModule, ".data.baz", 2)
+	initGlobalVariable(bpfModule, ".data.qux", 1)
 
 	if err := bpfModule.BPFLoadObject(); err != nil {
 		exitWithErr(err)
