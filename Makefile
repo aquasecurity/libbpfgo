@@ -1,3 +1,7 @@
+
+.ONESHELL:
+SHELL = /bin/bash
+
 BASEDIR = $(abspath ./)
 
 OUTPUT = ./output
@@ -8,6 +12,7 @@ CC = gcc
 CLANG = clang
 GO = go
 VAGRANT = vagrant
+CLANG_FMT = clang-format
 
 HOSTOS = $(shell uname)
 ARCH ?= $(shell uname -m | sed 's/x86_64/amd64/g; s/aarch64/arm64/g')
@@ -204,6 +209,34 @@ vagrant-ssh: .vagrant-ssh
 		ARCH=$(ARCH) \
 		HOSTOS=$(HOSTOS) \
 		$(VAGRANT) $*
+
+# fmt-check
+
+fmt-check:
+	@errors=0
+	echo "Checking C and eBPF files and headers formatting..."
+	$(CLANG_FMT) --dry-run -i ./libbpfgo.h > /tmp/check-c-fmt 2>&1
+	clangfmtamount=$$(cat /tmp/check-c-fmt | wc -l)
+	if [[ $$clangfmtamount -ne 0 ]]; then
+		head -n30 /tmp/check-c-fmt
+		errors=1
+	fi
+	rm -f /tmp/check-c-fmt
+#
+	if [[ $$errors -ne 0 ]]; then
+		echo
+		echo "Please fix formatting errors above!"
+		echo "Use: $(MAKE) fmt-fix target".
+		echo
+		exit 1
+	fi
+
+
+# fmt-fix
+
+fmt-fix:
+	@echo "Fixing C and eBPF files and headers formatting..."
+	$(CLANG_FMT) -i --verbose ./libbpfgo.h
 
 # output
 
