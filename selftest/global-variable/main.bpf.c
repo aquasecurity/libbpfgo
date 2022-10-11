@@ -13,11 +13,12 @@ struct {
     __uint(max_entries, 1 << 24);
 } events SEC(".maps");
 
-const volatile int foobar SEC(".rodata") = 0;
-const volatile int foo SEC(".rodata.foo") = 0;
-const volatile int bar SEC(".rodata.bar") = 0;
-const volatile int baz SEC(".data.baz") = 0;
-const volatile int qux SEC(".data.qux") = 0;
+const volatile int foo SEC(".rodata") = 0;
+const volatile int bar SEC(".data") = 0;
+const volatile int baz SEC(".rodata.baz") = 0;
+const volatile int qux SEC(".rodata.qux") = 0;
+const volatile int quux SEC(".data.quux") = 0;
+const volatile int quuz SEC(".data.quuz") = 0;
 
 long ringbuffer_flags = 0;
 
@@ -32,7 +33,7 @@ int kprobe__sys_mmap(struct pt_regs *ctx)
         return 1;
     }
 
-    *process = foobar + foo + bar + baz + qux;
+    *process = foo + bar + baz + qux + quux + quuz;
 
     bpf_ringbuf_submit(process, ringbuffer_flags);
     return 1;

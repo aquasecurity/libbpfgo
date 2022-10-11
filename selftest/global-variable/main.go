@@ -17,13 +17,9 @@ func exitWithErr(err error) {
 	os.Exit(-1)
 }
 
-func initGlobalVariable(bpfModule *bpf.Module, name string, value int) {
-	bmap, err := bpfModule.GetMap(name)
-	if err != nil {
-		exitWithErr(err)
-	}
+func initGlobalVariable(bpfModule *bpf.Module, sectionName string, value int) {
 	val := C.int(value)
-	if err := bmap.SetInitialValue(unsafe.Pointer(&val)); err != nil {
+	if err := bpfModule.InitGlobalVariable(sectionName, unsafe.Pointer(&val)); err != nil {
 		exitWithErr(err)
 	}
 }
@@ -35,11 +31,12 @@ func main() {
 	}
 	defer bpfModule.Close()
 
-	initGlobalVariable(bpfModule, ".rodata", 2000)
-	initGlobalVariable(bpfModule, ".rodata.foo", 10)
-	initGlobalVariable(bpfModule, ".rodata.bar", 8)
-	initGlobalVariable(bpfModule, ".data.baz", 2)
-	initGlobalVariable(bpfModule, ".data.qux", 1)
+	initGlobalVariable(bpfModule, ".rodata", 1500)
+	initGlobalVariable(bpfModule, ".data", 500)
+	initGlobalVariable(bpfModule, ".rodata.baz", 10)
+	initGlobalVariable(bpfModule, ".rodata.qux", 8)
+	initGlobalVariable(bpfModule, ".data.quux", 2)
+	initGlobalVariable(bpfModule, ".data.quuz", 1)
 
 	if err := bpfModule.BPFLoadObject(); err != nil {
 		exitWithErr(err)

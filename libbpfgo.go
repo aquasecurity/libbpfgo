@@ -391,6 +391,15 @@ func (m *Module) BPFLoadObject() error {
 	return nil
 }
 
+// InitGlobalVariable init global variable (defined by .data, .data.<whatever>, .rodata or .rodata.<whatever> section) in bpf code
+func (m *Module) InitGlobalVariable(sectionName string, value unsafe.Pointer) error {
+	internalMap, err := m.GetMap(sectionName)
+	if err != nil {
+		return err
+	}
+	return internalMap.setInitialValue(value)
+}
+
 // BPFMapCreateOpts mirrors the C structure bpf_map_create_opts
 type BPFMapCreateOpts struct {
 	Size                  uint64
@@ -631,7 +640,7 @@ func (b *BPFMap) GetValueReadInto(key unsafe.Pointer, value *[]byte) error {
 	return nil
 }
 
-func (b *BPFMap) SetInitialValue(value unsafe.Pointer) error {
+func (b *BPFMap) setInitialValue(value unsafe.Pointer) error {
 	sz := b.ValueSize()
 	ret := C.bpf_map__set_initial_value(b.bpfMap, value, C.ulong(sz))
 	if ret != 0 {
