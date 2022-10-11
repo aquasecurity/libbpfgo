@@ -6,6 +6,17 @@ on:
       - main
   workflow_call:
 jobs:
+  analyze-code:
+    name: Analyze Code
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+      - name: Install Dependencies
+        uses: ./.github/actions/build-dependencies
+      - name: Check Code Style
+        run: |
+          make fmt-check
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-22.04
