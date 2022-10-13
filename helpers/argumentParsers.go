@@ -3,12 +3,11 @@ package helpers
 import (
 	"encoding/binary"
 	"fmt"
-	"golang.org/x/sys/unix"
 	"net"
 	"strconv"
 	"strings"
 
-	"github.com/aquasecurity/libbpfgo"
+	"golang.org/x/sys/unix"
 )
 
 type SystemFunctionArgument interface {
@@ -1708,45 +1707,127 @@ func ParseGetSocketOption(rawValue uint64) (SocketOptionArgument, error) {
 	return v, nil
 }
 
-var bpfProgTypeMap = map[uint64]libbpfgo.BPFProgType{
-	libbpfgo.BPFProgTypeUnspec.Value():                libbpfgo.BPFProgTypeUnspec,
-	libbpfgo.BPFProgTypeSocketFilter.Value():          libbpfgo.BPFProgTypeSocketFilter,
-	libbpfgo.BPFProgTypeKprobe.Value():                libbpfgo.BPFProgTypeKprobe,
-	libbpfgo.BPFProgTypeSchedCls.Value():              libbpfgo.BPFProgTypeSchedCls,
-	libbpfgo.BPFProgTypeSchedAct.Value():              libbpfgo.BPFProgTypeSchedAct,
-	libbpfgo.BPFProgTypeTracepoint.Value():            libbpfgo.BPFProgTypeTracepoint,
-	libbpfgo.BPFProgTypeXdp.Value():                   libbpfgo.BPFProgTypeXdp,
-	libbpfgo.BPFProgTypePerfEvent.Value():             libbpfgo.BPFProgTypePerfEvent,
-	libbpfgo.BPFProgTypeCgroupSkb.Value():             libbpfgo.BPFProgTypeCgroupSkb,
-	libbpfgo.BPFProgTypeCgroupSock.Value():            libbpfgo.BPFProgTypeCgroupSock,
-	libbpfgo.BPFProgTypeLwtIn.Value():                 libbpfgo.BPFProgTypeLwtIn,
-	libbpfgo.BPFProgTypeLwtOut.Value():                libbpfgo.BPFProgTypeLwtOut,
-	libbpfgo.BPFProgTypeLwtXmit.Value():               libbpfgo.BPFProgTypeLwtXmit,
-	libbpfgo.BPFProgTypeSockOps.Value():               libbpfgo.BPFProgTypeSockOps,
-	libbpfgo.BPFProgTypeSkSkb.Value():                 libbpfgo.BPFProgTypeSkSkb,
-	libbpfgo.BPFProgTypeCgroupDevice.Value():          libbpfgo.BPFProgTypeCgroupDevice,
-	libbpfgo.BPFProgTypeSkMsg.Value():                 libbpfgo.BPFProgTypeSkMsg,
-	libbpfgo.BPFProgTypeRawTracepoint.Value():         libbpfgo.BPFProgTypeRawTracepoint,
-	libbpfgo.BPFProgTypeCgroupSockAddr.Value():        libbpfgo.BPFProgTypeCgroupSockAddr,
-	libbpfgo.BPFProgTypeLwtSeg6Local.Value():          libbpfgo.BPFProgTypeLwtSeg6Local,
-	libbpfgo.BPFProgTypeLircMode2.Value():             libbpfgo.BPFProgTypeLircMode2,
-	libbpfgo.BPFProgTypeSkReuseport.Value():           libbpfgo.BPFProgTypeSkReuseport,
-	libbpfgo.BPFProgTypeFlowDissector.Value():         libbpfgo.BPFProgTypeFlowDissector,
-	libbpfgo.BPFProgTypeCgroupSysctl.Value():          libbpfgo.BPFProgTypeCgroupSysctl,
-	libbpfgo.BPFProgTypeRawTracepointWritable.Value(): libbpfgo.BPFProgTypeRawTracepointWritable,
-	libbpfgo.BPFProgTypeCgroupSockopt.Value():         libbpfgo.BPFProgTypeCgroupSockopt,
-	libbpfgo.BPFProgTypeTracing.Value():               libbpfgo.BPFProgTypeTracing,
-	libbpfgo.BPFProgTypeStructOps.Value():             libbpfgo.BPFProgTypeStructOps,
-	libbpfgo.BPFProgTypeExt.Value():                   libbpfgo.BPFProgTypeExt,
-	libbpfgo.BPFProgTypeLsm.Value():                   libbpfgo.BPFProgTypeLsm,
-	libbpfgo.BPFProgTypeSkLookup.Value():              libbpfgo.BPFProgTypeSkLookup,
-	libbpfgo.BPFProgTypeSyscall.Value():               libbpfgo.BPFProgTypeSyscall,
+// BPFProgType is an enum as defined in https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/bpf.h
+type BPFProgType uint32
+
+const (
+	BPFProgTypeUnspec BPFProgType = iota
+	BPFProgTypeSocketFilter
+	BPFProgTypeKprobe
+	BPFProgTypeSchedCls
+	BPFProgTypeSchedAct
+	BPFProgTypeTracepoint
+	BPFProgTypeXdp
+	BPFProgTypePerfEvent
+	BPFProgTypeCgroupSkb
+	BPFProgTypeCgroupSock
+	BPFProgTypeLwtIn
+	BPFProgTypeLwtOut
+	BPFProgTypeLwtXmit
+	BPFProgTypeSockOps
+	BPFProgTypeSkSkb
+	BPFProgTypeCgroupDevice
+	BPFProgTypeSkMsg
+	BPFProgTypeRawTracepoint
+	BPFProgTypeCgroupSockAddr
+	BPFProgTypeLwtSeg6Local
+	BPFProgTypeLircMode2
+	BPFProgTypeSkReuseport
+	BPFProgTypeFlowDissector
+	BPFProgTypeCgroupSysctl
+	BPFProgTypeRawTracepointWritable
+	BPFProgTypeCgroupSockopt
+	BPFProgTypeTracing
+	BPFProgTypeStructOps
+	BPFProgTypeExt
+	BPFProgTypeLsm
+	BPFProgTypeSkLookup
+	BPFProgTypeSyscall
+)
+
+func (b BPFProgType) Value() uint64 { return uint64(b) }
+
+func (b BPFProgType) String() (str string) {
+	x := map[BPFProgType]string{
+		BPFProgTypeUnspec:                "BPF_PROG_TYPE_UNSPEC",
+		BPFProgTypeSocketFilter:          "BPF_PROG_TYPE_SOCKET_FILTER",
+		BPFProgTypeKprobe:                "BPF_PROG_TYPE_KPROBE",
+		BPFProgTypeSchedCls:              "BPF_PROG_TYPE_SCHED_CLS",
+		BPFProgTypeSchedAct:              "BPF_PROG_TYPE_SCHED_ACT",
+		BPFProgTypeTracepoint:            "BPF_PROG_TYPE_TRACEPOINT",
+		BPFProgTypeXdp:                   "BPF_PROG_TYPE_XDP",
+		BPFProgTypePerfEvent:             "BPF_PROG_TYPE_PERF_EVENT",
+		BPFProgTypeCgroupSkb:             "BPF_PROG_TYPE_CGROUP_SKB",
+		BPFProgTypeCgroupSock:            "BPF_PROG_TYPE_CGROUP_SOCK",
+		BPFProgTypeLwtIn:                 "BPF_PROG_TYPE_LWT_IN",
+		BPFProgTypeLwtOut:                "BPF_PROG_TYPE_LWT_OUT",
+		BPFProgTypeLwtXmit:               "BPF_PROG_TYPE_LWT_XMIT",
+		BPFProgTypeSockOps:               "BPF_PROG_TYPE_SOCK_OPS",
+		BPFProgTypeSkSkb:                 "BPF_PROG_TYPE_SK_SKB",
+		BPFProgTypeCgroupDevice:          "BPF_PROG_TYPE_CGROUP_DEVICE",
+		BPFProgTypeSkMsg:                 "BPF_PROG_TYPE_SK_MSG",
+		BPFProgTypeRawTracepoint:         "BPF_PROG_TYPE_RAW_TRACEPOINT",
+		BPFProgTypeCgroupSockAddr:        "BPF_PROG_TYPE_CGROUP_SOCK_ADDR",
+		BPFProgTypeLwtSeg6Local:          "BPF_PROG_TYPE_LWT_SEG6LOCAL",
+		BPFProgTypeLircMode2:             "BPF_PROG_TYPE_LIRC_MODE2",
+		BPFProgTypeSkReuseport:           "BPF_PROG_TYPE_SK_REUSEPORT",
+		BPFProgTypeFlowDissector:         "BPF_PROG_TYPE_FLOW_DISSECTOR",
+		BPFProgTypeCgroupSysctl:          "BPF_PROG_TYPE_CGROUP_SYSCTL",
+		BPFProgTypeRawTracepointWritable: "BPF_PROG_TYPE_RAW_TRACEPOINT_WRITABLE",
+		BPFProgTypeCgroupSockopt:         "BPF_PROG_TYPE_CGROUP_SOCKOPT",
+		BPFProgTypeTracing:               "BPF_PROG_TYPE_TRACING",
+		BPFProgTypeStructOps:             "BPF_PROG_TYPE_STRUCT_OPS",
+		BPFProgTypeExt:                   "BPF_PROG_TYPE_EXT",
+		BPFProgTypeLsm:                   "BPF_PROG_TYPE_LSM",
+		BPFProgTypeSkLookup:              "BPF_PROG_TYPE_SK_LOOKUP",
+		BPFProgTypeSyscall:               "BPF_PROG_TYPE_SYSCALL",
+	}
+	str = x[b]
+	if str == "" {
+		str = BPFProgTypeUnspec.String()
+	}
+	return str
 }
 
-func ParseBPFProgType(rawValue uint64) (libbpfgo.BPFProgType, error) {
+var bpfProgTypeMap = map[uint64]BPFProgType{
+	BPFProgTypeUnspec.Value():                BPFProgTypeUnspec,
+	BPFProgTypeSocketFilter.Value():          BPFProgTypeSocketFilter,
+	BPFProgTypeKprobe.Value():                BPFProgTypeKprobe,
+	BPFProgTypeSchedCls.Value():              BPFProgTypeSchedCls,
+	BPFProgTypeSchedAct.Value():              BPFProgTypeSchedAct,
+	BPFProgTypeTracepoint.Value():            BPFProgTypeTracepoint,
+	BPFProgTypeXdp.Value():                   BPFProgTypeXdp,
+	BPFProgTypePerfEvent.Value():             BPFProgTypePerfEvent,
+	BPFProgTypeCgroupSkb.Value():             BPFProgTypeCgroupSkb,
+	BPFProgTypeCgroupSock.Value():            BPFProgTypeCgroupSock,
+	BPFProgTypeLwtIn.Value():                 BPFProgTypeLwtIn,
+	BPFProgTypeLwtOut.Value():                BPFProgTypeLwtOut,
+	BPFProgTypeLwtXmit.Value():               BPFProgTypeLwtXmit,
+	BPFProgTypeSockOps.Value():               BPFProgTypeSockOps,
+	BPFProgTypeSkSkb.Value():                 BPFProgTypeSkSkb,
+	BPFProgTypeCgroupDevice.Value():          BPFProgTypeCgroupDevice,
+	BPFProgTypeSkMsg.Value():                 BPFProgTypeSkMsg,
+	BPFProgTypeRawTracepoint.Value():         BPFProgTypeRawTracepoint,
+	BPFProgTypeCgroupSockAddr.Value():        BPFProgTypeCgroupSockAddr,
+	BPFProgTypeLwtSeg6Local.Value():          BPFProgTypeLwtSeg6Local,
+	BPFProgTypeLircMode2.Value():             BPFProgTypeLircMode2,
+	BPFProgTypeSkReuseport.Value():           BPFProgTypeSkReuseport,
+	BPFProgTypeFlowDissector.Value():         BPFProgTypeFlowDissector,
+	BPFProgTypeCgroupSysctl.Value():          BPFProgTypeCgroupSysctl,
+	BPFProgTypeRawTracepointWritable.Value(): BPFProgTypeRawTracepointWritable,
+	BPFProgTypeCgroupSockopt.Value():         BPFProgTypeCgroupSockopt,
+	BPFProgTypeTracing.Value():               BPFProgTypeTracing,
+	BPFProgTypeStructOps.Value():             BPFProgTypeStructOps,
+	BPFProgTypeExt.Value():                   BPFProgTypeExt,
+	BPFProgTypeLsm.Value():                   BPFProgTypeLsm,
+	BPFProgTypeSkLookup.Value():              BPFProgTypeSkLookup,
+	BPFProgTypeSyscall.Value():               BPFProgTypeSyscall,
+}
+
+func ParseBPFProgType(rawValue uint64) (BPFProgType, error) {
 	v, ok := bpfProgTypeMap[rawValue]
 	if !ok {
-		return libbpfgo.BPFProgType(0), fmt.Errorf("not a valid argument: %d", rawValue)
+		return BPFProgType(0), fmt.Errorf("not a valid argument: %d", rawValue)
 	}
 	return v, nil
 }

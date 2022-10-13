@@ -3,7 +3,6 @@ package helpers
 import (
 	"testing"
 
-	"github.com/aquasecurity/libbpfgo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -158,7 +157,7 @@ func TestParseBPFProgType(t *testing.T) {
 	}{
 		{
 			name:          "Type tracepoint",
-			parseValue:    libbpfgo.BPFProgTypeTracepoint.Value(),
+			parseValue:    BPFProgTypeTracepoint.Value(),
 			expectedSting: "BPF_PROG_TYPE_TRACEPOINT",
 			expectedError: false,
 		},
