@@ -1745,9 +1745,11 @@ const (
 	BPFProgTypeSyscall
 )
 
-func (b BPFProgType) Value() uint64 { return uint64(b) }
+func (b BPFProgType) Value() uint64 {
+	return uint64(b)
+}
 
-func (b BPFProgType) String() (str string) {
+func (b BPFProgType) String() string {
 	x := map[BPFProgType]string{
 		BPFProgTypeUnspec:                "BPF_PROG_TYPE_UNSPEC",
 		BPFProgTypeSocketFilter:          "BPF_PROG_TYPE_SOCKET_FILTER",
@@ -1782,8 +1784,8 @@ func (b BPFProgType) String() (str string) {
 		BPFProgTypeSkLookup:              "BPF_PROG_TYPE_SK_LOOKUP",
 		BPFProgTypeSyscall:               "BPF_PROG_TYPE_SYSCALL",
 	}
-	str = x[b]
-	if str == "" {
+	str, found := x[b]
+	if !found {
 		str = BPFProgTypeUnspec.String()
 	}
 	return str
