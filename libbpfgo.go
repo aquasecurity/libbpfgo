@@ -47,6 +47,7 @@ type Module struct {
 	perfBufs []*PerfBuffer
 	ringBufs []*RingBuffer
 	elf      *elf.File
+	loaded   bool
 }
 
 type BPFMap struct {
@@ -395,7 +396,6 @@ func (m *Module) Close() {
 		}
 	}
 	C.bpf_object__close(m.obj)
-	m.elf.Close()
 }
 
 func (m *Module) BPFLoadObject() error {
@@ -403,6 +403,8 @@ func (m *Module) BPFLoadObject() error {
 	if ret != 0 {
 		return fmt.Errorf("failed to load BPF object: %w", syscall.Errno(-ret))
 	}
+	m.loaded = true
+	m.elf.Close()
 
 	return nil
 }
@@ -410,6 +412,9 @@ func (m *Module) BPFLoadObject() error {
 // InitGlobalVariable sets global variables (defined in .data or .rodata)
 // in bpf code. It must be called before the BPF object is loaded.
 func (m *Module) InitGlobalVariable(name string, value interface{}) error {
+	if m.loaded {
+		return errors.New("must be called before the BPF object is loaded")
+	}
 	s, err := getGlobalVariableSymbol(m.elf, name)
 	if err != nil {
 		return err
