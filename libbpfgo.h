@@ -87,10 +87,10 @@ struct perf_buffer *init_perf_buf(int map_fd, int page_cnt, uintptr_t ctx) {
 }
 
 void get_internal_map_init_value(struct bpf_map *map, void *value) {
-    size_t psize;
-    const void *data;
-    data = bpf_map__initial_value(map, &psize);
-    memcpy(value, data, psize);
+  size_t psize;
+  const void *data;
+  data = bpf_map__initial_value(map, &psize);
+  memcpy(value, data, psize);
 }
 
 int bpf_prog_attach_cgroup_legacy(
