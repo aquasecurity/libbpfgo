@@ -1,13 +1,13 @@
 package main
 
-import "C"
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"os"
+	"reflect"
 	"syscall"
 	"time"
-	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 )
@@ -17,10 +17,21 @@ func exitWithErr(err error) {
 	os.Exit(-1)
 }
 
-func initGlobalVariable(bpfModule *bpf.Module, sectionName string, value int) {
-	val := C.int(value)
-	if err := bpfModule.InitGlobalVariable(sectionName, unsafe.Pointer(&val)); err != nil {
-		exitWithErr(err)
+type Event struct {
+	Sum uint64
+	A   [6]byte
+}
+
+type Config struct {
+	A uint64
+	B [6]byte
+}
+
+func initGlobalVariables(bpfModule *bpf.Module, variables map[string]interface{}) {
+	for name, value := range variables {
+		if err := bpfModule.InitGlobalVariable(name, value); err != nil {
+			exitWithErr(err)
+		}
 	}
 }
 
@@ -31,12 +42,15 @@ func main() {
 	}
 	defer bpfModule.Close()
 
-	initGlobalVariable(bpfModule, ".rodata", 1500)
-	initGlobalVariable(bpfModule, ".data", 500)
-	initGlobalVariable(bpfModule, ".rodata.baz", 10)
-	initGlobalVariable(bpfModule, ".rodata.qux", 8)
-	initGlobalVariable(bpfModule, ".data.quux", 2)
-	initGlobalVariable(bpfModule, ".data.quuz", 1)
+	initGlobalVariables(bpfModule, map[string]interface{}{
+		"abc":    uint32(9),
+		"efg":    uint32(80),
+		"foobar": Config{A: uint64(700), B: [6]byte{'a', 'b'}},
+		"foo":    uint64(6000),
+		"bar":    uint32(50000),
+		"baz":    uint32(400000),
+		"qux":    uint32(3000000),
+	})
 
 	if err := bpfModule.BPFLoadObject(); err != nil {
 		exitWithErr(err)
@@ -46,7 +60,6 @@ func main() {
 	if err != nil {
 		exitWithErr(err)
 	}
-
 	if _, err := prog.AttachKprobe("__x64_sys_mmap"); err != nil {
 		exitWithErr(err)
 	}
@@ -64,9 +77,20 @@ func main() {
 	}()
 
 	b := <-eventsChannel
-	if binary.LittleEndian.Uint32(b) != 2021 {
-		fmt.Fprintf(os.Stderr, "invalid data retrieved: %v\n", b)
-		os.Exit(-1)
+
+	var event Event
+	err = binary.Read(bytes.NewReader(b), binary.LittleEndian, &event)
+	if err != nil {
+		exitWithErr(err)
+	}
+
+	expect := Event{
+		Sum: 9 + 80 + 700 + 6000 + 50000 + 400000 + 3000000,
+		A:   [6]byte{'a', 'b'},
+	}
+	if !reflect.DeepEqual(event, expect) {
+		fmt.Fprintf(os.Stderr, "want %v but got %v\n", expect, event)
+		os.Exit(1)
 	}
 
 	rb.Stop()
