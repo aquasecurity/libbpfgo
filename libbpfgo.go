@@ -296,6 +296,20 @@ func (b LibbpfStrictMode) String() (str string) {
 	return str
 }
 
+// NOTE: libbpf has started raising limits by default but, unfortunately, that
+// seems to be failing in current libbpf version. The memory limit bump might be
+// removed once this is sorted out.
+func bumpMemlockRlimit() error {
+	var rLimit syscall.Rlimit
+	rLimit.Max = 512 << 20 /* 512 MBs */
+	rLimit.Cur = 512 << 20 /* 512 MBs */
+	err := syscall.Setrlimit(C.RLIMIT_MEMLOCK, &rLimit)
+	if err != nil {
+		return fmt.Errorf("error setting rlimit: %v", err)
+	}
+	return nil
+}
+
 func SetStrictMode(mode LibbpfStrictMode) {
 	C.libbpf_set_strict_mode(uint32(mode))
 }
@@ -306,6 +320,11 @@ func NewModuleFromFileArgs(args NewModuleArgs) (*Module, error) {
 		return nil, err
 	}
 	C.set_print_fn()
+
+	// TODO: remove this once libbpf memory limit bump issue is solved
+	if err := bumpMemlockRlimit(); err != nil {
+		return nil, err
+	}
 
 	opts := C.struct_bpf_object_open_opts{}
 	opts.sz = C.sizeof_struct_bpf_object_open_opts
@@ -352,6 +371,11 @@ func NewModuleFromBufferArgs(args NewModuleArgs) (*Module, error) {
 		return nil, err
 	}
 	C.set_print_fn()
+
+	// TODO: remove this once libbpf memory limit bump issue is solved
+	if err := bumpMemlockRlimit(); err != nil {
+		return nil, err
+	}
 
 	if args.BTFObjPath == "" {
 		args.BTFObjPath = "/sys/kernel/btf/vmlinux"
