@@ -181,3 +181,44 @@ func TestParseBPFProgType(t *testing.T) {
 		})
 	}
 }
+
+func TestParseMmapFlags(t *testing.T) {
+	testCases := []struct {
+		name          string
+		parseValue    uint64
+		expectedSting string
+	}{
+		{
+			name:          "Single value",
+			parseValue:    MapGrowsdown.Value(),
+			expectedSting: "MAP_GROWSDOWN",
+		},
+		{
+			name:          "Multiple values",
+			parseValue:    MapGrowsdown.Value() | MapStack.Value() | MapExecutable.Value(),
+			expectedSting: "MAP_GROWSDOWN|MAP_EXECUTABLE|MAP_STACK",
+		},
+		{
+			name:          "Huge table size flag",
+			parseValue:    MapHuge2MB.Value(),
+			expectedSting: "MAP_HUGE_2MB",
+		},
+		{
+			name:          "Huge table custom size flag",
+			parseValue:    19 << HugetlbFlagEncodeShift,
+			expectedSting: "MAP_HUGE_512KB",
+		},
+		{
+			name:          "Huge table custom size flag with normal flags",
+			parseValue:    (19 << HugetlbFlagEncodeShift) | MapHugetlb.Value() | MapExecutable.Value(),
+			expectedSting: "MAP_EXECUTABLE|MAP_HUGETLB|MAP_HUGE_512KB",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			flags := ParseMmapFlags(testCase.parseValue)
+			assert.Equal(t, testCase.expectedSting, flags.String())
+		})
+	}
+}
