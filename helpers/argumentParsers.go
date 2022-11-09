@@ -3,11 +3,10 @@ package helpers
 import (
 	"encoding/binary"
 	"fmt"
+	"golang.org/x/sys/unix"
 	"net"
 	"strconv"
 	"strings"
-
-	"golang.org/x/sys/unix"
 )
 
 type SystemFunctionArgument interface {
@@ -1832,4 +1831,122 @@ func ParseBPFProgType(rawValue uint64) (BPFProgType, error) {
 		return BPFProgType(0), fmt.Errorf("not a valid argument: %d", rawValue)
 	}
 	return v, nil
+}
+
+type MmapFlagArgument struct {
+	rawValue    uint32
+	stringValue string
+}
+
+const (
+	HugetlbFlagEncodeShift = 26
+	MapHugeSizeMask        = ((1 << 6) - 1) << HugetlbFlagEncodeShift
+)
+
+var (
+	MapShared         MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_SHARED, stringValue: "MAP_SHARED"}
+	MapPrivate        MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_PRIVATE, stringValue: "MAP_PRIVATE"}
+	MapSharedValidate MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_SHARED_VALIDATE, stringValue: "MAP_SHARED_VALIDATE"}
+	Map32bit          MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_32BIT, stringValue: "MAP_32BIT"}
+	MapType           MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_TYPE, stringValue: "MAP_TYPE"}
+	MapFixed          MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_FIXED, stringValue: "MAP_FIXED"}
+	MapAnonymous      MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_ANONYMOUS, stringValue: "MAP_ANONYMOUS"}
+	MapPopulate       MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_POPULATE, stringValue: "MAP_POPULATE"}
+	MapNonblock       MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_NONBLOCK, stringValue: "MAP_NONBLOCK"}
+	MapStack          MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_STACK, stringValue: "MAP_STACK"}
+	MapHugetlb        MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_HUGETLB, stringValue: "MAP_HUGETLB"}
+	MapSync           MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_SYNC, stringValue: "MAP_SYNC"}
+	MapFixedNoreplace MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_FIXED_NOREPLACE, stringValue: "MAP_FIXED_NOREPLACE"}
+	MapGrowsdown      MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_GROWSDOWN, stringValue: "MAP_GROWSDOWN"}
+	MapDenywrite      MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_DENYWRITE, stringValue: "MAP_DENYWRITE"}
+	MapExecutable     MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_EXECUTABLE, stringValue: "MAP_EXECUTABLE"}
+	MapLocked         MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_LOCKED, stringValue: "MAP_LOCKED"}
+	MapNoreserve      MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_NORESERVE, stringValue: "MAP_NORESERVE"}
+	MapFile           MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_FILE, stringValue: "MAP_FILE"}
+	MapHuge2MB        MmapFlagArgument = MmapFlagArgument{rawValue: 21 << HugetlbFlagEncodeShift, stringValue: "MAP_HUGE_2MB"}
+	MapHuge1GB        MmapFlagArgument = MmapFlagArgument{rawValue: 30 << HugetlbFlagEncodeShift, stringValue: "MAP_HUGE_1GB"}
+	MapSYNC           MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_SYNC, stringValue: "MAP_SYNC"}
+	// TODO: Add support for MAP_UNINITIALIZED which collide with Huge TLB size bits
+)
+
+var mmapFlagMap = map[uint64]MmapFlagArgument{
+	MapShared.Value():         MapShared,
+	MapPrivate.Value():        MapPrivate,
+	MapSharedValidate.Value(): MapSharedValidate,
+	Map32bit.Value():          Map32bit,
+	MapType.Value():           MapType,
+	MapFixed.Value():          MapFixed,
+	MapAnonymous.Value():      MapAnonymous,
+	MapPopulate.Value():       MapPopulate,
+	MapNonblock.Value():       MapNonblock,
+	MapStack.Value():          MapStack,
+	MapHugetlb.Value():        MapHugetlb,
+	MapSync.Value():           MapSync,
+	MapFixedNoreplace.Value(): MapFixedNoreplace,
+	MapGrowsdown.Value():      MapGrowsdown,
+	MapDenywrite.Value():      MapDenywrite,
+	MapExecutable.Value():     MapExecutable,
+	MapLocked.Value():         MapLocked,
+	MapNoreserve.Value():      MapNoreserve,
+	MapFile.Value():           MapFile,
+	MapHuge2MB.Value():        MapHuge2MB,
+	MapHuge1GB.Value():        MapHuge1GB,
+	MapSYNC.Value():           MapSYNC,
+}
+
+func (mf MmapFlagArgument) Value() uint64 {
+	return uint64(mf.rawValue)
+}
+
+func (mf MmapFlagArgument) String() string {
+	return mf.stringValue
+}
+
+// getHugeMapSizeFlagString extract the huge flag size flag from the mmap flags.
+// This flag is special, because it is 6-bits representation of the log2 of the size.
+// For more information - https://elixir.bootlin.com/linux/latest/source/include/uapi/asm-generic/hugetlb_encode.h
+func getHugeMapSizeFlagString(flags uint32) MmapFlagArgument {
+	hugeSizeFlagVal := flags & MapHugeSizeMask
+	// The size given in the flags is log2 of the size of the pages
+	mapHugeSizePower := hugeSizeFlagVal >> HugetlbFlagEncodeShift
+
+	// Create a name of a flag matching given huge page size
+	// The size is 6 bits, so maximum value is 16EB
+	unitsPrefix := []string{"", "K", "M", "G", "T", "P", "E"}
+	var unitPrefix string
+	var inUnitSize uint
+	for i, prefix := range unitsPrefix {
+		if mapHugeSizePower < ((uint32(i) + 1) * 10) {
+			unitPrefix = prefix
+			inUnitSize = 1 << (mapHugeSizePower % 10)
+			break
+		}
+	}
+	return MmapFlagArgument{rawValue: hugeSizeFlagVal, stringValue: fmt.Sprintf("MAP_HUGE_%d%sB", inUnitSize, unitPrefix)}
+}
+
+// ParseMmapFlags parses the `flags` bitmask argument of the `mmap` syscall
+// http://man7.org/linux/man-pages/man2/mmap.2.html
+// https://elixir.bootlin.com/linux/v5.5.3/source/include/uapi/asm-generic/mman-common.h#L19
+func ParseMmapFlags(rawValue uint64) MmapFlagArgument {
+	var f []string
+	for i := 0; i < HugetlbFlagEncodeShift; i++ {
+		flagMask := 1 << i
+
+		if (rawValue & uint64(flagMask)) != 0 {
+			flag, ok := mmapFlagMap[1<<i]
+			if ok {
+				f = append(f, flag.String())
+			} else {
+				f = append(f, fmt.Sprintf("UNKNOWN_FLAG_0X%s", strings.ToUpper(strconv.FormatUint(flag.Value(), 16))))
+			}
+		}
+	}
+
+	if (rawValue & MapHugeSizeMask) != 0 {
+		hugeMapFlag := getHugeMapSizeFlagString(uint32(rawValue))
+		f = append(f, hugeMapFlag.String())
+	}
+
+	return MmapFlagArgument{stringValue: strings.Join(f, "|"), rawValue: uint32(rawValue)}
 }
