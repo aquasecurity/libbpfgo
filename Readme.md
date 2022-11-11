@@ -25,7 +25,8 @@ libbpfgo is built around [libbpf](https://github.com/libbpf/libbpf) - the standa
 libbpfgo uses CGO to interop with libbpf and will expect to be linked with libbpf at run or link time. Simply importing libbpfgo is not enough to get started, and you will need to fulfill the required dependency in one of the following ways:
 
 1. Install libbpf as a shared object in the system. Libbpf may already be packaged for your distribution and, if not, you can build and install from source. More info [here](https://github.com/libbpf/libbpf).
-1. Embed libbpf into your Go project as a vendored dependency. This means that the libbpf code is statically linked into the resulting binary, and there are no runtime dependencies.  [Tracee](https://github.com/aquasecurity/tracee) takes this approach.
+1. Embed libbpf into your Go project as a vendored dependency. This means that the libbpf code is statically linked into the resulting binary, and there are no runtime dependencies other than libelf and zlib.  [Tracee](https://github.com/aquasecurity/tracee) takes this approach.
+1. Fully static build where libelf and zlib are also linked statically.  The host project must define the `libbpfgo_full_static` tag.
 
 ## Building
 
@@ -49,7 +50,7 @@ Currently you will find the following GNU Makefile rules:
 | selftest-dynamic-run     | run tests using dynamic libbpfgo  |
 | helpers-test-dynamic-run | run helpers package unit tests using dynamic libbpfgo  |
 
-* statically compiled (libbpf submodule)
+* statically compiled (libbpf submodule) with runtime dependencies on libelf and zlib
 
 | Makefile Rule            | Description                       |
 |--------------------------|-----------------------------------|
@@ -58,6 +59,17 @@ Currently you will find the following GNU Makefile rules:
 | selftest-static          | build tests with static libbpfgo  |
 | selftest-static-run      | run tests using static libbpfgo   |
 | helpers-test-static-run  | run helpers package unit tests using static libbpfgo   |
+
+* fully statically compiled (libbpf submodule) with compile time dependencies on libelf and zlib
+
+| Makefile Rule            | Description                       |
+|--------------------------|-----------------------------------|
+| libbpfgo-full-static     | builds static libbpfgo (libbpf)   |
+| libbpfgo-full-static-test| 'go test' with static libbpfgo    |
+| selftest-static          | build tests with static libbpfgo  |
+| selftest-static-run      | run tests using static libbpfgo   |
+| helpers-test-static-run  | run helpers package unit tests using static libbpfgo   |
+
 
 * examples
 
@@ -70,6 +82,7 @@ $ make selftest-static-run => will build & run all static selftests
 
 > Note 01: dynamic builds need your OS to have a *recent enough* libbpf package (and its headers) installed. Sometimes, recent features might require the use of backported OS packages in order for your OS to contain latest *libbpf* features (sometimes required by libbpfgo).
 > Note 02: static builds need `git submodule init` first. Make sure to sync the *libbpf* git submodule before trying to statically compile or test the *libbpfgo* repository.
+> Note 03: fully static builds additionally need static versions of the libelf and libz libraries installed on the build host.
 
 ## Concepts
 

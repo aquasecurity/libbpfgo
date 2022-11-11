@@ -92,6 +92,22 @@ libbpfgo-static-test: libbpfgo-test-bpf-static
 		-v -tags netgo -ldflags $(CGO_EXTLDFLAGS_STATIC) \
 		.
 
+libbpfgo-full-static: $(VMLINUXH) | $(LIBBPF_OBJ)
+	CC=$(CLANG) \
+		GOOS=linux GOARCH=$(ARCH) \
+		$(GO) build \
+		-tags 'netgo libbpfgo_full_static' -ldflags $(CGO_EXTLDFLAGS_STATIC) \
+		.
+
+libbpfgo-full-static-test: libbpfgo-test-bpf-static
+	sudo env PATH=$(PATH) \
+		CC=$(CLANG) \
+		GOOS=linux GOARCH=$(ARCH) \
+		$(GO) test \
+		-v -tags 'netgo libbpfgo_full_static' -ldflags $(CGO_EXTLDFLAGS_STATIC) \
+		.
+
+
 # vmlinux header file
 
 .PHONY: vmlinuxh
