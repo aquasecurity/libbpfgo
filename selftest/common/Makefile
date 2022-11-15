@@ -21,13 +21,13 @@ CGO_EXTLDFLAGS_STATIC = '-w -extldflags "-static"'
 CGO_CFLAGS_DYN = "-I. -I/usr/include/"
 CGO_LDFLAGS_DYN = "-lelf -lz -lbpf"
 
-.PHONY: $(TEST)
-.PHONY: $(TEST).go
-.PHONY: $(TEST).bpf.c
+MAIN = main
 
-TEST = main
+.PHONY: $(MAIN)
+.PHONY: $(MAIN).go
+.PHONY: $(MAIN).bpf.c
 
-all: $(TEST)-static
+all: $(MAIN)-static
 
 .PHONY: libbpfgo
 .PHONY: libbpfgo-static
@@ -49,29 +49,29 @@ outputdir:
 
 ## test bpf dependency
 
-$(TEST).bpf.o: $(TEST).bpf.c
+$(MAIN).bpf.o: $(MAIN).bpf.c
 	$(MAKE) -C $(BASEDIR) vmlinuxh
 	$(CLANG) $(CFLAGS) -target bpf -D__TARGET_ARCH_$(ARCH) -I$(OUTPUT) -c $< -o $@
 
 ## test
 
-.PHONY: $(TEST)-static
-.PHONY: $(TEST)-dynamic
+.PHONY: $(MAIN)-static
+.PHONY: $(MAIN)-dynamic
 
-$(TEST)-static: libbpfgo-static | $(TEST).bpf.o
+$(MAIN)-static: libbpfgo-static | $(MAIN).bpf.o
 	CC=$(CLANG) \
 		CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
 		CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
 		GOOS=linux GOARCH=$(ARCH) \
 		$(GO) build \
 		-tags netgo -ldflags $(CGO_EXTLDFLAGS_STATIC) \
-		-o $(TEST)-static ./$(TEST).go
+		-o $(MAIN)-static ./$(MAIN).go
 
-$(TEST)-dynamic: libbpfgo-dynamic | $(TEST).bpf.o
+$(MAIN)-dynamic: libbpfgo-dynamic | $(MAIN).bpf.o
 	CC=$(CLANG) \
 		CGO_CFLAGS=$(CGO_CFLAGS_DYN) \
 		CGO_LDFLAGS=$(CGO_LDFLAGS_DYN) \
-		$(GO) build -o ./$(TEST)-dynamic ./$(TEST).go
+		$(GO) build -o ./$(MAIN)-dynamic ./$(MAIN).go
 
 ## run
 
@@ -81,11 +81,11 @@ $(TEST)-dynamic: libbpfgo-dynamic | $(TEST).bpf.o
 
 run: run-static
 
-run-static: $(TEST)-static
-	sudo ./run.sh $(TEST)-static
+run-static: $(MAIN)-static
+	sudo ./run.sh $(MAIN)-static
 
-run-dynamic: $(TEST)-dynamic
-	sudo ./run.sh $(TEST)-dynamic
+run-dynamic: $(MAIN)-dynamic
+	sudo ./run.sh $(MAIN)-dynamic
 
 clean:
 	rm -f *.o *-static *-dynamic
