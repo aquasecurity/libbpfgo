@@ -51,7 +51,9 @@ int libbpf_print_fn(enum libbpf_print_level level, const char *format,
 }
 
 void set_print_fn() { libbpf_set_print(libbpf_print_fn); }
-void set_libbpf_print_min_level(enum libbpf_print_level level) { min_level = level; }
+void set_libbpf_print_min_level(enum libbpf_print_level level) {
+  min_level = level;
+}
 
 extern void perfCallback(void *ctx, int cpu, void *data, __u32 size);
 extern void perfLostCallback(void *ctx, int cpu, __u64 cnt);
