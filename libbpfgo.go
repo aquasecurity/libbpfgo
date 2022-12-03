@@ -314,6 +314,18 @@ func SetStrictMode(mode LibbpfStrictMode) {
 	C.libbpf_set_strict_mode(uint32(mode))
 }
 
+type LibbpfPrintLevel uint32
+
+const (
+	LibbpfPrintLevelWarn  = C.LIBBPF_WARN
+	LibbpfPrintLevelInfo  = C.LIBBPF_INFO
+	LibbpfPrintLevelDebug = C.LIBBPF_DEBUG
+)
+
+func SetPrintLevel(level LibbpfPrintLevel) {
+	C.set_libbpf_print_min_level(uint32(level))
+}
+
 func NewModuleFromFileArgs(args NewModuleArgs) (*Module, error) {
 	f, err := elf.Open(args.BPFObjPath)
 	if err != nil {

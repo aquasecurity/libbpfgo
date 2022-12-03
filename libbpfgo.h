@@ -11,9 +11,11 @@
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
 
+enum libbpf_print_level min_level = LIBBPF_WARN;
+
 int libbpf_print_fn(enum libbpf_print_level level, const char *format,
                     va_list args) {
-  if (level != LIBBPF_WARN)
+  if (level > min_level)
     return 0;
 
   // NOTE: va_list args is managed in libbpf caller
@@ -49,6 +51,7 @@ int libbpf_print_fn(enum libbpf_print_level level, const char *format,
 }
 
 void set_print_fn() { libbpf_set_print(libbpf_print_fn); }
+void set_libbpf_print_min_level(enum libbpf_print_level level) { min_level = level; }
 
 extern void perfCallback(void *ctx, int cpu, void *data, __u32 size);
 extern void perfLostCallback(void *ctx, int cpu, __u64 cnt);
