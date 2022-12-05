@@ -11,10 +11,8 @@
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
 
-int libbpf_print_fn(enum libbpf_print_level level,
-                    const char *format,
-                    va_list args)
-{
+int libbpf_print_fn(enum libbpf_print_level level, const char *format,
+                    va_list args) {
   if (level != LIBBPF_WARN)
     return 0;
 
