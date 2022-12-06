@@ -323,7 +323,7 @@ const (
 )
 
 func SetPrintLevel(level LibbpfPrintLevel) {
-	C.set_libbpf_print_min_level(uint32(level))
+	C.set_libbpf_print_max_level(uint32(level))
 }
 
 func NewModuleFromFileArgs(args NewModuleArgs) (*Module, error) {
