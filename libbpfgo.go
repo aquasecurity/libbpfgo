@@ -317,9 +317,9 @@ func SetStrictMode(mode LibbpfStrictMode) {
 type LibbpfPrintLevel uint32
 
 const (
-	LibbpfPrintLevelWarn  = C.LIBBPF_WARN
-	LibbpfPrintLevelInfo  = C.LIBBPF_INFO
-	LibbpfPrintLevelDebug = C.LIBBPF_DEBUG
+	LibbpfPrintLevelWarn  LibbpfPrintLevel = C.LIBBPF_WARN
+	LibbpfPrintLevelInfo  LibbpfPrintLevel = C.LIBBPF_INFO
+	LibbpfPrintLevelDebug LibbpfPrintLevel = C.LIBBPF_DEBUG
 )
 
 func SetPrintLevel(level LibbpfPrintLevel) {
