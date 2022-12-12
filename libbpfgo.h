@@ -11,40 +11,39 @@
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
 
-int libbpf_print_fn(enum libbpf_print_level level, const char *format,
-                    va_list args) {
+int libbpf_print_fn(enum libbpf_print_level level, // libbpf print level
+                    const char *format,            // format used for the msg
+                    va_list args) {                // args used by format
+
   if (level != LIBBPF_WARN)
     return 0;
 
-  // NOTE: va_list args is managed in libbpf caller
-  // however, these copies must be matched with va_end() in this function
-  va_list exclusivity_check, cgroup_check;
-  va_copy(exclusivity_check, args);
-  va_copy(cgroup_check, args);
+  int ret;
+  char str[300];
+  va_list check;
 
-  // BUG: https://github.com/aquasecurity/tracee/issues/1676
+  va_copy(check, args);
+  ret = vsnprintf(str, sizeof(str), format, check);
+  va_end(args);
 
-  char *str = va_arg(exclusivity_check, char *);
+  if (ret <= 0) {
+    goto done;
+  }
+
+  // BUG: https:/github.com/aquasecurity/tracee/issues/1676
   if (strstr(str, "Exclusivity flag on") != NULL) {
-    va_end(exclusivity_check);
     return 0;
   }
-  va_end(exclusivity_check);
 
-  // AttachCgroupLegacy() will first try AttachCgroup() and it
-  // might fail. This is not an error and is the best way of
-  // probing for eBPF cgroup attachment link existence.
-
-  str = va_arg(cgroup_check, char *);
+  // AttachCgroupLegacy() will first try AttachCgroup() and it might fail. This
+  // is not an error and is the best way of probing for eBPF cgroup attachment
+  // link existence.
   if (strstr(str, "cgroup") != NULL) {
-    str = va_arg(cgroup_check, char *);
-    if (strstr(str, "Invalid argument") != NULL) {
-      va_end(cgroup_check);
+    if (strstr(str, "Invalid argument") != NULL)
       return 0;
-    }
   }
-  va_end(cgroup_check);
 
+done:
   return vfprintf(stderr, format, args);
 }
 
