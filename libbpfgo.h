@@ -1,6 +1,10 @@
 #ifndef __LIBBPF_GO_H__
 #define __LIBBPF_GO_H__
 
+#ifdef __powerpc64__
+#define __SANE_USERSPACE_TYPES__ 1
+#endif
+
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
