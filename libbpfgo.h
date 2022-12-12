@@ -35,6 +35,12 @@ int libbpf_print_fn(enum libbpf_print_level level, // libbpf print level
     return 0;
   }
 
+  // BUG: https://github.com/aquasecurity/tracee/issues/2446
+  if (strstr(str, "failed to create kprobe") != NULL) {
+    if (strstr(str, "trace_check_map_func_compatibility") != NULL)
+      return 0;
+  }
+
   // AttachCgroupLegacy() will first try AttachCgroup() and it might fail. This
   // is not an error and is the best way of probing for eBPF cgroup attachment
   // link existence.
