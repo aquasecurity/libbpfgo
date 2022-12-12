@@ -51,7 +51,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	bpfModule.ListProgramNames()
+	//bpfModule.ListProgramNames()
 
 	prog, err := bpfModule.GetProgram("mmap_fentry")
 	if err != nil {
