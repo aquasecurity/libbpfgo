@@ -1847,7 +1847,6 @@ var (
 	MapShared         MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_SHARED, stringValue: "MAP_SHARED"}
 	MapPrivate        MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_PRIVATE, stringValue: "MAP_PRIVATE"}
 	MapSharedValidate MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_SHARED_VALIDATE, stringValue: "MAP_SHARED_VALIDATE"}
-	Map32bit          MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_32BIT, stringValue: "MAP_32BIT"}
 	MapType           MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_TYPE, stringValue: "MAP_TYPE"}
 	MapFixed          MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_FIXED, stringValue: "MAP_FIXED"}
 	MapAnonymous      MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_ANONYMOUS, stringValue: "MAP_ANONYMOUS"}
@@ -1873,7 +1872,6 @@ var mmapFlagMap = map[uint64]MmapFlagArgument{
 	MapShared.Value():         MapShared,
 	MapPrivate.Value():        MapPrivate,
 	MapSharedValidate.Value(): MapSharedValidate,
-	Map32bit.Value():          Map32bit,
 	MapType.Value():           MapType,
 	MapFixed.Value():          MapFixed,
 	MapAnonymous.Value():      MapAnonymous,
