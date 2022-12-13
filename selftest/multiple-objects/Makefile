@@ -22,6 +22,9 @@ CGO_CFLAGS_DYN = "-I. -I/usr/include/"
 CGO_LDFLAGS_DYN = "-lelf -lz -lbpf"
 
 MAIN = main
+FIRST = first
+SECOND = second
+MAP = map
 
 .PHONY: $(MAIN)
 .PHONY: $(MAIN).go
@@ -49,7 +52,15 @@ outputdir:
 
 ## test bpf dependency
 
-$(MAIN).bpf.o: $(MAIN).bpf.c
+$(FIRST).bpf.o: $(FIRST).bpf.c
+	$(MAKE) -C $(BASEDIR) vmlinuxh
+	$(CLANG) $(CFLAGS) -target bpf -D__TARGET_ARCH_$(ARCH) -I$(OUTPUT) -c $< -o $@
+
+$(SECOND).bpf.o: $(SECOND).bpf.c
+	$(MAKE) -C $(BASEDIR) vmlinuxh
+	$(CLANG) $(CFLAGS) -target bpf -D__TARGET_ARCH_$(ARCH) -I$(OUTPUT) -c $< -o $@
+
+$(MAP).bpf.o: $(MAP).bpf.c
 	$(MAKE) -C $(BASEDIR) vmlinuxh
 	$(CLANG) $(CFLAGS) -target bpf -D__TARGET_ARCH_$(ARCH) -I$(OUTPUT) -c $< -o $@
 
@@ -58,7 +69,7 @@ $(MAIN).bpf.o: $(MAIN).bpf.c
 .PHONY: $(MAIN)-static
 .PHONY: $(MAIN)-dynamic
 
-$(MAIN)-static: libbpfgo-static | $(MAIN).bpf.o
+$(MAIN)-static: libbpfgo-static | $(FIRST).bpf.o $(SECOND).bpf.o $(MAP).bpf.o
 	CC=$(CLANG) \
 		CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
 		CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
@@ -67,7 +78,7 @@ $(MAIN)-static: libbpfgo-static | $(MAIN).bpf.o
 		-tags netgo -ldflags $(CGO_EXTLDFLAGS_STATIC) \
 		-o $(MAIN)-static ./$(MAIN).go
 
-$(MAIN)-dynamic: libbpfgo-dynamic | $(MAIN).bpf.o
+$(MAIN)-dynamic: libbpfgo-dynamic | $(FIRST).bpf.o $(SECOND).bpf.o $(MAP).bpf.o
 	CC=$(CLANG) \
 		CGO_CFLAGS=$(CGO_CFLAGS_DYN) \
 		CGO_LDFLAGS=$(CGO_LDFLAGS_DYN) \
