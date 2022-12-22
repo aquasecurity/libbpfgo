@@ -57,19 +57,19 @@ func NewKernelSymbolsMap() (*KernelSymbolTable, error) {
 		if err != nil {
 			continue
 		}
-		symbolType := line[1]
-		symbolName := line[2]
+		symbolType := strings.Clone(line[1])
+		symbolName := strings.Clone(line[2])
 
 		symbolOwner := "system"
 		if len(line) > 3 {
 			// When a symbol is contained in a kernel module, it will be specified
 			// within square brackets, otherwise it's part of the system
-			symbolOwner = line[3]
+			symbolOwner = strings.Clone(line[3])
 			symbolOwner = strings.TrimPrefix(symbolOwner, "[")
 			symbolOwner = strings.TrimSuffix(symbolOwner, "]")
 		}
 
-		symbolKey := fmt.Sprintf("%s_%s", symbolOwner, symbolName)
+		symbolKey := symbolOwner + "_" + symbolName
 		symbol := &KernelSymbol{symbolName, symbolType, symbolAddr, symbolOwner}
 		KernelSymbols.symbolMap[symbolKey] = symbol
 		KernelSymbols.symbolAddrMap[symbolAddr] = symbol
