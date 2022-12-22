@@ -20,8 +20,8 @@ import (
  */
 
 type KernelSymbolTable struct {
-	symbolMap     map[string]KernelSymbol
-	symbolAddrMap map[uint64]KernelSymbol
+	symbolMap     map[string]*KernelSymbol
+	symbolAddrMap map[uint64]*KernelSymbol
 	initialized   bool
 }
 
@@ -38,8 +38,8 @@ type KernelSymbol struct {
  */
 func NewKernelSymbolsMap() (*KernelSymbolTable, error) {
 	var KernelSymbols = KernelSymbolTable{}
-	KernelSymbols.symbolMap = make(map[string]KernelSymbol)
-	KernelSymbols.symbolAddrMap = make(map[uint64]KernelSymbol)
+	KernelSymbols.symbolMap = make(map[string]*KernelSymbol)
+	KernelSymbols.symbolAddrMap = make(map[uint64]*KernelSymbol)
 	file, err := os.Open("/proc/kallsyms")
 	if err != nil {
 		return nil, fmt.Errorf("could not open /proc/kallsyms: %w", err)
@@ -57,20 +57,20 @@ func NewKernelSymbolsMap() (*KernelSymbolTable, error) {
 		if err != nil {
 			continue
 		}
-		symbolType := line[1]
-		symbolName := line[2]
+		symbolType := strings.Clone(line[1])
+		symbolName := strings.Clone(line[2])
 
 		symbolOwner := "system"
 		if len(line) > 3 {
 			// When a symbol is contained in a kernel module, it will be specified
 			// within square brackets, otherwise it's part of the system
-			symbolOwner = line[3]
+			symbolOwner = strings.Clone(line[3])
 			symbolOwner = strings.TrimPrefix(symbolOwner, "[")
 			symbolOwner = strings.TrimSuffix(symbolOwner, "]")
 		}
 
-		symbolKey := fmt.Sprintf("%s_%s", symbolOwner, symbolName)
-		symbol := KernelSymbol{symbolName, symbolType, symbolAddr, symbolOwner}
+		symbolKey := symbolOwner + "_" + symbolName
+		symbol := &KernelSymbol{symbolName, symbolType, symbolAddr, symbolOwner}
 		KernelSymbols.symbolMap[symbolKey] = symbol
 		KernelSymbols.symbolAddrMap[symbolAddr] = symbol
 	}
@@ -103,7 +103,7 @@ func (k *KernelSymbolTable) GetSymbolByName(owner string, name string) (*KernelS
 	key := fmt.Sprintf("%s_%s", owner, name)
 	symbol, exist := k.symbolMap[key]
 	if exist {
-		return &symbol, nil
+		return symbol, nil
 	}
 	return nil, fmt.Errorf("symbol not found: %s_%s", owner, name)
 }
@@ -115,7 +115,7 @@ func (k *KernelSymbolTable) GetSymbolByAddr(addr uint64) (*KernelSymbol, error) 
 	}
 	symbol, exist := k.symbolAddrMap[addr]
 	if exist {
-		return &symbol, nil
+		return symbol, nil
 	}
 	return nil, fmt.Errorf("symbol not found at address: 0x%x", addr)
 }
