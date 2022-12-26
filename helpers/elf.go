@@ -13,6 +13,7 @@ func SymbolToOffset(path, symbol string) (uint32, error) {
 	if err != nil {
 		return 0, fmt.Errorf("could not open elf file to resolve symbol offset: %w", err)
 	}
+	defer f.Close()
 
 	regularSymbols, regularSymbolsErr := f.Symbols()
 	dynamicSymbols, dynamicSymbolsErr := f.DynamicSymbols()
