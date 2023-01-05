@@ -51,6 +51,22 @@ func symbolKey(owner, name string) string {
 	return owner + "_" + name
 }
 
+// parses ksymbol line file file. returns in order the symbols "type", "name", "order"
+func parseSymbolLine(line []string) (string, string, string) {
+	symbolType := strings.Clone(line[1])
+	symbolName := strings.Clone(line[2])
+
+	symbolOwner := "system"
+	if len(line) > 3 {
+		// When a symbol is contained in a kernel module, it will be specified
+		// within square brackets, otherwise it's part of the system
+		symbolOwner = strings.Clone(line[3])
+		symbolOwner = strings.TrimPrefix(symbolOwner, "[")
+		symbolOwner = strings.TrimSuffix(symbolOwner, "]")
+	}
+	return symbolType, symbolName, symbolOwner
+}
+
 // fullKernelSymbolTable
 
 type fullKernelSymbolTable struct {
@@ -116,17 +132,8 @@ func (k *fullKernelSymbolTable) Refresh() error {
 		if err != nil {
 			continue
 		}
-		symbolType := strings.Clone(line[1])
-		symbolName := strings.Clone(line[2])
 
-		symbolOwner := "system"
-		if len(line) > 3 {
-			// When a symbol is contained in a kernel module, it will be specified
-			// within square brackets, otherwise it's part of the system
-			symbolOwner = strings.Clone(line[3])
-			symbolOwner = strings.TrimPrefix(symbolOwner, "[")
-			symbolOwner = strings.TrimSuffix(symbolOwner, "]")
-		}
+		symbolType, symbolName, symbolOwner := parseSymbolLine(line)
 
 		symbolKey := symbolOwner + "_" + symbolName
 		symbol := &KernelSymbol{symbolName, symbolType, symbolAddr, symbolOwner}
@@ -199,17 +206,8 @@ func (k *lazyKernelSymbols) GetSymbolByName(owner string, name string) (*KernelS
 		if err != nil {
 			continue
 		}
-		symbolType := strings.Clone(line[1])
-		symbolName := strings.Clone(line[2])
 
-		symbolOwner := "system"
-		if len(line) > 3 {
-			// When a symbol is contained in a kernel module, it will be specified
-			// within square brackets, otherwise it's part of the system
-			symbolOwner = strings.Clone(line[3])
-			symbolOwner = strings.TrimPrefix(symbolOwner, "[")
-			symbolOwner = strings.TrimSuffix(symbolOwner, "]")
-		}
+		symbolType, symbolName, symbolOwner := parseSymbolLine(line)
 
 		if name == symbolName && owner == symbolOwner {
 			symbolKey := symbolKey(symbolOwner, symbolName)
@@ -233,8 +231,10 @@ func (k *lazyKernelSymbols) GetSymbolByAddr(addr uint64) (*KernelSymbol, error) 
 		err        error
 	)
 
-	// since kallsyms is sorted in address ascending order, use binary search
-	i := sort.Search(len(k.fileContent), func(i int) bool {
+	fileLen := len(k.fileContent)
+	found := false
+	// kallsyms are almost sorted by address, start search with binary search
+	i := sort.Search(fileLen, func(i int) bool {
 		line := strings.Fields(k.fileContent[i])
 		if len(line) < 3 {
 			return false
@@ -242,6 +242,34 @@ func (k *lazyKernelSymbols) GetSymbolByAddr(addr uint64) (*KernelSymbol, error) 
 		symbolAddr, err = strconv.ParseUint(line[0], 16, 64)
 		if err != nil {
 			return false
+		}
+		if symbolAddr == addr {
+			found = true
+
+			symbolType, symbolName, symbolOwner := parseSymbolLine(line)
+
+			symbolKey := symbolKey(symbolOwner, symbolName)
+			symbol = &KernelSymbol{symbolName, symbolType, symbolAddr, symbolOwner}
+			k.symbolMap[symbolKey] = symbol
+			k.symbolAddrMap[symbolAddr] = symbol
+			return true
+		}
+		return symbolAddr > addr
+	})
+
+	if i < len(k.fileContent) && found {
+		return symbol, nil
+	}
+
+	// symbols may be out of order near the end of the ksymbols, search linearly in reverse
+	for i := fileLen - 1; i > 0; i-- {
+		line := strings.Fields(k.fileContent[i])
+		if len(line) < 3 {
+			continue
+		}
+		symbolAddr, err = strconv.ParseUint(line[0], 16, 64)
+		if err != nil {
+			continue
 		}
 		if symbolAddr == addr {
 			symbolType := strings.Clone(line[1])
@@ -257,19 +285,13 @@ func (k *lazyKernelSymbols) GetSymbolByAddr(addr uint64) (*KernelSymbol, error) 
 			}
 
 			symbolKey := symbolKey(symbolOwner, symbolName)
-			symbol = &KernelSymbol{symbolName, symbolType, symbolAddr, symbolOwner}
+			symbol := &KernelSymbol{symbolName, symbolType, symbolAddr, symbolOwner}
 			k.symbolMap[symbolKey] = symbol
 			k.symbolAddrMap[symbolAddr] = symbol
-			return true
+			return symbol, nil
 		}
-		return symbolAddr > addr
-	})
-
-	if i < len(k.fileContent) && symbolAddr == addr {
-		return symbol, nil
-	} else {
-		return nil, SymbolNotFoundAtAddress(addr)
 	}
+	return nil, SymbolNotFoundAtAddress(addr)
 }
 
 func (k *lazyKernelSymbols) Refresh() error {
@@ -306,17 +328,8 @@ func (k *lazyKernelSymbols) getSymbolByAddrNotBinary(addr uint64) (*KernelSymbol
 		if symbolAddr != addr {
 			continue
 		}
-		symbolType := strings.Clone(line[1])
-		symbolName := strings.Clone(line[2])
 
-		symbolOwner := "system"
-		if len(line) > 3 {
-			// When a symbol is contained in a kernel module, it will be specified
-			// within square brackets, otherwise it's part of the system
-			symbolOwner = strings.Clone(line[3])
-			symbolOwner = strings.TrimPrefix(symbolOwner, "[")
-			symbolOwner = strings.TrimSuffix(symbolOwner, "]")
-		}
+		symbolType, symbolName, symbolOwner := parseSymbolLine(line)
 
 		symbolKey := symbolKey(symbolOwner, symbolName)
 		symbol := &KernelSymbol{symbolName, symbolType, symbolAddr, symbolOwner}
