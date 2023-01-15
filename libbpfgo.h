@@ -28,7 +28,7 @@ int libbpf_print_fn(enum libbpf_print_level level, // libbpf print level
 
   va_copy(check, args);
   ret = vsnprintf(str, sizeof(str), format, check);
-  va_end(args);
+  va_end(check);
 
   if (ret <= 0) {
     goto done;
