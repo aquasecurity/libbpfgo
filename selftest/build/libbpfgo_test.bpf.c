@@ -1,7 +1,9 @@
 //+build ignore
-#include <vmlinux.h>
+#include <linux/bpf.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
+
+#include "vmlinux.h"
 
 char LICENSE[] SEC("license") = "Dual BSD/GPL";
 

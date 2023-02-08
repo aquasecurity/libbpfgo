@@ -14,6 +14,7 @@
 
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
+#include <linux/bpf.h> // uapi
 
 int libbpf_print_fn(enum libbpf_print_level level, // libbpf print level
                     const char *format,            // format used for the msg

@@ -1,6 +1,8 @@
 //+build ignore
+#include <linux/bpf.h>
+#include <bpf/bpf_helpers.h>
+
 #include "vmlinux.h"
-#include <bpf/bpf_helpers.h>  
 
 #ifdef asm_inline
 #undef asm_inline

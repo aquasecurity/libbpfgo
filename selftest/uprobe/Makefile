@@ -9,21 +9,23 @@ CC = gcc
 CLANG = clang
 GO = go
 
-CFLAGS = -g -O2 -Wall -fpie
-LDFLAGS =
 ARCH := $(shell uname -m | sed 's/x86_64/amd64/g; s/aarch64/arm64/g')
 
-CGO_CFLAGS_STATIC = "-I$(abspath $(OUTPUT))"
+CFLAGS = -g -O2 -Wall -fpie
+LDFLAGS =
+
+CGO_CFLAGS_STATIC = "-I$(abspath $(OUTPUT)) -I$(abspath ../common)"
 CGO_LDFLAGS_STATIC = "-lelf -lz $(LIBBPF_OBJ)"
+CGO_EXTLDFLAGS_STATIC = '-w -extldflags "-static"'
 
 CGO_CFLAGS_DYN = "-I. -I/usr/include/"
 CGO_LDFLAGS_DYN = "-lelf -lz -lbpf"
 
+TEST = main
+
 .PHONY: $(TEST)
 .PHONY: $(TEST).go
 .PHONY: $(TEST).bpf.c
-
-TEST = main
 
 all: $(TEST)-static
 
@@ -39,15 +41,10 @@ libbpfgo-static:
 libbpfgo-dynamic:
 	$(MAKE) -C $(BASEDIR) libbpfgo-dynamic
 
-vmlinuxh:
-	$(MAKE) -C $(BASEDIR) vmlinuxh
-
 ## test (bpf)
 
-.PHONY: $(TEST)-bpf
-
-$(TEST)-bpf: vmlinuxh
-	$(CLANG) $(CFLAGS) -target bpf -D__TARGET_ARCH_$(ARCH) -I$(OUTPUT) -c $(TEST).bpf.c -o $(TEST).bpf.o
+$(TEST).bpf.o: $(TEST).bpf.c
+	$(CLANG) $(CFLAGS) -target bpf -D__TARGET_ARCH_$(ARCH) -I$(OUTPUT) -I$(abspath ../common) -c $< -o $@
 
 ## test deps
 
@@ -70,13 +67,20 @@ gotest:
 .PHONY: $(TEST)-static
 .PHONY: $(TEST)-dynamic
 
-$(TEST)-static: $(TEST)-bpf libbpfgo-static $(DEPS)
-	CC=$(CLANG) CGO_CFLAGS=$(CGO_CFLAGS_STATIC) CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
-	   $(GO) build -o $(TEST)-static ./$(TEST).go
+$(TEST)-static: libbpfgo-static | $(TEST).bpf.o $(DEPS)
+	CC=$(CLANG) \
+		CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
+		CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
+		GOOS=linux GOARCH=$(ARCH) \
+		$(GO) build \
+		-tags netgo -ldflags $(CGO_EXTLDFLAGS_STATIC) \
+		-o $(TEST)-static ./$(TEST).go
 
-$(TEST)-dynamic: $(TEST)-bpf libbpfgo-dynamic $(DEPS)
-	CC=$(CLANG) CGO_CFLAGS=$(CGO_CFLAGS_DYN) CGO_LDFLAGS=$(CGO_LDFLAGS_DYN) \
-	   $(GO) build -o ./$(TEST)-dynamic ./$(TEST).go
+$(TEST)-dynamic: libbpfgo-dynamic | $(TEST).bpf.o $(DEPS)
+	CC=$(CLANG) \
+		CGO_CFLAGS=$(CGO_CFLAGS_DYN) \
+		CGO_LDFLAGS=$(CGO_LDFLAGS_DYN) \
+		$(GO) build -o ./$(TEST)-dynamic ./$(TEST).go
 
 ## run
 
