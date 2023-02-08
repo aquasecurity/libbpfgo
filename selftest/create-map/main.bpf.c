@@ -1,5 +1,5 @@
 //+build ignore
-#include "vmlinux.h"
+#include <linux/bpf.h>
 #include <bpf/bpf_helpers.h>
 
 SEC("kprobe/sys_execve")

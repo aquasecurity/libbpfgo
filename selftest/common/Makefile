@@ -14,7 +14,7 @@ ARCH := $(shell uname -m | sed 's/x86_64/amd64/g; s/aarch64/arm64/g')
 CFLAGS = -g -O2 -Wall -fpie
 LDFLAGS =
 
-CGO_CFLAGS_STATIC = "-I$(abspath $(OUTPUT))"
+CGO_CFLAGS_STATIC = "-I$(abspath $(OUTPUT)) -I$(abspath ../common)"
 CGO_LDFLAGS_STATIC = "-lelf -lz $(LIBBPF_OBJ)"
 CGO_EXTLDFLAGS_STATIC = '-w -extldflags "-static"'
 
@@ -41,17 +41,13 @@ libbpfgo-static:
 libbpfgo-dynamic:
 	$(MAKE) -C $(BASEDIR) libbpfgo-dynamic
 
-vmlinuxh:
-	$(MAKE) -C $(BASEDIR) vmlinuxh
-
 outputdir:
 	$(MAKE) -C $(BASEDIR) outputdir
 
 ## test bpf dependency
 
 $(MAIN).bpf.o: $(MAIN).bpf.c
-	$(MAKE) -C $(BASEDIR) vmlinuxh
-	$(CLANG) $(CFLAGS) -target bpf -D__TARGET_ARCH_$(ARCH) -I$(OUTPUT) -c $< -o $@
+	$(CLANG) $(CFLAGS) -target bpf -D__TARGET_ARCH_$(ARCH) -I$(OUTPUT) -I$(abspath ../common) -c $< -o $@
 
 ## test
 

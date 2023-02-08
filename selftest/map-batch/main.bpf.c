@@ -1,6 +1,8 @@
 //+build ignore
-#include "vmlinux.h"
+#include <linux/bpf.h>
 #include <bpf/bpf_helpers.h>
+
+#include "vmlinux.h"
 
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
