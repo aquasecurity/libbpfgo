@@ -116,6 +116,26 @@ int bpf_prog_detach_cgroup_legacy(
   return syscall(__NR_bpf, BPF_PROG_DETACH, &attr, sizeof(attr));
 }
 
+struct bpf_link *bpf_prog_attach_iter(struct bpf_program *prog, __u32 map_fd,
+                                      enum bpf_cgroup_iter_order order,
+                                      __u32 cgroup_fd, __u64 cgroup_id,
+                                      __u32 tid, __u32 pid, __u32 pid_fd) {
+  DECLARE_LIBBPF_OPTS(bpf_iter_attach_opts, opts);
+  union bpf_iter_link_info linfo;
+  memset(&linfo, 0, sizeof(linfo));
+  linfo.map.map_fd = map_fd;
+  linfo.cgroup.order = order;
+  linfo.cgroup.cgroup_fd = cgroup_fd;
+  linfo.cgroup.cgroup_id = cgroup_id;
+  linfo.task.tid = tid;
+  linfo.task.pid = pid;
+  linfo.task.pid_fd = pid_fd;
+  opts.link_info = &linfo;
+  opts.link_info_len = sizeof(linfo);
+
+  return bpf_program__attach_iter(prog, &opts);
+}
+
 struct bpf_object *open_bpf_object(char *btf_file_path, char *kconfig_path,
                                    char *bpf_obj_name, const void *obj_buf,
                                    size_t obj_buf_size) {
