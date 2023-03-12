@@ -81,7 +81,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	rb.Start()
+	rb.Poll(300)
 
 	numberOfEventsReceived := 0
 

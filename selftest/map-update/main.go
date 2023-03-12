@@ -95,7 +95,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	pb.Start()
+	pb.Poll(300)
 
 	go func() {
 		time.Sleep(time.Second)

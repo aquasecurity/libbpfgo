@@ -63,7 +63,7 @@ func main() {
 	defer stop()
 
 	// start eBPF perf buffer event polling
-	bpfPerfBuffer.Start()
+	bpfPerfBuffer.Poll(300)
 
 	go func() {
 		_, err := exec.Command("ping", "127.0.0.1", "-c 5", "-w 10").Output()

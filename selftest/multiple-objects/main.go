@@ -82,7 +82,7 @@ func main() {
 		fmt.Println("couldn't init ringbuffer")
 		os.Exit(-1)
 	}
-	ringBuf.Start()
+	ringBuf.Poll(300)
 	gotOne, gotTwo := false, false
 
 thisloop:

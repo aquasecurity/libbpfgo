@@ -70,7 +70,7 @@ func main() {
 		exitWithErr(err)
 	}
 
-	rb.Start()
+	rb.Poll(300)
 	go func() {
 		time.Sleep(time.Second)
 		syscall.Mmap(999, 999, 999, 1, 1)
