@@ -22,16 +22,25 @@ int libbpf_print_fn(enum libbpf_print_level level, // libbpf print level
                     const char *format,            // format used for the msg
                     va_list args) {                // args used by format
 
-  int ret = 0;
+  int ret;
+  size_t len;
   char *out;
   va_list check;
 
-  out = (char *)calloc(1, 300);
+  va_copy(check, args);
+  ret = vsnprintf(NULL, 0, format, check); // get output length
+  va_end(check);
+
+  if (ret < 0)
+    return ret;
+
+  len = ret + 1; // add 1 for NUL
+  out = malloc(len);
   if (!out)
     return -ENOMEM;
 
   va_copy(check, args);
-  ret = vsnprintf(out, 300, format, check);
+  ret = vsnprintf(out, len, format, check);
   va_end(check);
 
   if (ret > 0)
