@@ -1613,11 +1613,16 @@ func (p *BPFProg) AttachIter(opts IterOpts) (*BPFLink, error) {
 	tid := C.uint(opts.Tid)
 	pid := C.uint(opts.Pid)
 	pidFd := C.uint(opts.PidFd)
-	link, errno := C.bpf_prog_attach_iter(p.prog, mapFd, cgroupIterOrder, cgroupFd, cgroupId, tid, pid, pidFd)
+	cOpts, errno := C.bpf_iter_attach_opts_new(mapFd, cgroupIterOrder, cgroupFd, cgroupId, tid, pid, pidFd)
+	if cOpts == nil {
+		return nil, fmt.Errorf("failed to create iter_attach_opts to program %s: %w", p.name, errno)
+	}
+	defer C.bpf_iter_attach_opts_free(cOpts)
+
+	link, errno := C.bpf_program__attach_iter(p.prog, cOpts)
 	if link == nil {
 		return nil, fmt.Errorf("failed to attach iter to program %s: %w", p.name, errno)
 	}
-
 	eventName := fmt.Sprintf("iter-%s-%d", p.name, opts.MapFd)
 	bpfLink := &BPFLink{
 		link:      link,
