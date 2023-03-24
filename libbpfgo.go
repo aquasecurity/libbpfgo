@@ -1599,7 +1599,7 @@ type IterOpts struct {
 	MapFd           int
 	CgroupIterOrder BPFCgroupIterOrder
 	CgroupFd        int
-	CGroupId        uint64
+	CgroupId        uint64
 	Tid             int
 	Pid             int
 	PidFd           int
@@ -1609,7 +1609,7 @@ func (p *BPFProg) AttachIter(opts IterOpts) (*BPFLink, error) {
 	mapFd := C.uint(opts.MapFd)
 	cgroupIterOrder := uint32(opts.CgroupIterOrder)
 	cgroupFd := C.uint(opts.CgroupFd)
-	cgroupId := C.ulonglong(opts.CGroupId)
+	cgroupId := C.ulonglong(opts.CgroupId)
 	tid := C.uint(opts.Tid)
 	pid := C.uint(opts.Pid)
 	pidFd := C.uint(opts.PidFd)
