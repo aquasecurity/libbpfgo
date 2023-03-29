@@ -18,12 +18,7 @@ import (
 //
 //export loggerCallback
 func loggerCallback(libbpfPrintLevel int, libbpfOutput *C.char) {
-	var (
-		level    int
-		goOutput string
-	)
-
-	goOutput = C.GoString(libbpfOutput)
+	goOutput := C.GoString(libbpfOutput)
 	goOutput = strings.TrimSuffix(goOutput, "\n")
 
 	for _, fnFilterOut := range callbacks.LogFilters {
@@ -34,7 +29,7 @@ func loggerCallback(libbpfPrintLevel int, libbpfOutput *C.char) {
 		}
 	}
 
-	callbacks.Log(level, goOutput)
+	callbacks.Log(libbpfPrintLevel, goOutput)
 }
 
 const (
