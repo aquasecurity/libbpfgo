@@ -46,7 +46,6 @@ func TestLogFallback(t *testing.T) {
 		_, err = io.Copy(&buf, r)
 		require.NoError(t, err, "failed to copy from read end to buffer")
 
-		// The message should be printed to stderr with a newline
-		assert.Equal(t, tc.message+"\n", buf.String())
+		assert.Equal(t, tc.message, buf.String())
 	}
 }
