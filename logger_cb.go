@@ -8,7 +8,6 @@ import "C"
 import (
 	"fmt"
 	"os"
-	"strings"
 )
 
 // This callback definition needs to be in a different file from where it is declared in C
@@ -19,7 +18,6 @@ import (
 //export loggerCallback
 func loggerCallback(libbpfPrintLevel int, libbpfOutput *C.char) {
 	goOutput := C.GoString(libbpfOutput)
-	goOutput = strings.TrimSuffix(goOutput, "\n")
 
 	for _, fnFilterOut := range callbacks.LogFilters {
 		if fnFilterOut != nil {
@@ -29,6 +27,7 @@ func loggerCallback(libbpfPrintLevel int, libbpfOutput *C.char) {
 		}
 	}
 
+	// pass received output to callback, leaving formatting to consumer
 	callbacks.Log(libbpfPrintLevel, goOutput)
 }
 
@@ -62,9 +61,6 @@ func SetLoggerCbs(cbs Callbacks) {
 
 // logFallback is the default logger callback
 // - level is ignored
-// - output, suffixed with a newline, is printed to stderr
 func logFallback(level int, msg string) {
-	var outMsg = msg + "\n"
-
-	fmt.Fprint(os.Stderr, outMsg)
+	fmt.Fprint(os.Stderr, msg)
 }
