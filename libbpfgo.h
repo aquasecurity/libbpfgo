@@ -175,27 +175,25 @@ void bpf_iter_attach_opts_free(struct bpf_iter_attach_opts *opts)
     free(opts);
 }
 
-struct bpf_object *open_bpf_object(char *btf_file_path,
-                                   char *kconfig_path,
-                                   char *bpf_obj_name,
-                                   const void *obj_buf,
-                                   size_t obj_buf_size)
+struct bpf_object_open_opts *
+bpf_object_open_opts_new(char *btf_file_path, char *kconfig_path, char *bpf_obj_name)
 {
-    struct bpf_object_open_opts opts = {};
-    opts.btf_custom_path = btf_file_path;
-    opts.kconfig = kconfig_path;
-    opts.object_name = bpf_obj_name;
-    opts.sz = sizeof(opts);
-
-    struct bpf_object *obj = bpf_object__open_mem(obj_buf, obj_buf_size, &opts);
-    if (obj == NULL) {
-        int saved_errno = errno;
-        fprintf(stderr, "Failed to open bpf object: %s\n", strerror(errno));
-        errno = saved_errno;
+    struct bpf_object_open_opts *opts;
+    opts = calloc(1, sizeof(*opts));
+    if (!opts)
         return NULL;
-    }
 
-    return obj;
+    opts->sz = sizeof(*opts);
+    opts->btf_custom_path = btf_file_path;
+    opts->kconfig = kconfig_path;
+    opts->object_name = bpf_obj_name;
+
+    return opts;
+}
+
+void bpf_object_open_opts_free(struct bpf_object_open_opts *opts)
+{
+    free(opts);
 }
 
 #endif
