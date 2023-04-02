@@ -382,25 +382,31 @@ func NewModuleFromBufferArgs(args NewModuleArgs) (*Module, error) {
 		args.BTFObjPath = "/sys/kernel/btf/vmlinux"
 	}
 
-	CBTFFilePath := C.CString(args.BTFObjPath)
-	CKconfigPath := C.CString(args.KConfigFilePath)
-	CBPFObjName := C.CString(args.BPFObjName)
-	CBPFBuff := unsafe.Pointer(C.CBytes(args.BPFObjBuff))
-	CBPFBuffSize := C.size_t(len(args.BPFObjBuff))
+	cBTFFilePath := C.CString(args.BTFObjPath)
+	defer C.free(unsafe.Pointer(cBTFFilePath))
+	cKconfigPath := C.CString(args.KConfigFilePath)
+	defer C.free(unsafe.Pointer(cKconfigPath))
+	cBPFObjName := C.CString(args.BPFObjName)
+	defer C.free(unsafe.Pointer(cBPFObjName))
+	cBPFBuff := unsafe.Pointer(C.CBytes(args.BPFObjBuff))
+	defer C.free(cBPFBuff)
+	cBPFBuffSize := C.size_t(len(args.BPFObjBuff))
 
 	if len(args.KConfigFilePath) <= 2 {
-		C.free(unsafe.Pointer(CKconfigPath))
-		CKconfigPath = nil
+		C.free(unsafe.Pointer(cKconfigPath))
+		cKconfigPath = nil
 	}
 
-	obj, errno := C.open_bpf_object(CBTFFilePath, CKconfigPath, CBPFObjName, CBPFBuff, CBPFBuffSize)
+	cOpts, errno := C.bpf_object_open_opts_new(cBTFFilePath, cKconfigPath, cBPFObjName)
+	if cOpts == nil {
+		return nil, fmt.Errorf("failed to create bpf_object_open_opts to %s: %w", args.BPFObjName, errno)
+	}
+	defer C.bpf_object_open_opts_free(cOpts)
+
+	obj, errno := C.bpf_object__open_mem(cBPFBuff, cBPFBuffSize, cOpts)
 	if obj == nil {
 		return nil, fmt.Errorf("failed to open BPF object %s: %w", args.BPFObjName, errno)
 	}
-
-	C.free(CBPFBuff)
-	C.free(unsafe.Pointer(CBPFObjName))
-	C.free(unsafe.Pointer(CBTFFilePath))
 
 	return &Module{
 		obj: obj,
