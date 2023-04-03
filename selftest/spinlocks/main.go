@@ -85,7 +85,7 @@ func main() {
 	var zero uint32
 	lostEventCounterMap.Update(unsafe.Pointer(&lostEventCounterKey), unsafe.Pointer(&zero))
 
-	rb.Start()
+	rb.Poll(300)
 
 	numberOfEventsReceived := 0
 	go func() {

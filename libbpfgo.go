@@ -1740,10 +1740,17 @@ func (m *Module) InitRingBuf(mapName string, eventsChan chan []byte) (*RingBuffe
 	return ringBuf, nil
 }
 
-func (rb *RingBuffer) Start() {
+// Poll will wait until timeout in milliseconds to gather
+// data from the ring buffer.
+func (rb *RingBuffer) Poll(timeout int) {
 	rb.stop = make(chan struct{})
 	rb.wg.Add(1)
-	go rb.poll()
+	go rb.poll(timeout)
+}
+
+// Deprecated: use RingBuffer.Poll() instead.
+func (rb *RingBuffer) Start() {
+	rb.Poll(300)
 }
 
 func (rb *RingBuffer) Stop() {
@@ -1792,11 +1799,11 @@ func (rb *RingBuffer) isStopped() bool {
 	}
 }
 
-func (rb *RingBuffer) poll() error {
+func (rb *RingBuffer) poll(timeout int) error {
 	defer rb.wg.Done()
 
 	for {
-		err := C.ring_buffer__poll(rb.rb, 300)
+		err := C.ring_buffer__poll(rb.rb, C.int(timeout))
 		if rb.isStopped() {
 			break
 		}
@@ -1844,10 +1851,17 @@ func (m *Module) InitPerfBuf(mapName string, eventsChan chan []byte, lostChan ch
 	return perfBuf, nil
 }
 
-func (pb *PerfBuffer) Start() {
+// Poll will wait until timeout in milliseconds to gather
+// data from the perf buffer.
+func (pb *PerfBuffer) Poll(timeout int) {
 	pb.stop = make(chan struct{})
 	pb.wg.Add(1)
-	go pb.poll()
+	go pb.poll(timeout)
+}
+
+// Deprecated: use PerfBuffer.Poll() instead.
+func (pb *PerfBuffer) Start() {
+	pb.Poll(300)
 }
 
 func (pb *PerfBuffer) Stop() {
@@ -1895,7 +1909,7 @@ func (pb *PerfBuffer) Close() {
 }
 
 // todo: consider writing the perf polling in go as c to go calls (callback) are expensive
-func (pb *PerfBuffer) poll() error {
+func (pb *PerfBuffer) poll(timeout int) error {
 	defer pb.wg.Done()
 
 	for {
@@ -1903,7 +1917,7 @@ func (pb *PerfBuffer) poll() error {
 		case <-pb.stop:
 			return nil
 		default:
-			err := C.perf_buffer__poll(pb.pb, 300)
+			err := C.perf_buffer__poll(pb.pb, C.int(timeout))
 			if err < 0 {
 				if syscall.Errno(-err) == syscall.EINTR {
 					continue

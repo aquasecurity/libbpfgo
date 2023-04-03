@@ -52,7 +52,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	rb.Start()
+	rb.Poll(300)
 	numberOfEventsReceived := 0
 	go func() {
 		for i := 0; i < 10; i++ {

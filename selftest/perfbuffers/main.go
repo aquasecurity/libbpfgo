@@ -64,7 +64,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	pb.Start()
+	pb.Poll(300)
 
 	numberOfEventsReceived := 0
 
