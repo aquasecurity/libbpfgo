@@ -5,9 +5,11 @@
     #define __SANE_USERSPACE_TYPES__ 1
 #endif
 
+#include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include <sys/resource.h>
 #include <sys/syscall.h>
 #include <unistd.h>
