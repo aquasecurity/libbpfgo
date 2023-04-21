@@ -5,8 +5,8 @@ OUTPUT = ../../output
 LIBBPF_SRC = $(abspath ../../libbpf/src)
 LIBBPF_OBJ = $(abspath $(OUTPUT)/libbpf.a)
 
-CC = gcc
 CLANG = clang
+CC = $(CLANG)
 GO = go
 
 ARCH := $(shell uname -m | sed 's/x86_64/amd64/g; s/aarch64/arm64/g')

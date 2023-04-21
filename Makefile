@@ -8,8 +8,8 @@ OUTPUT = ./output
 SELFTEST = ./selftest
 HELPERS = ./helpers
 
-CC = clang
 CLANG = clang
+CC = $(CLANG)
 GO = go
 VAGRANT = vagrant
 CLANG_FMT = clang-format
