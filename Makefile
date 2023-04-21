@@ -8,7 +8,7 @@ OUTPUT = ./output
 SELFTEST = ./selftest
 HELPERS = ./helpers
 
-CC = gcc
+CC = clang
 CLANG = clang
 GO = go
 VAGRANT = vagrant
@@ -26,7 +26,7 @@ LIBBPF_OBJ = $(abspath ./$(OUTPUT)/libbpf.a)
 LIBBPF_OBJDIR = $(abspath ./$(OUTPUT)/libbpf)
 LIBBPF_DESTDIR = $(abspath ./$(OUTPUT))
 
-CFLAGS = -g -O2 -Wall -fpie
+CFLAGS = -g -O2 -Wall -fpie -I$(abspath $(OUTPUT))
 LDFLAGS =
 
 # golang
