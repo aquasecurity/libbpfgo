@@ -3,11 +3,11 @@ module github.com/aquasecurity/libbpfgo/selftest/uprobe
 go 1.18
 
 require (
-	github.com/aquasecurity/libbpfgo v0.4.0-libbpf-1.0.0.0.20221004153638-7139cb41036f
-	github.com/aquasecurity/libbpfgo/helpers v0.0.0-20221004153638-7139cb41036f
+	github.com/aquasecurity/libbpfgo v0.4.7-libbpf-1.2.0-b2e29a1
+	github.com/aquasecurity/libbpfgo/helpers v0.4.5
 )
 
-require golang.org/x/sys v0.0.0-20220928140112-f11e5e49a4ec // indirect
+require golang.org/x/sys v0.7.0 // indirect
 
 replace github.com/aquasecurity/libbpfgo => ../../
 
