@@ -27,13 +27,17 @@ func main() {
 		os.Exit(-1)
 	}
 
-	prog.SetProgramType(bpf.BPFProgTypeTracing)
+	// eBPF program type should only be set if it differs from the desired one
+	// commit d6e6286a12e7 ("libbpf: disassociate section handler on explicit bpf_program__set_type() call")
+	// prog.SetProgramType(bpf.BPFProgTypeTracing)
 	prog.SetAttachType(bpf.BPFAttachTypeTraceFentry)
+
 	err = prog.SetAttachTarget(0, "__x64_sys_mmap")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
 	}
+
 	err = bpfModule.BPFLoadObject()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
