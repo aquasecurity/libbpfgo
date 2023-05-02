@@ -1,12 +1,12 @@
 package helpers
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetKernelConfigValue(t *testing.T) {
-
 	allConfigFiles := []string{"testdata/config_standard.gz", "testdata/config_comments.gz", "testdata/config_comments"}
 
 	testCases := []struct {

@@ -13,7 +13,6 @@ import (
 )
 
 func main() {
-
 	mapModule, err := bpf.NewModuleFromFile("map.bpf.o")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

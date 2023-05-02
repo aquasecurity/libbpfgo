@@ -271,8 +271,8 @@ var lockdownModeToString = map[LockdownMode]string{
 }
 
 func Lockdown() (LockdownMode, error) {
-	LockdownFile := "/sys/kernel/security/lockdown"
-	data, err := os.ReadFile(LockdownFile)
+	lockdownFile := "/sys/kernel/security/lockdown"
+	data, err := os.ReadFile(lockdownFile)
 	if err != nil {
 		return NOVALUE, err
 	}

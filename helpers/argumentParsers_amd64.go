@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	Map32bit          MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_32BIT, stringValue: "MAP_32BIT"}
+	Map32bit = MmapFlagArgument{rawValue: unix.MAP_32BIT, stringValue: "MAP_32BIT"}
 )
 
 func init() {

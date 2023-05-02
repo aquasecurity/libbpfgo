@@ -3,10 +3,11 @@ package helpers
 import (
 	"encoding/binary"
 	"fmt"
-	"golang.org/x/sys/unix"
 	"net"
 	"strconv"
 	"strings"
+
+	"golang.org/x/sys/unix"
 )
 
 type SystemFunctionArgument interface {
@@ -32,6 +33,8 @@ type CloneFlagArgument struct {
 	rawValue    uint64
 	stringValue string
 }
+
+// revive:disable
 
 var (
 	// These values are copied from uapi/linux/sched.h
@@ -61,11 +64,12 @@ var (
 	CLONE_IO             CloneFlagArgument = CloneFlagArgument{rawValue: 0x80000000, stringValue: "CLONE_IO"}
 )
 
+// revive:enable
+
 func (c CloneFlagArgument) Value() uint64  { return c.rawValue }
 func (c CloneFlagArgument) String() string { return c.stringValue }
 
 func ParseCloneFlags(rawValue uint64) (CloneFlagArgument, error) {
-
 	if rawValue == 0 {
 		return CloneFlagArgument{}, nil
 	}
@@ -155,6 +159,8 @@ type OpenFlagArgument struct {
 	stringValue string
 }
 
+// revive:disable
+
 var (
 	// These values are copied from uapi/asm-generic/fcntl.h
 	O_ACCMODE   OpenFlagArgument = OpenFlagArgument{rawValue: 00000003, stringValue: "O_ACCMODE"}
@@ -179,6 +185,8 @@ var (
 	O_PATH      OpenFlagArgument = OpenFlagArgument{rawValue: 040000000, stringValue: "O_PATH"}
 	O_TMPFILE   OpenFlagArgument = OpenFlagArgument{rawValue: 020000000, stringValue: "O_TMPFILE"}
 )
+
+// revive:enable
 
 func (o OpenFlagArgument) Value() uint64  { return o.rawValue }
 func (o OpenFlagArgument) String() string { return o.stringValue }
@@ -264,12 +272,16 @@ type AccessModeArgument struct {
 	stringValue string
 }
 
+// revive:disable
+
 var (
 	F_OK AccessModeArgument = AccessModeArgument{rawValue: 0, stringValue: "F_OK"}
 	X_OK AccessModeArgument = AccessModeArgument{rawValue: 1, stringValue: "X_OK"}
 	W_OK AccessModeArgument = AccessModeArgument{rawValue: 2, stringValue: "W_OK"}
 	R_OK AccessModeArgument = AccessModeArgument{rawValue: 4, stringValue: "R_OK"}
 )
+
+// revive:enable
 
 func (a AccessModeArgument) Value() uint64 { return a.rawValue }
 
@@ -308,6 +320,8 @@ type ExecFlagArgument struct {
 	stringValue string
 }
 
+// revive:disable
+
 var (
 	AT_SYMLINK_NOFOLLOW   ExecFlagArgument = ExecFlagArgument{stringValue: "AT_SYMLINK_NOFOLLOW", rawValue: 0x100}
 	AT_EACCESS            ExecFlagArgument = ExecFlagArgument{stringValue: "AT_EACCESS", rawValue: 0x200}
@@ -322,11 +336,12 @@ var (
 	AT_RECURSIVE          ExecFlagArgument = ExecFlagArgument{stringValue: "AT_RECURSIVE", rawValue: 0x8000}
 )
 
+// revive:enable
+
 func (e ExecFlagArgument) Value() uint64  { return e.rawValue }
 func (e ExecFlagArgument) String() string { return e.stringValue }
 
 func ParseExecFlag(rawValue uint64) (ExecFlagArgument, error) {
-
 	if rawValue == 0 {
 		return ExecFlagArgument{}, nil
 	}
@@ -628,7 +643,6 @@ var prctlOptionStringMap = map[PrctlOptionArgument]string{
 }
 
 func (p PrctlOptionArgument) String() string {
-
 	var res string
 	if opName, ok := prctlOptionStringMap[p]; ok {
 		res = opName
@@ -697,7 +711,6 @@ var prctlOptionsMap = map[uint64]PrctlOptionArgument{
 // ParsePrctlOption parses the `option` argument of the `prctl` syscall
 // http://man7.org/linux/man-pages/man2/prctl.2.html
 func ParsePrctlOption(rawValue uint64) (PrctlOptionArgument, error) {
-
 	v, ok := prctlOptionsMap[rawValue]
 	if !ok {
 		return 0, fmt.Errorf("not a valid prctl option value: %d", rawValue)
@@ -788,7 +801,6 @@ var bpfCmdStringMap = map[BPFCommandArgument]string{
 // String parses the `cmd` argument of the `bpf` syscall
 // https://man7.org/linux/man-pages/man2/bpf.2.html
 func (b BPFCommandArgument) String() string {
-
 	var res string
 	if cmdName, ok := bpfCmdStringMap[b]; ok {
 		res = cmdName
@@ -849,6 +861,8 @@ func ParseBPFCmd(cmd uint64) (BPFCommandArgument, error) {
 
 type PtraceRequestArgument uint64
 
+// revive:disable
+
 var (
 	PTRACE_TRACEME              PtraceRequestArgument = 0
 	PTRACE_PEEKTEXT             PtraceRequestArgument = 1
@@ -885,6 +899,8 @@ var (
 	PTRACE_SECCOMP_GET_METADATA PtraceRequestArgument = 0x420d
 	PTRACE_GET_SYSCALL_INFO     PtraceRequestArgument = 0x420e
 )
+
+// revive:enable
 
 func (p PtraceRequestArgument) Value() uint64 { return uint64(p) }
 
@@ -974,7 +990,6 @@ var ptraceRequestArgMap = map[uint64]PtraceRequestArgument{
 }
 
 func ParsePtraceRequestArgument(rawValue uint64) (PtraceRequestArgument, error) {
-
 	if reqName, ok := ptraceRequestArgMap[rawValue]; ok {
 		return reqName, nil
 	}
@@ -1144,7 +1159,6 @@ var socketDomainMap = map[uint64]SocketDomainArgument{
 }
 
 func ParseSocketDomainArgument(rawValue uint64) (SocketDomainArgument, error) {
-
 	v, ok := socketDomainMap[rawValue]
 	if !ok {
 		return 0, fmt.Errorf("not a valid argument: %d", rawValue)
@@ -1157,6 +1171,8 @@ type SocketTypeArgument struct {
 	stringValue string
 }
 
+// revive:disable
+
 var (
 	SOCK_STREAM    SocketTypeArgument = SocketTypeArgument{rawValue: 1, stringValue: "SOCK_STREAM"}
 	SOCK_DGRAM     SocketTypeArgument = SocketTypeArgument{rawValue: 2, stringValue: "SOCK_DGRAM"}
@@ -1168,6 +1184,8 @@ var (
 	SOCK_NONBLOCK  SocketTypeArgument = SocketTypeArgument{rawValue: 000004000, stringValue: "SOCK_NONBLOCK"}
 	SOCK_CLOEXEC   SocketTypeArgument = SocketTypeArgument{rawValue: 002000000, stringValue: "SOCK_CLOEXEC"}
 )
+
+// revive:enable
 
 func (s SocketTypeArgument) Value() uint64  { return s.rawValue }
 func (s SocketTypeArgument) String() string { return s.stringValue }
@@ -1208,6 +1226,8 @@ type InodeModeArgument struct {
 	stringValue string
 }
 
+// revive:disable
+
 var (
 	S_IFSOCK InodeModeArgument = InodeModeArgument{stringValue: "S_IFSOCK", rawValue: 0140000}
 	S_IFLNK  InodeModeArgument = InodeModeArgument{stringValue: "S_IFLNK", rawValue: 0120000}
@@ -1229,6 +1249,8 @@ var (
 	S_IWOTH  InodeModeArgument = InodeModeArgument{stringValue: "S_IWOTH", rawValue: 00002}
 	S_IXOTH  InodeModeArgument = InodeModeArgument{stringValue: "S_IXOTH", rawValue: 00001}
 )
+
+// revive:enable
 
 func (mode InodeModeArgument) Value() uint64  { return mode.rawValue }
 func (mode InodeModeArgument) String() string { return mode.stringValue }
@@ -1306,6 +1328,8 @@ type MmapProtArgument struct {
 	stringValue string
 }
 
+// revive:disable
+
 var (
 	PROT_READ      MmapProtArgument = MmapProtArgument{stringValue: "PROT_READ", rawValue: 0x1}
 	PROT_WRITE     MmapProtArgument = MmapProtArgument{stringValue: "PROT_WRITE", rawValue: 0x2}
@@ -1315,6 +1339,8 @@ var (
 	PROT_GROWSDOWN MmapProtArgument = MmapProtArgument{stringValue: "PROT_GROWSDOWN", rawValue: 0x01000000}
 	PROT_GROWSUP   MmapProtArgument = MmapProtArgument{stringValue: "PROT_GROWSUP", rawValue: 0x02000000}
 )
+
+// revive:enable
 
 func (p MmapProtArgument) Value() uint64  { return p.rawValue }
 func (p MmapProtArgument) String() string { return p.stringValue }
@@ -1498,7 +1524,6 @@ var socketLevelMap = map[uint64]SocketLevelArgument{
 // https://man7.org/linux/man-pages/man2/setsockopt.2.html
 // https://elixir.bootlin.com/linux/latest/source/include/linux/socket.h
 func ParseSocketLevel(rawValue uint64) (SocketLevelArgument, error) {
-
 	v, ok := socketLevelMap[rawValue]
 	if !ok {
 		return 0, fmt.Errorf("not a valid argument: %d", rawValue)
@@ -1510,6 +1535,8 @@ type SocketOptionArgument struct {
 	value uint64
 	name  string
 }
+
+// revive:disable
 
 var (
 	SO_DEBUG                         = SocketOptionArgument{unix.SO_DEBUG, "SO_DEBUG"}
@@ -1590,6 +1617,8 @@ var (
 	SO_RESERVE_MEM  SocketOptionArgument = SocketOptionArgument{73, "SO_RESERVE_MEM"}
 	SO_TXREHASH     SocketOptionArgument = SocketOptionArgument{74, "SO_TXREHASH"}
 )
+
+// revive:enable
 
 func (socketOption SocketOptionArgument) Value() uint64 { return socketOption.value }
 
@@ -2512,6 +2541,8 @@ const (
 	MapHugeSizeMask        = ((1 << 6) - 1) << HugetlbFlagEncodeShift
 )
 
+// revive:disable
+
 var (
 	MapShared         MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_SHARED, stringValue: "MAP_SHARED"}
 	MapPrivate        MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_PRIVATE, stringValue: "MAP_PRIVATE"}
@@ -2536,6 +2567,8 @@ var (
 	MapSYNC           MmapFlagArgument = MmapFlagArgument{rawValue: unix.MAP_SYNC, stringValue: "MAP_SYNC"}
 	// TODO: Add support for MAP_UNINITIALIZED which collide with Huge TLB size bits
 )
+
+// revive:enable
 
 var mmapFlagMap = map[uint64]MmapFlagArgument{
 	MapShared.Value():         MapShared,

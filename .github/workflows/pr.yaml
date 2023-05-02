@@ -14,9 +14,44 @@ jobs:
         uses: actions/checkout@v2
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
+      - name: Lint
+        run: |
+          if test -z "$(gofmt -l .)"; then
+            echo "Congrats! There is nothing to fix."
+          else
+            echo "The following lines should be fixed."
+            gofmt -s -d .
+            exit 1
+          fi
+        shell: bash
+      # - name: Install staticchecker
+      #   run: |
+      #     go install honnef.co/go/tools/cmd/staticcheck@latest
+      #     cp $HOME/go/bin/staticcheck /usr/bin/
+      #   shell: bash
+      - name: Install revive
+        run: |
+          go install github.com/mgechev/revive@latest
+          cp $HOME/go/bin/revive /usr/bin/
+        shell: bash
+      # - name: Install goimports-reviser
+      #   run: |
+      #     go go install github.com/incu6us/goimports-reviser/v3@latest
+      #     cp $HOME/go/bin/goimports-reviser /usr/bin/
+      #   shell: bash
+      # - name: Install errcheck
+      #   run: |
+      #     go install github.com/kisielk/errcheck@latest
+      #     cp $HOME/go/bin/errcheck /usr/bin/
+      #   shell: bash
       - name: Check Code Style
         run: |
           make fmt-check
+        shell: bash
+      - name: Lint (Revive)
+        run: |
+          make lint-check
+        shell: bash
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-22.04

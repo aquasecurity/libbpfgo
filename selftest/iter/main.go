@@ -87,7 +87,7 @@ func main() {
 		}
 	}
 	if numberOfMatches != totalExecs {
-		err := fmt.Errorf("expect numberOfMatches == %d but got %d\n", totalExecs, numberOfMatches)
+		err := fmt.Errorf("expect numberOfMatches == %d but got %d", totalExecs, numberOfMatches)
 		exitWithErr(err)
 	}
 }
