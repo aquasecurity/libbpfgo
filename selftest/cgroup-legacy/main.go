@@ -40,13 +40,14 @@ func main() {
 
 	cgroupRootDir := getCgroupV2RootDir()
 
+	// link, err := prog.AttachCgroup(cgroupRootDir)
 	link, err := prog.AttachCgroupLegacy(cgroupRootDir, bpf.BPFAttachTypeCgroupInetIngress)
 	if err != nil {
 		Error(err)
 	}
 
-	eventsChannel := make(chan []byte, 100)
-	lostChannel := make(chan uint64, 10)
+	eventsChannel := make(chan []byte, 1)
+	lostChannel := make(chan uint64, 1)
 
 	// initialize an eBPF perf buffer to receive events
 	bpfPerfBuffer, err := bpfModule.InitPerfBuf(
@@ -63,7 +64,7 @@ func main() {
 	defer stop()
 
 	// start eBPF perf buffer event polling
-	bpfPerfBuffer.Poll(300)
+	bpfPerfBuffer.Poll(5000)
 
 	go func() {
 		_, err := exec.Command("ping", "127.0.0.1", "-c 5", "-w 10").Output()
@@ -76,10 +77,12 @@ func main() {
 
 	testPassed := false
 	numberOfEventsReceived := 0
+
 LOOP:
 	for {
 		select {
 		case raw := <-eventsChannel:
+
 			value := int(binary.LittleEndian.Uint32(raw))
 			if value == 20220823 {
 				fmt.Println("Received correct event.")
