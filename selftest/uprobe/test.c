@@ -1,10 +1,10 @@
 //+build ignore
 #include <unistd.h>
 
-__attribute__((optnone))
-void testFunction() {}
+__attribute__((optnone)) void testFunction() {}
 
-int main() {
+int main()
+{
     int i;
 
     while (1) {

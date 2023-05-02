@@ -1,14 +1,8 @@
 //+build ignore
-#include <linux/bpf.h>
+
+#include <vmlinux.h>
+
 #include <bpf/bpf_helpers.h>
-#include <bpf/bpf_tracing.h>
-
-#include "vmlinux.h"
-
-#ifdef asm_inline
-#undef asm_inline
-#define asm_inline asm
-#endif
 
 struct {
     __uint(type, BPF_MAP_TYPE_RINGBUF);
@@ -16,8 +10,8 @@ struct {
 } events SEC(".maps");
 
 struct config_t {
-	u64 a;
-	char c[6];
+    u64 a;
+    char c[6];
 };
 
 struct event_t {
@@ -48,7 +42,7 @@ int kprobe__sys_mmap(struct pt_regs *ctx)
     }
 
     event->sum = abc + efg + foobar.a + foo + bar + baz + qux;
-    for (i=0; i<sizeof(foobar.c); i++) {
+    for (i = 0; i < sizeof(foobar.c); i++) {
         event->c[i] = foobar.c[i];
     }
 
@@ -57,4 +51,3 @@ int kprobe__sys_mmap(struct pt_regs *ctx)
 }
 
 char LICENSE[] SEC("license") = "GPL";
-

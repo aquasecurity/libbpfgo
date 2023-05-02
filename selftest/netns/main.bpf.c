@@ -1,14 +1,9 @@
 //+build ignore
-#include <linux/bpf.h>
+
+#include <vmlinux.h>
+
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
-
-#include "vmlinux.h"
-
-#ifdef asm_inline
-#undef asm_inline
-#define asm_inline asm
-#endif
 
 struct {
     __uint(type, BPF_MAP_TYPE_RINGBUF);
@@ -34,4 +29,3 @@ int sk_lookup__lookup(struct bpf_sk_lookup *ctx)
 }
 
 char LICENSE[] SEC("license") = "GPL";
-

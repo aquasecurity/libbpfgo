@@ -1,21 +1,9 @@
 //+build ignore
-#include <linux/bpf.h>
+
+#include <vmlinux.h>
+
 #include <bpf/bpf_helpers.h>
-#include <bpf/bpf_tracing.h>
-#include <bpf/bpf_core_read.h>
 #include <bpf/bpf_endian.h>
-
-#include <netinet/ip_icmp.h>
-#include <netinet/ip.h>
-
-#include "vmlinux.h"
-
-#ifdef asm_inline
-#undef asm_inline
-#define asm_inline asm
-#endif
-
-#define ETH_P_IP 0x0800
 
 struct {
     __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
@@ -50,13 +38,10 @@ int cgroup__skb_ingress(struct __sk_buff *ctx)
 
     switch (ip.protocol) {
         case IPPROTO_ICMP:
-            if (bpf_skb_load_bytes_relative(ctx,
-                                            sizeof(ip),
-                                            &icmp,
-                                            sizeof(struct icmphdr),
-                                            BPF_HDR_START_NET))
+            if (bpf_skb_load_bytes_relative(
+                    ctx, sizeof(ip), &icmp, sizeof(struct icmphdr), BPF_HDR_START_NET))
                 return 1;
-    
+
             u32 bleh = 20220823;
             bpf_perf_event_output(ctx, &perfbuffer, BPF_F_CURRENT_CPU, &bleh, sizeof(bleh));
             break;

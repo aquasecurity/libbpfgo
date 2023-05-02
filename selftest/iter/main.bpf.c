@@ -1,9 +1,8 @@
 //+build ignore
-#include <linux/bpf.h>
-#include <bpf/bpf_helpers.h>
-#include <bpf/bpf_tracing.h>
 
-#include "vmlinux.h"
+#include <vmlinux.h>
+
+#include <bpf/bpf_helpers.h>
 
 SEC("iter/task")
 int iter__task(struct bpf_iter__task *ctx)
