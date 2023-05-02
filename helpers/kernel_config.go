@@ -235,7 +235,7 @@ func (k *KernelConfig) GetKernelConfigFilePath() string {
 // AddCustomKernelConfig allows user to extend list of possible existing kconfigs to be parsed from kConfigFilePath
 func (k *KernelConfig) AddCustomKernelConfig(key KernelConfigOption, value string) error {
 	if key < CUSTOM_OPTION_START {
-		return fmt.Errorf("KConfig key index must be bigger than %d (CUSTOM_OPTION_START)\n", CUSTOM_OPTION_START)
+		return fmt.Errorf("KConfig key index must be bigger than %d (CUSTOM_OPTION_START)", CUSTOM_OPTION_START)
 	}
 
 	// extend initial list of kconfig options: add other possible existing ones
@@ -285,7 +285,6 @@ func (k *KernelConfig) readConfigFromProcConfigGZ(filePath string) error {
 
 // readConfigFromScanner reads all existing KernelConfigOption's and KernelConfigOptionValue's from given io.Reader
 func (k *KernelConfig) readConfigFromScanner(reader io.Reader) {
-
 	if k.configs == nil {
 		k.configs = make(map[KernelConfigOption]interface{})
 	}
@@ -341,7 +340,6 @@ func (k *KernelConfig) GetValueString(option KernelConfigOption) (string, error)
 // kernelConfig.Exists(helpers.CONFIG_BPF)
 // kernelConfig.Exists(helpers.CONFIG_BPF_PRELOAD)
 // kernelConfig.Exists(helpers.CONFIG_HZ)
-//
 func (k *KernelConfig) Exists(option KernelConfigOption) bool {
 	if _, ok := k.configs[option]; ok {
 		return true
@@ -391,7 +389,6 @@ func (k *KernelConfig) CheckMissing() []KernelConfigOption {
 // kernelConfig.AddNeeded(helpers.CONFIG_BPF, helpers.ANY)
 // kernelConfig.AddNeeded(helpers.CONFIG_BPF_PRELOAD, helpers.ANY)
 // kernelConfig.AddNeeded(helpers.CONFIG_HZ, "250")
-//
 func (k *KernelConfig) AddNeeded(option KernelConfigOption, value interface{}) {
 	if _, ok := kernelConfigKeyIDToString[option]; ok {
 		k.needed[option] = value

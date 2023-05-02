@@ -124,7 +124,8 @@ func (k *fullKernelSymbolTable) Refresh() error {
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
 		line := strings.Fields(scanner.Text())
-		//if the line is less than 3 words, we can't parse it (one or more fields missing)
+		// if the line is less than 3 words, we can't parse it (one or more
+		// fields missing)
 		if len(line) < 3 {
 			continue
 		}

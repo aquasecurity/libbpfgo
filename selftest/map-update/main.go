@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"syscall"
 
-	"github.com/aquasecurity/libbpfgo"
 	bpf "github.com/aquasecurity/libbpfgo"
 )
 
@@ -33,7 +32,6 @@ func resizeMap(module *bpf.Module, name string, size uint32) error {
 }
 
 func main() {
-
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -64,7 +62,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	if testerMap.Type() != libbpfgo.MapTypeHash {
+	if testerMap.Type() != bpf.MapTypeHash {
 		fmt.Fprintln(os.Stderr, "wrong map type")
 		os.Exit(-1)
 	}

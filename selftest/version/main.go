@@ -9,7 +9,6 @@ import (
 )
 
 func main() {
-
 	cmd := exec.Command("git", "describe", "--tags")
 	cmd.Dir = "../../libbpf"
 

@@ -32,7 +32,6 @@ func resizeMap(module *bpf.Module, name string, size uint32) error {
 }
 
 func main() {
-
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -51,7 +50,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	//bpfModule.ListProgramNames()
+	// bpfModule.ListProgramNames()
 
 	prog, err := bpfModule.GetProgram("mmap_fentry")
 	if err != nil {

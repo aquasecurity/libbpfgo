@@ -8,7 +8,6 @@ import (
 )
 
 func TestCompareKernelRelease(t *testing.T) {
-
 	testCases := []struct {
 		testName           string
 		base               string

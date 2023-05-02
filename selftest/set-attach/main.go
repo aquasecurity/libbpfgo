@@ -14,7 +14,6 @@ import (
 )
 
 func main() {
-
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

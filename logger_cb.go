@@ -10,10 +10,13 @@ import (
 	"os"
 )
 
-// This callback definition needs to be in a different file from where it is declared in C
-// Otherwise, multiple definition compilation error will occur
+// This callback definition needs to be in a different file from where it is
+// declared in C Otherwise, multiple definition compilation error will occur
 
-// loggerCallback is called by libbpf_print_fn() which in turn is called by libbpf
+// loggerCallback is called by libbpf_print_fn() which in turn is called by
+// libbpf
+//
+// revive:disable
 //
 //export loggerCallback
 func loggerCallback(libbpfPrintLevel int, libbpfOutput *C.char) {
@@ -64,3 +67,5 @@ func SetLoggerCbs(cbs Callbacks) {
 func logFallback(level int, msg string) {
 	fmt.Fprint(os.Stderr, msg)
 }
+
+// revive:enable

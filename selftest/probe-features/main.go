@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/aquasecurity/libbpfgo"
 	bpf "github.com/aquasecurity/libbpfgo"
 )
 
@@ -31,7 +30,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	isSupported, err := bpf.BPFProgramTypeIsSupported(libbpfgo.BPFProgTypeKprobe)
+	isSupported, err := bpf.BPFProgramTypeIsSupported(bpf.BPFProgTypeKprobe)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
@@ -51,14 +50,14 @@ func main() {
 		os.Exit(-1)
 	}
 
-	isSupported, err = bpf.BPFMapTypeIsSupported(libbpfgo.MapTypeHash)
+	isSupported, err = bpf.BPFMapTypeIsSupported(bpf.MapTypeHash)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
 	}
 
 	if isSupported {
-		_, err = libbpfgo.CreateMap(libbpfgo.MapTypeHash, "foobar", 4, 4, 420, nil)
+		_, err = bpf.CreateMap(bpf.MapTypeHash, "foobar", 4, 4, 420, nil)
 		if err != nil {
 			log.Fatal(err)
 		}

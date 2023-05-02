@@ -11,7 +11,6 @@ import (
 )
 
 func main() {
-
 	bpfModule, err := libbpfgo.NewModuleFromFile("main.bpf.o")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

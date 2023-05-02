@@ -28,7 +28,6 @@ func resizeMap(module *bpf.Module, name string, size uint32) error {
 }
 
 func main() {
-
 	if len(os.Args) < 3 {
 		fmt.Fprintln(os.Stderr, "wrong syntax")
 		os.Exit(-1)

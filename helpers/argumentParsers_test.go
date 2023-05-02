@@ -7,7 +7,6 @@ import (
 )
 
 func TestOptionsContainedInArgument(t *testing.T) {
-
 	attachTests := []struct {
 		testName          string
 		rawArgument       uint64

@@ -1,14 +1,9 @@
 //+build ignore
-#include <linux/bpf.h>
+
+#include <vmlinux.h>
+
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
-
-#include "vmlinux.h"
-
-#ifdef asm_inline
-#undef asm_inline
-#define asm_inline asm
-#endif
 
 SEC("fentry/commit_creds")
 int BPF_PROG(commit_creds, struct cred *foobar)

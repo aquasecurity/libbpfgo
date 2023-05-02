@@ -8,12 +8,13 @@ OUTPUT = ./output
 SELFTEST = ./selftest
 HELPERS = ./helpers
 
-CLANG = clang
-CC = $(CLANG)
-GO = go
-VAGRANT = vagrant
-CLANG_FMT = clang-format
-GIT = $(shell which git || /bin/false)
+CLANG := clang
+CC := $(CLANG)
+GO := go
+VAGRANT := vagrant
+CLANG_FMT := clang-format
+GIT := $(shell which git || /bin/false)
+REVIVE := revive
 
 HOSTOS = $(shell uname)
 ARCH ?= $(shell uname -m | sed 's/x86_64/amd64/g; s/aarch64/arm64/g')
@@ -195,9 +196,13 @@ vagrant-ssh: .vagrant-ssh
 		HOSTOS=$(HOSTOS) \
 		$(VAGRANT) $*
 
+#
+# code check and linting
+#
+
 # fmt-check
 
-C_FILES_TO_BE_CHECKED = $(shell find -regextype posix-extended -regex '.*\.(h|c)' ! -regex '.*libbpf\/.*' | xargs)
+C_FILES_TO_BE_CHECKED = $(shell find -regextype posix-extended -regex '.*\.(h|c)' ! -regex '.*(libbpf|output)\/.*' | xargs)
 
 fmt-check:
 	@errors=0
@@ -223,6 +228,15 @@ fmt-check:
 fmt-fix:
 	@echo "Fixing C and eBPF files and headers formatting..."
 	$(CLANG_FMT) -i --verbose $(C_FILES_TO_BE_CHECKED)
+
+# lint-check
+
+.PHONY: lint-check
+lint-check:
+#
+	@errors=0
+	echo "Linting golang code..."
+	$(REVIVE) -config .revive.toml ./...
 
 # output
 

@@ -258,7 +258,6 @@ type NewModuleArgs struct {
 }
 
 func NewModuleFromFile(bpfObjPath string) (*Module, error) {
-
 	return NewModuleFromFileArgs(NewModuleArgs{
 		BPFObjPath: bpfObjPath,
 	})
@@ -359,7 +358,6 @@ func NewModuleFromFileArgs(args NewModuleArgs) (*Module, error) {
 }
 
 func NewModuleFromBuffer(bpfObjBuff []byte, bpfObjName string) (*Module, error) {
-
 	return NewModuleFromBufferArgs(NewModuleArgs{
 		BPFObjBuff: bpfObjBuff,
 		BPFObjName: bpfObjName,
@@ -382,25 +380,25 @@ func NewModuleFromBufferArgs(args NewModuleArgs) (*Module, error) {
 		args.BTFObjPath = "/sys/kernel/btf/vmlinux"
 	}
 
-	CBTFFilePath := C.CString(args.BTFObjPath)
-	CKconfigPath := C.CString(args.KConfigFilePath)
-	CBPFObjName := C.CString(args.BPFObjName)
-	CBPFBuff := unsafe.Pointer(C.CBytes(args.BPFObjBuff))
-	CBPFBuffSize := C.size_t(len(args.BPFObjBuff))
+	cBTFFilePath := C.CString(args.BTFObjPath)
+	cKconfigPath := C.CString(args.KConfigFilePath)
+	cBPFObjName := C.CString(args.BPFObjName)
+	cBPFBuff := unsafe.Pointer(C.CBytes(args.BPFObjBuff))
+	cBPFBuffSize := C.size_t(len(args.BPFObjBuff))
 
 	if len(args.KConfigFilePath) <= 2 {
-		C.free(unsafe.Pointer(CKconfigPath))
-		CKconfigPath = nil
+		C.free(unsafe.Pointer(cKconfigPath))
+		cKconfigPath = nil
 	}
 
-	obj, errno := C.open_bpf_object(CBTFFilePath, CKconfigPath, CBPFObjName, CBPFBuff, CBPFBuffSize)
+	obj, errno := C.open_bpf_object(cBTFFilePath, cKconfigPath, cBPFObjName, cBPFBuff, cBPFBuffSize)
 	if obj == nil {
 		return nil, fmt.Errorf("failed to open BPF object %s: %w", args.BPFObjName, errno)
 	}
 
-	C.free(CBPFBuff)
-	C.free(unsafe.Pointer(CBPFObjName))
-	C.free(unsafe.Pointer(CBTFFilePath))
+	C.free(cBPFBuff)
+	C.free(unsafe.Pointer(cBPFObjName))
+	C.free(unsafe.Pointer(cBTFFilePath))
 
 	return &Module{
 		obj: obj,
@@ -993,7 +991,6 @@ func (it *BPFObjectIterator) NextMap() *BPFMap {
 }
 
 func (it *BPFObjectIterator) NextProgram() *BPFProg {
-
 	var startProg *C.struct_bpf_program
 	if it.prevProg != nil && it.prevProg.prog != nil {
 		startProg = it.prevProg.prog
@@ -1119,7 +1116,6 @@ func (p *BPFProg) GetFd() int {
 }
 
 func (p *BPFProg) Pin(path string) error {
-
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return fmt.Errorf("invalid path: %s: %v", path, err)
@@ -1359,10 +1355,12 @@ func (p *BPFProg) SetAttachType(attachType BPFAttachType) {
 
 // getCgroupDirFD returns a file descriptor for a given cgroup2 directory path
 func getCgroupDirFD(cgroupV2DirPath string) (int, error) {
+	// revive:disable
 	const (
 		O_DIRECTORY int = syscall.O_DIRECTORY
 		O_RDONLY    int = syscall.O_RDONLY
 	)
+	// revive:enable
 	fd, err := syscall.Open(cgroupV2DirPath, O_DIRECTORY|O_RDONLY, 0)
 	if fd < 0 {
 		return 0, fmt.Errorf("failed to open cgroupv2 directory path %s: %w", cgroupV2DirPath, err)
@@ -1674,7 +1672,6 @@ func (p *BPFProg) AttachUprobe(pid int, path string, offset uint32) (*BPFLink, e
 // which can be relative or absolute. A pid can be provided to attach to, or -1 can be specified
 // to attach to all processes
 func (p *BPFProg) AttachURetprobe(pid int, path string, offset uint32) (*BPFLink, error) {
-
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return nil, err
@@ -1764,8 +1761,10 @@ func (rb *RingBuffer) Stop() {
 		// goroutine will block in the callback.
 		eventChan := eventChannels.get(rb.slot).(chan []byte)
 		go func() {
+			// revive:disable:empty-block
 			for range eventChan {
 			}
+			// revive:enable:empty-block
 		}()
 
 		// Wait for the poll goroutine to exit
@@ -1874,6 +1873,7 @@ func (pb *PerfBuffer) Stop() {
 		// result in a deadlock: the channel will fill up and the poll
 		// goroutine will block in the callback.
 		go func() {
+			// revive:disable:empty-block
 			for range pb.eventsChan {
 			}
 
@@ -1881,6 +1881,7 @@ func (pb *PerfBuffer) Stop() {
 				for range pb.lostChan {
 				}
 			}
+			// revive:enable:empty-block
 		}()
 
 		// Wait for the poll goroutine to exit

@@ -11,7 +11,6 @@ import (
 )
 
 func main() {
-
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -45,7 +44,7 @@ func main() {
 		os.Exit(-1)
 	}
 	for k, v := range expectedProgramNames {
-		if v == false {
+		if !v {
 			fmt.Fprintf(os.Stderr, "did not iterate over expected program: %s", k)
 			os.Exit(-1)
 		}
@@ -68,7 +67,7 @@ func main() {
 		os.Exit(-1)
 	}
 	for k, v := range expectedMapNames {
-		if v == false {
+		if !v {
 			fmt.Fprintf(os.Stderr, "did not iterate over expected map: %s", k)
 			os.Exit(-1)
 		}
