@@ -82,6 +82,7 @@ install_pkgs \
     llvm-"${CLANG_VERSION}" clang-"${CLANG_VERSION}" clang-format-"${CLANG_VERSION}" \
     linux-headers-generic \
     linux-tools-generic linux-tools-"$(uname -r)" \
+    gcc-multilib \
     zlib1g-dev libelf-dev libbpf-dev
 
 setup_go
