@@ -12,7 +12,7 @@ CLANG := clang
 CC := $(CLANG)
 GO := go
 VAGRANT := vagrant
-CLANG_FMT := clang-format
+CLANG_FMT := clang-format-12
 GIT := $(shell which git || /bin/false)
 REVIVE := revive
 
