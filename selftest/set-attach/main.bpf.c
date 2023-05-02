@@ -11,7 +11,7 @@ struct {
 } events SEC(".maps");
 long ringbuffer_flags = 0;
 
-SEC("fentry/FUNC")
+SEC("fentry")
 int BPF_PROG(foobar)
 {
     int *process;
