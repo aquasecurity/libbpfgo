@@ -197,10 +197,12 @@ vagrant-ssh: .vagrant-ssh
 
 # fmt-check
 
+C_FILES_TO_BE_CHECKED = $(shell find -regextype posix-extended -regex '.*\.(h|c)' ! -regex '.*libbpf\/.*' | xargs)
+
 fmt-check:
 	@errors=0
 	echo "Checking C and eBPF files and headers formatting..."
-	$(CLANG_FMT) --dry-run -i ./libbpfgo.h > /tmp/check-c-fmt 2>&1
+	$(CLANG_FMT) --dry-run -i $(C_FILES_TO_BE_CHECKED) > /tmp/check-c-fmt 2>&1
 	clangfmtamount=$$(cat /tmp/check-c-fmt | wc -l)
 	if [[ $$clangfmtamount -ne 0 ]]; then
 		head -n30 /tmp/check-c-fmt
@@ -216,12 +218,11 @@ fmt-check:
 		exit 1
 	fi
 
-
 # fmt-fix
 
 fmt-fix:
 	@echo "Fixing C and eBPF files and headers formatting..."
-	$(CLANG_FMT) -i --verbose ./libbpfgo.h
+	$(CLANG_FMT) -i --verbose $(C_FILES_TO_BE_CHECKED)
 
 # output
 
