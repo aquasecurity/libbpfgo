@@ -11,7 +11,7 @@ GO = go
 
 ARCH := $(shell uname -m | sed 's/x86_64/amd64/g; s/aarch64/arm64/g')
 
-CFLAGS = -g -O2 -Wall -fpie
+CFLAGS = -g -O2 -Wall -fpie -I$(abspath ../common)
 LDFLAGS =
 
 CGO_CFLAGS_STATIC = "-I$(abspath $(OUTPUT)) -I$(abspath ../common)"

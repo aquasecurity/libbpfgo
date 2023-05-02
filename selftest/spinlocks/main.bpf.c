@@ -1,26 +1,22 @@
 //+build ignore
-#include <linux/bpf.h>
-#include <bpf/bpf_helpers.h>  
 
-#include "vmlinux.h"
+#include <vmlinux.h>
 
-#ifdef asm_inline
-#undef asm_inline
-#define asm_inline asm
-#endif
+#include <bpf/bpf_helpers.h>
+#include <bpf/bpf_tracing.h>
 
 #define VAR_NUM 16
 
 struct hmap_elem {
-	struct bpf_spin_lock lock;
-	int val;
+    struct bpf_spin_lock lock;
+    int val;
 };
 
 struct {
-	__uint(type, BPF_MAP_TYPE_HASH);
-	__uint(max_entries, 1);
-	__type(key, u32);
-	__type(value, struct hmap_elem);
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 1);
+    __type(key, u32);
+    __type(value, struct hmap_elem);
 } counter_hash_map SEC(".maps");
 
 long ringbuffer_flags = 0;
@@ -45,7 +41,6 @@ int mmap_fentry(struct pt_regs *ctx)
     // Reserve space on the ringbuffer for the sample
     process = bpf_ringbuf_reserve(&events, sizeof(int), ringbuffer_flags);
     if (!process) {
-
         bpf_spin_lock(&lost_event_counter->lock);
         lost_event_counter->val++;
         bpf_spin_unlock(&lost_event_counter->lock);

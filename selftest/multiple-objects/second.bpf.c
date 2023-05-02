@@ -1,13 +1,15 @@
 //+build ignore
-#include <linux/bpf.h>
+
+#include <vmlinux.h>
+
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
-#include <bpf/bpf_core_read.h>
+
 #include "map.bpf.h"
 
 // Large instruction count
 SEC("fentry/__x64_sys_mmap")
-int mmap_fentry(struct pt_regs *ctx)
+int mmap_fentry(struct pt_regs* ctx)
 {
     bpf_printk("Mmap (multiple objects-2)");
     int* value;
@@ -16,7 +18,7 @@ int mmap_fentry(struct pt_regs *ctx)
         return 0;
     }
     *value = 2;
-    bpf_ringbuf_submit(value, 0);  
+    bpf_ringbuf_submit(value, 0);
 
     return 0;
 }

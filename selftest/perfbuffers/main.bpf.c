@@ -1,13 +1,9 @@
 //+build ignore
-#include <linux/bpf.h>
+
+#include <vmlinux.h>
+
 #include <bpf/bpf_helpers.h>
-
-#include "vmlinux.h"
-
-#ifdef asm_inline
-#undef asm_inline
-#define asm_inline asm
-#endif
+#include <bpf/bpf_tracing.h>
 
 char LICENSE[] SEC("license") = "Dual BSD/GPL";
 

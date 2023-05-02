@@ -1,8 +1,9 @@
 //+build ignore
-#include <linux/bpf.h>
-#include <bpf/bpf_helpers.h>
 
-#include "vmlinux.h"
+#include <vmlinux.h>
+
+#include <bpf/bpf_helpers.h>
+#include <bpf/bpf_tracing.h>
 
 SEC("kprobe/sys_mmap")
 int kprobe__sys_mmap(struct pt_regs *ctx)
