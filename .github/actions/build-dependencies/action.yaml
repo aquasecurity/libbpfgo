@@ -13,7 +13,6 @@ runs:
         sudo apt-get update
         sudo apt-get install --yes bsdutils
         sudo apt-get install --yes build-essential
-        sudo apt-get install --yes gcc-multilib
         sudo apt-get install --yes pkgconf
         sudo apt-get install --yes llvm-12 clang-12
         sudo apt-get install --yes clang-format-12
