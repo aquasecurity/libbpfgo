@@ -17,6 +17,7 @@
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
 #include <linux/bpf.h> // uapi
+#include <linux/version.h>
 
 extern void loggerCallback(enum libbpf_print_level level, char *output);
 
@@ -145,12 +146,15 @@ struct bpf_iter_attach_opts *bpf_iter_attach_opts_new(__u32 map_fd,
         return NULL;
 
     linfo->map.map_fd = map_fd;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
     linfo->cgroup.order = order;
     linfo->cgroup.cgroup_fd = cgroup_fd;
     linfo->cgroup.cgroup_id = cgroup_id;
     linfo->task.tid = tid;
     linfo->task.pid = pid;
     linfo->task.pid_fd = pid_fd;
+#endif
 
     struct bpf_iter_attach_opts *opts;
     opts = calloc(1, sizeof(*opts));
