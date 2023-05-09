@@ -383,6 +383,7 @@ func NewModuleFromBufferArgs(args NewModuleArgs) (*Module, error) {
 	cBTFFilePath := C.CString(args.BTFObjPath)
 	defer C.free(unsafe.Pointer(cBTFFilePath))
 	cKconfigPath := C.CString(args.KConfigFilePath)
+	defer C.free(unsafe.Pointer(cKconfigPath))
 	cBPFObjName := C.CString(args.BPFObjName)
 	defer C.free(unsafe.Pointer(cBPFObjName))
 	cBPFBuff := unsafe.Pointer(C.CBytes(args.BPFObjBuff))
@@ -392,8 +393,6 @@ func NewModuleFromBufferArgs(args NewModuleArgs) (*Module, error) {
 	if len(args.KConfigFilePath) <= 2 {
 		cKconfigPath = nil
 	}
-
-	defer C.free(unsafe.Pointer(cKconfigPath))
 
 	cOpts, errno := C.bpf_object_open_opts_new(cBTFFilePath, cKconfigPath, cBPFObjName)
 	if cOpts == nil {
