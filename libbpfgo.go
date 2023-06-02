@@ -2091,9 +2091,9 @@ func BPFProgramTypeIsSupported(progType BPFProgType) (bool, error) {
 }
 
 func NumPossibleCPUs() (int, error) {
-	numCPUs, _ := C.libbpf_num_possible_cpus()
+	numCPUs, errC := C.libbpf_num_possible_cpus()
 	if numCPUs < 0 {
-		return 0, fmt.Errorf("failed to retrieve the number of CPUs")
+		return 0, fmt.Errorf("failed to retrieve the number of CPUs: %w", errC)
 	}
 	return int(numCPUs), nil
 }
