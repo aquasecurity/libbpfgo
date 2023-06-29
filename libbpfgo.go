@@ -1711,6 +1711,35 @@ func doAttachUprobe(prog *BPFProg, isUretprobe bool, pid int, path string, offse
 	return bpfLink, nil
 }
 
+type AttachFlag uint32
+
+const (
+	BPFFNone          AttachFlag = 0
+	BPFFAllowOverride AttachFlag = C.BPF_F_ALLOW_OVERRIDE
+	BPFFAllowMulti    AttachFlag = C.BPF_F_ALLOW_MULTI
+	BPFFReplace       AttachFlag = C.BPF_F_REPLACE
+)
+
+// AttachGenericFD attaches the BPFProgram to a targetFd at the specified attachType hook.
+func (p *BPFProg) AttachGenericFD(targetFd int, attachType BPFAttachType, flags AttachFlag) error {
+	progFd := C.bpf_program__fd(p.prog)
+	errC := C.bpf_prog_attach(progFd, C.int(targetFd), C.enum_bpf_attach_type(int(attachType)), C.uint(uint(flags)))
+	if errC < 0 {
+		return fmt.Errorf("failed to attach: %w", syscall.Errno(-errC))
+	}
+	return nil
+}
+
+// DetachGenericFD detaches the BPFProgram associated with the targetFd at the hook specified by attachType.
+func (p *BPFProg) DetachGenericFD(targetFd int, attachType BPFAttachType) error {
+	progFd := C.bpf_program__fd(p.prog)
+	errC := C.bpf_prog_detach2(progFd, C.int(targetFd), C.enum_bpf_attach_type(int(attachType)))
+	if errC < 0 {
+		return fmt.Errorf("failed to detach: %w", syscall.Errno(-errC))
+	}
+	return nil
+}
+
 var eventChannels = newRWArray(maxEventChannels)
 
 func (m *Module) InitRingBuf(mapName string, eventsChan chan []byte) (*RingBuffer, error) {
