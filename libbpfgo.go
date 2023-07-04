@@ -255,6 +255,7 @@ type NewModuleArgs struct {
 	BPFObjName      string
 	BPFObjPath      string
 	BPFObjBuff      []byte
+	SkipMemlockBump bool
 }
 
 func NewModuleFromFile(bpfObjPath string) (*Module, error) {
@@ -321,9 +322,12 @@ func NewModuleFromFileArgs(args NewModuleArgs) (*Module, error) {
 	}
 	C.set_print_fn()
 
-	// TODO: remove this once libbpf memory limit bump issue is solved
-	if err := bumpMemlockRlimit(); err != nil {
-		return nil, err
+	// If skipped, we rely on libbpf to do the bumping if deemed necessary
+	if !args.SkipMemlockBump {
+		// TODO: remove this once libbpf memory limit bump issue is solved
+		if err := bumpMemlockRlimit(); err != nil {
+			return nil, err
+		}
 	}
 
 	opts := C.struct_bpf_object_open_opts{}
