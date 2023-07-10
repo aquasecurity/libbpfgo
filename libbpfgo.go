@@ -531,6 +531,47 @@ func CreateMap(mapType MapType, mapName string, keySize, valueSize, maxEntries i
 	}, nil
 }
 
+/*
+GetMapByName get an existing map from userspace.
+This can be used for population BPF array of maps or has of maps. Currently, the returned map can only be updated.
+*/
+func GetMapByName(name string) (*BPFMap, error) {
+	startId := C.uint(0)
+	nextId := C.uint(0)
+
+	for {
+		err := C.bpf_map_get_next_id(startId, &nextId)
+		if err != 0 {
+			return nil, fmt.Errorf("could not get the map: %w", syscall.Errno(-err))
+		}
+
+		startId = nextId + 1
+
+		fd := C.bpf_map_get_fd_by_id(nextId)
+		if fd < 0 {
+			return nil, fmt.Errorf("could not get the file descriptor of %s", name)
+		}
+
+		info := C.struct_bpf_map_info{}
+		infolen := C.uint(unsafe.Sizeof(info))
+		err = C.bpf_obj_get_info_by_fd(fd, unsafe.Pointer(&info), &infolen)
+		if err != 0 {
+			return nil, fmt.Errorf("could not get the map info: %w", syscall.Errno(-err))
+		}
+
+		mapName := C.GoString((*C.char)(unsafe.Pointer(&info.name[0])))
+		if mapName != name {
+			continue
+		}
+
+		return &BPFMap{
+			name: name,
+			fd:   fd,
+		}, nil
+	}
+	return nil, fmt.Errorf("the %s map does not exists", name)
+}
+
 func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 	cs := C.CString(mapName)
 	bpfMap, errno := C.bpf_object__find_map_by_name(m.obj, cs)
