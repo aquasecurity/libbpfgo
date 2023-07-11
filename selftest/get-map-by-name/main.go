@@ -26,7 +26,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	key1 := uint32(1)
+	key1 := uint32(0)
 	value1 := uint32(55)
 	if err := testMap.Update(unsafe.Pointer(&key1), unsafe.Pointer(&value1)); err != nil {
 		fmt.Fprintln(os.Stderr, err)

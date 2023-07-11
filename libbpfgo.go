@@ -531,10 +531,8 @@ func CreateMap(mapType MapType, mapName string, keySize, valueSize, maxEntries i
 	}, nil
 }
 
-/*
-GetMapByName get an existing map from userspace.
-This can be used for population BPF array of maps or has of maps. Currently, the returned map can only be updated.
-*/
+// GetMapByName gets an existing map
+// Can be used for populating BPF array of maps or hash of maps. Currently, the returned map can only be updated.
 func GetMapByName(name string) (*BPFMap, error) {
 	startId := C.uint(0)
 	nextId := C.uint(0)
@@ -569,7 +567,7 @@ func GetMapByName(name string) (*BPFMap, error) {
 			fd:   fd,
 		}, nil
 	}
-	return nil, fmt.Errorf("the %s map does not exists", name)
+	return nil, fmt.Errorf("the %s map does not exist", name)
 }
 
 func (m *Module) GetMap(mapName string) (*BPFMap, error) {
