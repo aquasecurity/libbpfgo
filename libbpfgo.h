@@ -196,4 +196,39 @@ void bpf_object_open_opts_free(struct bpf_object_open_opts *opts)
     free(opts);
 }
 
+struct bpf_map_create_opts *bpf_map_create_opts_new(__u32 btf_fd,
+                                                    __u32 btf_key_type_id,
+                                                    __u32 btf_value_type_id,
+                                                    __u32 btf_vmlinux_value_type_id,
+                                                    __u32 inner_map_fd,
+                                                    __u32 map_flags,
+                                                    __u64 map_extra,
+                                                    __u32 numa_node,
+                                                    __u32 map_ifindex)
+{
+    struct bpf_map_create_opts *opts;
+    opts = calloc(1, sizeof(*opts));
+    if (!opts) {
+        return NULL;
+    }
+
+    opts->sz = sizeof(*opts);
+    opts->btf_fd = btf_fd;
+    opts->btf_key_type_id = btf_key_type_id;
+    opts->btf_value_type_id = btf_value_type_id;
+    opts->btf_vmlinux_value_type_id = btf_vmlinux_value_type_id;
+    opts->inner_map_fd = inner_map_fd;
+    opts->map_flags = map_flags;
+    opts->map_extra = map_extra;
+    opts->numa_node = numa_node;
+    opts->map_ifindex = map_ifindex;
+
+    return opts;
+}
+
+void bpf_map_create_opts_free(struct bpf_map_create_opts *opts)
+{
+    free(opts);
+}
+
 #endif
