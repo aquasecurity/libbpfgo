@@ -12,7 +12,11 @@ struct {
     __type(value, __u64);
 } percpu_hash SEC(".maps");
 
+#ifdef __TARGET_ARCH_amd64
 SEC("fentry/__x64_sys_mmap")
+#elif defined(__TARGET_ARCH_arm64)
+SEC("fentry/__arm64_sys_mmap")
+#endif
 int mmap_fentry(struct pt_regs *ctx)
 {
     __u32 key = 0;

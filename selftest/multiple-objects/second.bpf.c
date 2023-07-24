@@ -8,7 +8,11 @@
 #include "map.bpf.h"
 
 // Large instruction count
+#ifdef __TARGET_ARCH_amd64
 SEC("fentry/__x64_sys_mmap")
+#elif defined(__TARGET_ARCH_arm64)
+SEC("fentry/__arm64_sys_mmap")
+#endif
 int mmap_fentry(struct pt_regs* ctx)
 {
     bpf_printk("Mmap (multiple objects-2)");

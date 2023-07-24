@@ -11,7 +11,11 @@ struct {
 } events SEC(".maps");
 long ringbuffer_flags = 0;
 
+#ifdef __TARGET_ARCH_amd64
 SEC("fentry/__x64_sys_mmap")
+#elif defined(__TARGET_ARCH_arm64)
+SEC("fentry/__arm64_sys_mmap")
+#endif
 int mmap_fentry(struct pt_regs *ctx)
 {
     int *process;

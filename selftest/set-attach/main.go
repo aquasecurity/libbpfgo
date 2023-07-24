@@ -5,6 +5,7 @@ import "C"
 import (
 	"encoding/binary"
 	"os"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -32,7 +33,8 @@ func main() {
 	// prog.SetProgramType(bpf.BPFProgTypeTracing)
 	prog.SetAttachType(bpf.BPFAttachTypeTraceFentry)
 
-	err = prog.SetAttachTarget(0, "__x64_sys_mmap")
+	funcName := "__" + ksymArch() + "_sys_mmap"
+	err = prog.SetAttachTarget(0, funcName)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
@@ -78,4 +80,15 @@ recvLoop:
 	}
 	rb.Stop()
 	rb.Close()
+}
+
+func ksymArch() string {
+	switch runtime.GOARCH {
+	case "amd64":
+		return "x64"
+	case "arm64":
+		return "arm64"
+	default:
+		panic("unsupported architecture")
+	}
 }
