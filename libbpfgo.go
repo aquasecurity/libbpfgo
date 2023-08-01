@@ -564,6 +564,15 @@ func (b *BPFMap) Type() MapType {
 	return MapType(C.bpf_map__type(b.bpfMap))
 }
 
+func (b *BPFMap) MapReuseFd(fd int) error {
+	errC := C.bpf_map__reuse_fd(b.bpfMap, C.int(fd))
+	if errC != 0 {
+		return fmt.Errorf("could not reuse bpf map fd %d: %w", fd, syscall.Errno(-errC))
+	}
+	b.fd = C.int(fd)
+	return nil
+}
+
 // SetType is used to set the type of a bpf map that isn't associated
 // with a file descriptor already. If the map is already associated
 // with a file descriptor the libbpf API will return error code EBUSY

@@ -33,7 +33,7 @@ okcontinue()   { okay  "$1";         }
 kern_version() {
   _oper=$1; _version=$2; _notfatal=$3;
   _given=$(($(echo $_version | sed 's:\.::g')))
-  _current=$(($(uname -r | cut -d'.' -f1,2 | sed 's:\.::g')))
+  _current=$(($(uname -r | cut -d'.' -f1,2,3 | sed 's:\.::g')))
 
   [[ "$_version" == "" ]] && errexit "no kernel version given"
 
