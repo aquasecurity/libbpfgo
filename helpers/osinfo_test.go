@@ -38,6 +38,13 @@ func TestGetOSInfo(t *testing.T) {
 			expectedError:             nil,
 		},
 		{
+			testName:                  "env os-release filepath",
+			osReleaseFilePath:         "testdata/os-release-rhel",
+			expectedOSReleaseFilePath: "testdata/os-release-rhel",
+			expectedOSReleaseID:       RHEL,
+			expectedError:             nil,
+		},
+		{
 			testName:                  "default os-release filepath",
 			osReleaseFilePath:         "",
 			expectedOSReleaseFilePath: "/etc/os-release",

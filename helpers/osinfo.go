@@ -23,6 +23,7 @@ const (
 	CENTOS
 	STREAM
 	ALMA
+	RHEL
 )
 
 // stringToOSReleaseID is a map of supported distributions
@@ -34,6 +35,7 @@ var stringToOSReleaseID = map[string]OSReleaseID{
 	"centos": CENTOS,
 	"stream": STREAM,
 	"alma":   ALMA,
+	"rhel":   RHEL,
 }
 
 // osReleaseIDToString is a map of supported distributions
@@ -45,6 +47,7 @@ var osReleaseIDToString = map[OSReleaseID]string{
 	CENTOS: "centos",
 	STREAM: "stream",
 	ALMA:   "alma",
+	RHEL:   "rhel",
 }
 
 const (
