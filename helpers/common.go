@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"unicode"
 )
 
 func checkEnvPath(env string) (string, error) {
@@ -88,6 +89,7 @@ const (
 // 4.18.0-305.7.1.el8_4.centos.x86_64 (centos)
 // 4.18.0-305.7.1.el8_4.centos.plus.x86_64 (centos + plus repo)
 // 5.13.13-arch1-1 (archlinux)
+// 5.4.228+ (ubuntu-gke 5.4)
 func CompareKernelRelease(base, given string) (KernelVersionComparison, error) {
 	b := strings.Split(base, "-") // [base]-xxx
 	b = strings.Split(b[0], ".")  // [major][minor][patch]
@@ -108,11 +110,11 @@ func CompareKernelRelease(base, given string) (KernelVersionComparison, error) {
 	}
 
 	for n := 0; n <= 2; n++ {
-		givenValue, err := strconv.Atoi(g[n])
+		givenValue, err := strconv.Atoi(cleanVersionNumber(g[n]))
 		if err != nil {
 			return KernelVersionInvalid, fmt.Errorf("invalid given kernel version value: %s issue with: %s", given, g[n])
 		}
-		baseValue, err := strconv.Atoi(b[n])
+		baseValue, err := strconv.Atoi(cleanVersionNumber(b[n]))
 		if err != nil {
 			return KernelVersionInvalid, fmt.Errorf("invalid base kernel version value: %s issue with: %s", base, b[n])
 		}
@@ -126,4 +128,13 @@ func CompareKernelRelease(base, given string) (KernelVersionComparison, error) {
 		}
 	}
 	return KernelVersionEqual, nil
+}
+
+func cleanVersionNumber(number string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsDigit(r) {
+			return r
+		}
+		return -1
+	}, number)
 }
