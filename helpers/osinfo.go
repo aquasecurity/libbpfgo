@@ -26,19 +26,20 @@ const (
 	RHEL
 )
 
-// stringToOSReleaseID is a map of supported distributions
+// stringToOSReleaseID is a map of os-info ids to supported distributions ids
 var stringToOSReleaseID = map[string]OSReleaseID{
-	"ubuntu": UBUNTU,
-	"fedora": FEDORA,
-	"arch":   ARCH,
-	"debian": DEBIAN,
-	"centos": CENTOS,
-	"stream": STREAM,
-	"alma":   ALMA,
-	"rhel":   RHEL,
+	"ubuntu":    UBUNTU,
+	"fedora":    FEDORA,
+	"arch":      ARCH,
+	"debian":    DEBIAN,
+	"centos":    CENTOS,
+	"stream":    STREAM,
+	"alma":      ALMA,
+	"almalinux": ALMA,
+	"rhel":      RHEL,
 }
 
-// osReleaseIDToString is a map of supported distributions
+// osReleaseIDToString is a map of supported distributions string representations
 var osReleaseIDToString = map[OSReleaseID]string{
 	UBUNTU: "ubuntu",
 	FEDORA: "fedora",

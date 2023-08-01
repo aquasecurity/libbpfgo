@@ -45,6 +45,13 @@ func TestGetOSInfo(t *testing.T) {
 			expectedError:             nil,
 		},
 		{
+			testName:                  "env os-release filepath",
+			osReleaseFilePath:         "testdata/os-release-almalinux",
+			expectedOSReleaseFilePath: "testdata/os-release-almalinux",
+			expectedOSReleaseID:       ALMA,
+			expectedError:             nil,
+		},
+		{
 			testName:                  "default os-release filepath",
 			osReleaseFilePath:         "",
 			expectedOSReleaseFilePath: "/etc/os-release",
@@ -79,7 +86,6 @@ func TestGetOSInfo(t *testing.T) {
 			assert.Equal(t, tt.expectedOSReleaseFilePath, osInfo.GetOSReleaseFilePath())
 			if tt.expectedOSReleaseID > 0 {
 				assert.Equal(t, tt.expectedOSReleaseID, osInfo.GetOSReleaseID())
-				assert.Equal(t, tt.expectedOSReleaseID.String(), osInfo.GetOSReleaseFieldValue(OS_ID))
 			}
 		})
 	}
