@@ -23,6 +23,18 @@ func TestCompareKernelRelease(t *testing.T) {
 			expectedError:      nil,
 		},
 		{
+			testName:           "valid with +, older than",
+			base:               "5.4.228+",
+			given:              "4.18",
+			expectedComparison: KernelVersionOlder,
+		},
+		{
+			testName:           "valid with alphabet, older than",
+			base:               "5.6b",
+			given:              "4.18",
+			expectedComparison: KernelVersionOlder,
+		},
+		{
 			testName:           "equal",
 			base:               "5.0",
 			given:              "5.0",
