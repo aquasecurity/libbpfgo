@@ -160,7 +160,7 @@ type OSInfo struct {
 
 // GetOSReleaseFieldValue provides access to internal OSInfo OSReleaseField's
 func (btfi *OSInfo) GetOSReleaseFieldValue(value OSReleaseField) string {
-	return btfi.osReleaseFieldValues[value]
+	return strings.Trim(btfi.osReleaseFieldValues[value], "\"")
 }
 
 // GetOSReleaseFilePath provides the path for the used os-release file as it might
@@ -226,7 +226,9 @@ func (btfi *OSInfo) discoverOSDistro() error {
 		}
 		btfi.osReleaseFieldValues[keyID] = val[1]
 		if keyID == OS_ID {
-			btfi.osReleaseID = stringToOSReleaseID[strings.ToLower(val[1])]
+			osVal := strings.ToLower(val[1])
+			osVal = strings.Trim(osVal, "\"") // trim potential quotes (in centos)
+			btfi.osReleaseID = stringToOSReleaseID[osVal]
 		}
 	}
 
