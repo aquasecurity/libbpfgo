@@ -4,6 +4,7 @@ import "C"
 
 import (
 	"os"
+	"runtime"
 	"time"
 	"unsafe"
 
@@ -79,7 +80,8 @@ func main() {
 	value2Unsafe := unsafe.Pointer(&value2[0])
 	testerMap.Update(key2Unsafe, value2Unsafe)
 
-	_, err = prog.AttachKprobe("__x64_sys_mmap")
+	funcName := fmt.Sprintf("__%s_sys_mmap", ksymArch())
+	_, err = prog.AttachKprobe(funcName)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
@@ -115,4 +117,15 @@ func main() {
 
 	pb.Stop()
 	pb.Close()
+}
+
+func ksymArch() string {
+	switch runtime.GOARCH {
+	case "amd64":
+		return "x64"
+	case "arm64":
+		return "arm64"
+	default:
+		panic("unsupported architecture")
+	}
 }

@@ -4,6 +4,7 @@ import "C"
 
 import (
 	"os"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -50,7 +51,8 @@ func main() {
 		os.Exit(-1)
 	}
 
-	_, err = prog.AttachKprobe("__x64_sys_mmap")
+	funcName := fmt.Sprintf("__%s_sys_mmap", ksymArch())
+	_, err = prog.AttachKprobe(funcName)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
@@ -91,4 +93,15 @@ recvLoop:
 	rb.Close()
 	rb.Close()
 	rb.Stop()
+}
+
+func ksymArch() string {
+	switch runtime.GOARCH {
+	case "amd64":
+		return "x64"
+	case "arm64":
+		return "arm64"
+	default:
+		panic("unsupported architecture")
+	}
 }
