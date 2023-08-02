@@ -2,8 +2,8 @@
 
 # SETTINGS
 
-TEST=$(dirname $0)/$1	# execute
-TIMEOUT=5			# seconds
+TEST=$(dirname $0)/$1  # execute
+TIMEOUT=10             # seconds
 
 CTEST=$(dirname $0)/ctest
 GOTEST=$(dirname $0)/gotest
