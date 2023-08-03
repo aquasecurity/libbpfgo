@@ -60,7 +60,7 @@ jobs:
         go-version: [ 1.18, 1.19, '1.20', 'stable' ]
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
         with:
@@ -76,7 +76,7 @@ jobs:
         go-version: [ 1.18, 1.19, '1.20', 'stable' ]
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
         with:
