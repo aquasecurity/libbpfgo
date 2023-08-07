@@ -3,7 +3,7 @@ module github.com/aquasecurity/libbpfgo/helpers
 go 1.18
 
 require (
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.4
 	golang.org/x/sys v0.1.0
 )
 
