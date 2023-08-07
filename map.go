@@ -45,9 +45,33 @@ func (m *BPFMap) GetFd() int {
 	return m.FileDescriptor()
 }
 
-// bpf_map__reuse_fd
-// func (m *BPFMap) ReuseFD(fd int) error {
-// }
+// ReuseFD associates the BPFMap instance with the provided map file descriptor.
+//
+// This function is useful for reusing a map that was previously created by a
+// different process. By passing the file descriptor of the existing map, the
+// current BPFMap instance becomes linked to that map.
+//
+// NOTE: The function closes the current file descriptor associated with the
+// BPFMap instance and replaces it with a duplicated descriptor pointing to the
+// given fd. As a result, the instance original file descriptor becomes invalid,
+// and all associated information is overwritten.
+func (m *BPFMap) ReuseFD(fd int) error {
+	retC := C.bpf_map__reuse_fd(m.bpfMap, C.int(fd))
+	if retC < 0 {
+		return fmt.Errorf("failed to reuse fd %d: %w", fd, syscall.Errno(-retC))
+	}
+
+	newFD := m.FileDescriptor()
+	info, err := GetMapInfoByFD(newFD)
+	if err != nil {
+		return err
+	}
+
+	m.bpfMapLow.fd = newFD
+	m.bpfMapLow.info = info
+
+	return nil
+}
 
 func (m *BPFMap) Name() string {
 	return C.GoString(C.bpf_map__name(m.bpfMap))

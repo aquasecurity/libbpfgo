@@ -89,6 +89,35 @@ func (m *BPFMapLow) FileDescriptor() int {
 	return m.fd
 }
 
+func (m *BPFMapLow) ReuseFD(fd int) error {
+	info, err := GetMapInfoByFD(fd)
+	if err != nil {
+		return fmt.Errorf("failed to reuse fd %d: %w", fd, err)
+	}
+
+	newFD, err := syscall.Open("/", syscall.O_RDONLY|syscall.O_CLOEXEC, 0)
+	if err != nil {
+		return fmt.Errorf("failed to reuse fd %d: %w", fd, err)
+	}
+
+	err = syscall.Dup3(fd, newFD, syscall.O_CLOEXEC)
+	if err != nil {
+		_ = syscall.Close(newFD)
+		return fmt.Errorf("failed to reuse fd %d: %w", fd, err)
+	}
+
+	err = syscall.Close(m.FileDescriptor())
+	if err != nil {
+		_ = syscall.Close(newFD)
+		return fmt.Errorf("failed to reuse fd %d: %w", fd, err)
+	}
+
+	m.fd = newFD
+	m.info = info
+
+	return nil
+}
+
 func (m *BPFMapLow) Name() string {
 	return m.info.Name
 }
