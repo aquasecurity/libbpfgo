@@ -175,8 +175,9 @@ void bpf_iter_attach_opts_free(struct bpf_iter_attach_opts *opts)
     free(opts);
 }
 
-struct bpf_object_open_opts *
-bpf_object_open_opts_new(char *btf_file_path, char *kconfig_path, char *bpf_obj_name)
+struct bpf_object_open_opts *bpf_object_open_opts_new(char *btf_file_path,
+                                                      char *kconfig_path,
+                                                      char *bpf_obj_name)
 {
     struct bpf_object_open_opts *opts;
     opts = calloc(1, sizeof(*opts));
