@@ -79,9 +79,13 @@ run: run-static
 
 run-static: $(MAIN)-static
 	sudo ./run.sh $(MAIN)-static
+# cooldown
+	@sleep 1
 
 run-dynamic: $(MAIN)-dynamic
 	sudo ./run.sh $(MAIN)-dynamic
+# cooldown
+	@sleep 1
 
 clean:
 	rm -f *.o *-static *-dynamic
