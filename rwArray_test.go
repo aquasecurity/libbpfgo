@@ -109,7 +109,7 @@ func TestRWArrayConcurrent(t *testing.T) {
 
 			// time to exit?
 			select {
-			case _, _ = <-stop:
+			case <-stop:
 				return
 			default:
 			}
