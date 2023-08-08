@@ -3,9 +3,11 @@ package main
 import "C"
 
 import (
+	"bytes"
 	"fmt"
 	"net"
 	"os"
+	"time"
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
@@ -32,6 +34,7 @@ func main() {
 		os.Exit(-1)
 	}
 	defer unix.Close(serverFD)
+
 	serverAddr := &unix.SockaddrInet4{
 		Port: 22345,
 		Addr: [4]byte{127, 0, 0, 1},
@@ -40,6 +43,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
 	}
+
 	if err := unix.Listen(serverFD, 100); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
@@ -60,6 +64,7 @@ func main() {
 			os.Exit(-1)
 		}
 	}()
+
 	prog2, err := bpfModule.GetProgram("bpf_prog_verdict")
 	prog2.AttachGenericFD(sockMapRx.FileDescriptor(),
 		bpf.BPFAttachTypeSKSKBStreamVerdict, bpf.BPFFNone)
@@ -69,6 +74,8 @@ func main() {
 			os.Exit(-1)
 		}
 	}()
+
+	mapUpdateChan := make(chan struct{}, 1)
 
 	go func() {
 		acceptedFD, _, err := unix.Accept(serverFD)
@@ -82,6 +89,8 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(-1)
 		}
+
+		mapUpdateChan <- struct{}{}
 	}()
 
 	c, err := net.Dial("tcp", "127.0.0.1:22345")
@@ -90,13 +99,30 @@ func main() {
 		os.Exit(-1)
 	}
 	defer c.Close()
-	if _, err = c.Write([]byte("foobar")); err != nil {
+
+	// wait for the bpf map to be updated
+	select {
+	case <-mapUpdateChan:
+	// continue with write/read
+	case <-time.After(15 * time.Second): // Same of the selftest
+		fmt.Fprintln(os.Stderr, "bpf map timeout")
+		os.Exit(-1)
+	}
+
+	input := []byte("foobar")
+	if _, err = c.Write(input); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
 	}
-	data := make([]byte, 10)
-	if _, err = c.Read(data); err != nil {
+
+	output := make([]byte, 6)
+	if _, err = c.Read(output); err != nil {
 		fmt.Fprintln(os.Stderr, err)
+		os.Exit(-1)
+	}
+
+	if !bytes.Equal(output, input) {
+		fmt.Fprintln(os.Stderr, "data mismatch")
 		os.Exit(-1)
 	}
 }
