@@ -32,8 +32,10 @@ okcontinue()   { okay  "$1";         }
 
 kern_version() {
   _oper=$1; _version=$2; _notfatal=$3;
-  _given=$(($(echo $_version | sed 's:\.::g')))
-  _current=$(($(uname -r | cut -d'.' -f1,2 | sed 's:\.::g')))
+  _gmajor=$(echo "$_version" | cut -d'.' -f1) # given major
+  _gminor=$(echo "$_version" | cut -d'.' -f2) # given minor
+  _cmajor=$(uname -r | cut -d'.' -f1)         # current major
+  _cminor=$(uname -r | cut -d'.' -f2)         # current minor
 
   [[ "$_version" == "" ]] && errexit "no kernel version given"
 
@@ -41,16 +43,16 @@ kern_version() {
 
   case $_oper in
     lt)
-      [[ $_current -lt $_given ]] && _opergood=1
+      [[ $_cmajor -lt $_gmajor || ($_cmajor -eq $_gmajor && $_cminor -lt $_gminor) ]] && _opergood=1
       ;;
     le)
-      [[ $_current -le $_given ]] && _opergood=1
+      [[ $_cmajor -lt $_gmajor || ($_cmajor -eq $_gmajor && $_cminor -le $_gminor) ]] && _opergood=1
       ;;
     ge)
-      [[ $_current -ge $_given ]] && _opergood=1
+      [[ $_cmajor -gt $_gmajor || ($_cmajor -eq $_gmajor && $_cminor -ge $_gminor) ]] && _opergood=1
       ;;
     gt)
-      [[ $_current -gt $_given ]] && _opergood=1
+      [[ $_cmajor -gt $_gmajor || ($_cmajor -eq $_gmajor && $_cminor -gt $_gminor) ]] && _opergood=1
       ;;
     *)
       errexit "wrong oper"
@@ -59,9 +61,9 @@ kern_version() {
 
   if [[ $_opergood -ne 1 ]]; then
     if [[ $_notfatal -eq 1 ]]; then
-        warncontinue "kernel $_current not $_oper than $_given"
+        warncontinue "kernel $_cmajor.$_cminor not $_oper than $_gmajor.$_gminor"
     else
-        errexit "kernel $_current not $_oper than $_given"
+        errexit "kernel $_cmajor.$_cminor not $_oper than $_gmajor.$_gminor"
     fi
   fi
 }
