@@ -12,542 +12,326 @@ import (
 	"unsafe"
 )
 
-// BPFMapCreateOpts mirrors the C structure bpf_map_create_opts
-type BPFMapCreateOpts struct {
-	Size                  uint64
-	BtfFD                 uint32
-	BtfKeyTypeID          uint32
-	BtfValueTypeID        uint32
-	BtfVmlinuxValueTypeID uint32
-	InnerMapFD            uint32
-	MapFlags              uint32
-	MapExtra              uint64
-	NumaNode              uint32
-	MapIfIndex            uint32
-}
-
-func bpfMapCreateOptsToC(createOpts *BPFMapCreateOpts) *C.struct_bpf_map_create_opts {
-	if createOpts == nil {
-		return nil
-	}
-	opts := C.struct_bpf_map_create_opts{}
-	opts.sz = C.ulong(createOpts.Size)
-	opts.btf_fd = C.uint(createOpts.BtfFD)
-	opts.btf_key_type_id = C.uint(createOpts.BtfKeyTypeID)
-	opts.btf_value_type_id = C.uint(createOpts.BtfValueTypeID)
-	opts.btf_vmlinux_value_type_id = C.uint(createOpts.BtfVmlinuxValueTypeID)
-	opts.inner_map_fd = C.uint(createOpts.InnerMapFD)
-	opts.map_flags = C.uint(createOpts.MapFlags)
-	opts.map_extra = C.ulonglong(createOpts.MapExtra)
-	opts.numa_node = C.uint(createOpts.NumaNode)
-	opts.map_ifindex = C.uint(createOpts.MapIfIndex)
-
-	return &opts
-}
-
-// CreateMap creates a BPF map from userspace. This can be used for populating
-// BPF array of maps or hash of maps. However, this function uses a low-level
-// libbpf API; maps created in this way do not conform to libbpf map formats,
-// and therefore do not have access to libbpf high level bpf_map__* APIS
-// which causes different behavior from maps created in the kernel side code
 //
-// See usage of `bpf_map_create()` in kernel selftests for more info
-func CreateMap(mapType MapType, mapName string, keySize, valueSize, maxEntries int, opts *BPFMapCreateOpts) (*BPFMap, error) {
-	cs := C.CString(mapName)
-	fdOrError := C.bpf_map_create(uint32(mapType), cs, C.uint(keySize), C.uint(valueSize), C.uint(maxEntries), bpfMapCreateOptsToC(opts))
-	C.free(unsafe.Pointer(cs))
-	if fdOrError < 0 {
-		return nil, fmt.Errorf("could not create map: %w", syscall.Errno(-fdOrError))
-	}
+// BPFMap (high-level API - `bpf_map__*`)
+//
 
-	return &BPFMap{
-		name:   mapName,
-		fd:     fdOrError,
-		module: nil,
-		bpfMap: nil,
-	}, nil
-}
-
+// BPFMap is a wrapper around a libbpf bpf_map.
 type BPFMap struct {
-	name   string
-	bpfMap *C.struct_bpf_map
-	fd     C.int
-	module *Module
+	bpfMap    *C.struct_bpf_map
+	bpfMapLow *BPFMapLow
+	module    *Module
 }
 
-type MapType uint32
+//
+// BPFMap Specs
+//
 
-const (
-	MapTypeUnspec MapType = iota
-	MapTypeHash
-	MapTypeArray
-	MapTypeProgArray
-	MapTypePerfEventArray
-	MapTypePerCPUHash
-	MapTypePerCPUArray
-	MapTypeStackTrace
-	MapTypeCgroupArray
-	MapTypeLRUHash
-	MapTypeLRUPerCPUHash
-	MapTypeLPMTrie
-	MapTypeArrayOfMaps
-	MapTypeHashOfMaps
-	MapTypeDevMap
-	MapTypeSockMap
-	MapTypeCPUMap
-	MapTypeXSKMap
-	MapTypeSockHash
-	MapTypeCgroupStorage
-	MapTypeReusePortSockArray
-	MapTypePerCPUCgroupStorage
-	MapTypeQueue
-	MapTypeStack
-	MapTypeSKStorage
-	MapTypeDevmapHash
-	MapTypeStructOps
-	MapTypeRingbuf
-	MapTypeInodeStorage
-	MapTypeTaskStorage
-	MapTypeBloomFilter
-)
-
-type MapFlag uint32
-
-const (
-	MapFlagUpdateAny     MapFlag = iota // create new element or update existing
-	MapFlagUpdateNoExist                // create new element if it didn't exist
-	MapFlagUpdateExist                  // update existing element
-	MapFlagFLock                        // spin_lock-ed map_lookup/map_update
-)
-
-func (m MapType) String() string {
-	x := map[MapType]string{
-		MapTypeUnspec:              "BPF_MAP_TYPE_UNSPEC",
-		MapTypeHash:                "BPF_MAP_TYPE_HASH",
-		MapTypeArray:               "BPF_MAP_TYPE_ARRAY",
-		MapTypeProgArray:           "BPF_MAP_TYPE_PROG_ARRAY",
-		MapTypePerfEventArray:      "BPF_MAP_TYPE_PERF_EVENT_ARRAY",
-		MapTypePerCPUHash:          "BPF_MAP_TYPE_PERCPU_HASH",
-		MapTypePerCPUArray:         "BPF_MAP_TYPE_PERCPU_ARRAY",
-		MapTypeStackTrace:          "BPF_MAP_TYPE_STACK_TRACE",
-		MapTypeCgroupArray:         "BPF_MAP_TYPE_CGROUP_ARRAY",
-		MapTypeLRUHash:             "BPF_MAP_TYPE_LRU_HASH",
-		MapTypeLRUPerCPUHash:       "BPF_MAP_TYPE_LRU_PERCPU_HASH",
-		MapTypeLPMTrie:             "BPF_MAP_TYPE_LPM_TRIE",
-		MapTypeArrayOfMaps:         "BPF_MAP_TYPE_ARRAY_OF_MAPS",
-		MapTypeHashOfMaps:          "BPF_MAP_TYPE_HASH_OF_MAPS",
-		MapTypeDevMap:              "BPF_MAP_TYPE_DEVMAP",
-		MapTypeSockMap:             "BPF_MAP_TYPE_SOCKMAP",
-		MapTypeCPUMap:              "BPF_MAP_TYPE_CPUMAP",
-		MapTypeXSKMap:              "BPF_MAP_TYPE_XSKMAP",
-		MapTypeSockHash:            "BPF_MAP_TYPE_SOCKHASH",
-		MapTypeCgroupStorage:       "BPF_MAP_TYPE_CGROUP_STORAGE",
-		MapTypeReusePortSockArray:  "BPF_MAP_TYPE_REUSEPORT_SOCKARRAY",
-		MapTypePerCPUCgroupStorage: "BPF_MAP_TYPE_PERCPU_CGROUP_STORAGE",
-		MapTypeQueue:               "BPF_MAP_TYPE_QUEUE",
-		MapTypeStack:               "BPF_MAP_TYPE_STACK",
-		MapTypeSKStorage:           "BPF_MAP_TYPE_SK_STORAGE",
-		MapTypeDevmapHash:          "BPF_MAP_TYPE_DEVMAP_HASH",
-		MapTypeStructOps:           "BPF_MAP_TYPE_STRUCT_OPS",
-		MapTypeRingbuf:             "BPF_MAP_TYPE_RINGBUF",
-		MapTypeInodeStorage:        "BPF_MAP_TYPE_INODE_STORAGE",
-		MapTypeTaskStorage:         "BPF_MAP_TYPE_TASK_STORAGE",
-		MapTypeBloomFilter:         "BPF_MAP_TYPE_BLOOM_FILTER",
-	}
-	return x[m]
+func (m *BPFMap) Module() *Module {
+	return m.module
 }
 
-func (b *BPFMap) Name() string {
-	cs := C.bpf_map__name(b.bpfMap)
-	if cs == nil {
-		return ""
-	}
-	s := C.GoString(cs)
-	return s
+// Deprecated: use BPFMap.Module() instead.
+func (m *BPFMap) GetModule() *Module {
+	return m.Module()
 }
 
-func (b *BPFMap) Type() MapType {
-	return MapType(C.bpf_map__type(b.bpfMap))
-}
-
-// SetType is used to set the type of a bpf map that isn't associated
-// with a file descriptor already. If the map is already associated
-// with a file descriptor the libbpf API will return error code EBUSY
-func (b *BPFMap) SetType(mapType MapType) error {
-	errC := C.bpf_map__set_type(b.bpfMap, C.enum_bpf_map_type(int(mapType)))
-	if errC != 0 {
-		return fmt.Errorf("could not set bpf map type: %w", syscall.Errno(-errC))
-	}
-	return nil
-}
-
-func (b *BPFMap) Pin(pinPath string) error {
-	path := C.CString(pinPath)
-	ret := C.bpf_map__pin(b.bpfMap, path)
-	C.free(unsafe.Pointer(path))
-	if ret != 0 {
-		return fmt.Errorf("failed to pin map %s to path %s: %w", b.name, pinPath, syscall.Errno(-ret))
-	}
-	return nil
-}
-
-func (b *BPFMap) Unpin(pinPath string) error {
-	path := C.CString(pinPath)
-	ret := C.bpf_map__unpin(b.bpfMap, path)
-	C.free(unsafe.Pointer(path))
-	if ret != 0 {
-		return fmt.Errorf("failed to unpin map %s from path %s: %w", b.name, pinPath, syscall.Errno(-ret))
-	}
-	return nil
-}
-
-func (b *BPFMap) SetPinPath(pinPath string) error {
-	path := C.CString(pinPath)
-	ret := C.bpf_map__set_pin_path(b.bpfMap, path)
-	C.free(unsafe.Pointer(path))
-	if ret != 0 {
-		return fmt.Errorf("failed to set pin for map %s to path %s: %w", b.name, pinPath, syscall.Errno(-ret))
-	}
-	return nil
-}
-
-// Resize changes the map's capacity to maxEntries.
-// It should be called after the module was initialized but
-// prior to it being loaded with BPFLoadObject.
-// Note: for ring buffer and perf buffer, maxEntries is the
-// capacity in bytes.
-func (b *BPFMap) Resize(maxEntries uint32) error {
-	ret := C.bpf_map__set_max_entries(b.bpfMap, C.uint(maxEntries))
-	if ret != 0 {
-		return fmt.Errorf("failed to resize map %s to %v: %w", b.name, maxEntries, syscall.Errno(-ret))
-	}
-	return nil
-}
-
-// GetMaxEntries returns the map's capacity.
-// Note: for ring buffer and perf buffer, maxEntries is the
-// capacity in bytes.
-func (b *BPFMap) GetMaxEntries() uint32 {
-	maxEntries := C.bpf_map__max_entries(b.bpfMap)
-	return uint32(maxEntries)
-}
-
-func (b *BPFMap) FileDescriptor() int {
-	return int(C.bpf_map__fd(b.bpfMap))
+func (m *BPFMap) FileDescriptor() int {
+	return int(C.bpf_map__fd(m.bpfMap))
 }
 
 // Deprecated: use BPFMap.FileDescriptor() instead.
-func (b *BPFMap) GetFd() int {
-	return b.FileDescriptor()
+func (m *BPFMap) GetFd() int {
+	return m.FileDescriptor()
+}
+
+// bpf_map__reuse_fd
+// func (m *BPFMap) ReuseFD(fd int) error {
+// }
+
+func (m *BPFMap) Name() string {
+	return C.GoString(C.bpf_map__name(m.bpfMap))
 }
 
 // Deprecated: use BPFMap.Name() instead.
-func (b *BPFMap) GetName() string {
-	return b.Name()
+func (m *BPFMap) GetName() string {
+	return m.Name()
 }
 
-func (b *BPFMap) GetModule() *Module {
-	return b.module
+func (m *BPFMap) Type() MapType {
+	return MapType(C.bpf_map__type(m.bpfMap))
 }
 
-func (b *BPFMap) PinPath() string {
-	return C.GoString(C.bpf_map__pin_path(b.bpfMap))
+// SetType assigns a specific type to a BPFMap instance that is not yet associated
+// with a file descriptor.
+func (m *BPFMap) SetType(mapType MapType) error {
+	retC := C.bpf_map__set_type(m.bpfMap, C.enum_bpf_map_type(int(mapType)))
+	if retC < 0 {
+		return fmt.Errorf("could not set bpf map type: %w", syscall.Errno(-retC))
+	}
+
+	return nil
+}
+
+// MaxEntries returns the capacity of the BPFMap.
+//
+// For ring and perf buffer types, this returns the capacity in bytes.
+func (m *BPFMap) MaxEntries() uint32 {
+	return uint32(C.bpf_map__max_entries(m.bpfMap))
+}
+
+// Deprecated: use BPFMap.MaxEntries() instead.
+func (m *BPFMap) GetMaxEntries() uint32 {
+	return m.MaxEntries()
+}
+
+// SetMaxEntries sets the capacity of the BPFMap to the given maxEntries value.
+//
+// This function must be called after BPF module initialization and before loading
+// the module with BPFLoadObject, enabling customization of the map capacity.
+//
+// For ring and perf buffer types, maxEntries represents the capacity in bytes.
+func (m *BPFMap) SetMaxEntries(maxEntries uint32) error {
+	retC := C.bpf_map__set_max_entries(m.bpfMap, C.uint(maxEntries))
+	if retC < 0 {
+		return fmt.Errorf("failed to set map %s max entries to %v: %w", m.Name(), maxEntries, syscall.Errno(-retC))
+	}
+
+	return nil
+}
+
+// Deprecated: use BPFMap.SetMaxEntries() instead.
+func (m *BPFMap) Resize(maxEntries uint32) error {
+	return m.SetMaxEntries(maxEntries)
+}
+
+func (m *BPFMap) MapFlags() MapFlag {
+	return MapFlag(C.bpf_map__map_flags(m.bpfMap))
+}
+
+// TODO: implement `bpf_map__set_map_flags` wrapper
+// func (m *BPFMap) SetMapFlags(flags MapFlag) error {
+// }
+
+// TODO: implement `bpf_map__numa_node` wrapper
+// func (m *BPFMap) NUMANode() uint32 {
+// }
+
+// TODO: implement `bpf_map__set_numa_node` wrapper
+// func (m *BPFMap) SetNUMANode(node uint32) error {
+// }
+
+func (m *BPFMap) KeySize() int {
+	return int(C.bpf_map__key_size(m.bpfMap))
+}
+
+// TODO: implement `bpf_map__set_key_size` wrapper
+// func (m *BPFMap) SetKeySize(size uint32) error {
+// }
+
+func (m *BPFMap) ValueSize() int {
+	return int(C.bpf_map__value_size(m.bpfMap))
+}
+
+// SetValueSize sets the value size to a BPFMap instance that is not yet associated
+// with a file descriptor.
+func (m *BPFMap) SetValueSize(size uint32) error {
+	retC := C.bpf_map__set_value_size(m.bpfMap, C.uint(size))
+	if retC < 0 {
+		return fmt.Errorf("could not set map value size: %w", syscall.Errno(-retC))
+	}
+
+	return nil
+}
+
+// TODO: implement `bpf_map__btf_key_type_id` wrapper
+// func (m *BPFMap) BTFKeyTypeID() uint32 {
+// }
+
+// TODO: implement `bpf_map__btf_value_type_id` wrapper
+// func (m *BPFMap) BTFValueTypeID() uint32 {
+// }
+
+func (m *BPFMap) IfIndex() uint32 {
+	return uint32(C.bpf_map__ifindex(m.bpfMap))
+}
+
+// TODO: implement `bpf_map__set_ifindex` wrapper
+// func (m *BPFMap) SetIfIndex(ifIndex uint32) error {
+// }
+
+func (m *BPFMap) MapExtra() uint64 {
+	return uint64(C.bpf_map__map_extra(m.bpfMap))
+}
+
+// TODO: implement `bpf_map__set_map_extra` wrapper
+// func (m *BPFMap) SetMapExtra(extra uint64) error {
+// }
+
+func (m *BPFMap) InitialValue() ([]byte, error) {
+	valueSize, err := calcMapValueSize(m.ValueSize(), m.Type())
+	if err != nil {
+		return nil, fmt.Errorf("map %s %w", m.Name(), err)
+	}
+
+	value := make([]byte, valueSize)
+	C.cgo_bpf_map__initial_value(m.bpfMap, unsafe.Pointer(&value[0]))
+
+	return value, nil
+}
+
+func (m *BPFMap) SetInitialValue(value unsafe.Pointer) error {
+	valueSize, err := calcMapValueSize(m.ValueSize(), m.Type())
+	if err != nil {
+		return fmt.Errorf("map %s %w", m.Name(), err)
+	}
+
+	retC := C.bpf_map__set_initial_value(m.bpfMap, value, C.ulong(valueSize))
+	if retC < 0 {
+		return fmt.Errorf("failed to set inital value for map %s: %w", m.Name(), syscall.Errno(-retC))
+	}
+
+	return nil
+}
+
+// TODO: implement `bpf_map__is_internal` wrapper
+// func (m *BPFMap) IsInternal() bool {
+// }
+
+//
+// BPFMap Pinning
+//
+
+func (m *BPFMap) PinPath() string {
+	return C.GoString(C.bpf_map__pin_path(m.bpfMap))
 }
 
 // Deprecated: use BPFMap.PinPath() instead.
-func (b *BPFMap) GetPinPath() string {
-	return b.PinPath()
+func (m *BPFMap) GetPinPath() string {
+	return m.PinPath()
 }
 
-func (b *BPFMap) IsPinned() bool {
-	isPinned := C.bpf_map__is_pinned(b.bpfMap)
-	return isPinned == C.bool(true)
-}
+func (m *BPFMap) SetPinPath(pinPath string) error {
+	pathC := C.CString(pinPath)
+	defer C.free(unsafe.Pointer(pathC))
 
-func (b *BPFMap) KeySize() int {
-	return int(C.bpf_map__key_size(b.bpfMap))
-}
-
-func (b *BPFMap) ValueSize() int {
-	return int(C.bpf_map__value_size(b.bpfMap))
-}
-
-func (b *BPFMap) SetValueSize(size uint32) error {
-	ret := C.bpf_map__set_value_size(b.bpfMap, C.uint(size))
-	if ret != 0 {
-		return fmt.Errorf("could not set map value size: %w", syscall.Errno(-ret))
+	retC := C.bpf_map__set_pin_path(m.bpfMap, pathC)
+	if retC < 0 {
+		return fmt.Errorf("failed to set pin for map %s to path %s: %w", m.Name(), pinPath, syscall.Errno(-retC))
 	}
+
 	return nil
 }
 
-// GetValue takes a pointer to the key which is stored in the map.
-// It returns the associated value as a slice of bytes.
+func (m *BPFMap) IsPinned() bool {
+	return bool(C.bpf_map__is_pinned(m.bpfMap))
+}
+
+func (m *BPFMap) Pin(pinPath string) error {
+	pathC := C.CString(pinPath)
+	defer C.free(unsafe.Pointer(pathC))
+
+	retC := C.bpf_map__pin(m.bpfMap, pathC)
+	if retC < 0 {
+		return fmt.Errorf("failed to pin map %s to path %s: %w", m.Name(), pinPath, syscall.Errno(-retC))
+	}
+
+	return nil
+}
+
+func (m *BPFMap) Unpin(pinPath string) error {
+	pathC := C.CString(pinPath)
+	defer C.free(unsafe.Pointer(pathC))
+
+	retC := C.bpf_map__unpin(m.bpfMap, pathC)
+	if retC < 0 {
+		return fmt.Errorf("failed to unpin map %s from path %s: %w", m.Name(), pinPath, syscall.Errno(-retC))
+	}
+
+	return nil
+}
+
+//
+// BPFMap Map of Maps
+//
+
+// TODO: implement `bpf_map__inner_map` wrapper
+// func (m *BPFMap) InnerMap() *BPFMap {
+// }
+
+// TODO: implement `bpf_map__set_inner_map_fd` wrapper
+// func (m *BPFMap) SetInnerMapFD(innerMapFD int) error {
+// }
+
+//
+// BPFMap Operations
+//
+
+// GetValue retrieves the value associated with a given key in the BPFMap.
+//
+// This function accepts an unsafe.Pointer to the key value to be searched
+// in the map, and it returns the corresponding value as a slice of bytes.
 // All basic types, and structs are supported as keys.
 //
-// NOTE: Slices and arrays are also supported but special care
-// should be taken as to take a reference to the first element
-// in the slice or array instead of the slice/array itself, as to
-// avoid undefined behavior.
-func (b *BPFMap) GetValue(key unsafe.Pointer) ([]byte, error) {
-	value := make([]byte, b.ValueSize())
-	valuePtr := unsafe.Pointer(&value[0])
+// NOTE: Slices and arrays are supported, but references should point to the first
+// element in the slice or array, instead of the slice or array itself. This is
+// crucial to prevent undefined behavior.
+//
+// For example:
+//
+// key := []byte{'a', 'b', 'c'}
+// keyPtr := unsafe.Pointer(&key[0])
+// bpfmap.GetValue(keyPtr)
+func (m *BPFMap) GetValue(key unsafe.Pointer) ([]byte, error) {
+	return m.GetValueFlags(key, MapFlagUpdateAny)
+}
 
-	ret, errC := C.bpf_map_lookup_elem(b.fd, key, valuePtr)
-	if ret != 0 {
-		return nil, fmt.Errorf("failed to lookup value %v in map %s: %w", key, b.name, errC)
+func (m *BPFMap) GetValueFlags(key unsafe.Pointer, flags MapFlag) ([]byte, error) {
+	valueSize, err := calcMapValueSize(m.ValueSize(), m.Type())
+	if err != nil {
+		return nil, fmt.Errorf("map %s %w", m.Name(), err)
 	}
+
+	value := make([]byte, valueSize)
+	retC := C.bpf_map__lookup_elem(
+		m.bpfMap,
+		key,
+		C.ulong(m.KeySize()),
+		unsafe.Pointer(&value[0]),
+		C.ulong(valueSize),
+		C.ulonglong(flags),
+	)
+	if retC < 0 {
+		return nil, fmt.Errorf("failed to lookup value %v in map %s: %w", key, m.Name(), syscall.Errno(-retC))
+	}
+
 	return value, nil
 }
 
-func (b *BPFMap) GetValueFlags(key unsafe.Pointer, flags MapFlag) ([]byte, error) {
-	value := make([]byte, b.ValueSize())
-	valuePtr := unsafe.Pointer(&value[0])
+// TODO: implement `bpf_map__lookup_and_delete_elem` wrapper
+// func (m *BPFMap) GetValueAndDeleteKey(key unsafe.Pointer) ([]byte, error) {
+// }
 
-	errC := C.bpf_map_lookup_elem_flags(b.fd, key, valuePtr, C.ulonglong(flags))
-	if errC != 0 {
-		return nil, fmt.Errorf("failed to lookup value %v in map %s: %w", key, b.name, syscall.Errno(-errC))
-	}
-	return value, nil
-}
-
-// GetValueReadInto is like GetValue, except it allows the caller to pass in
-// a pointer to the slice of bytes that the value would be read into from the
-// map.
-// This is useful for reading from maps with variable sizes, especially
-// per-cpu arrays and hash maps where the size of each value depends on the
-// number of CPUs
-func (b *BPFMap) GetValueReadInto(key unsafe.Pointer, value *[]byte) error {
+// Deprecated: use BPFMap.GetValue() or BPFMap.GetValueFlags() instead, since
+// they already calculate the value size for per-cpu maps.
+func (m *BPFMap) GetValueReadInto(key unsafe.Pointer, value *[]byte) error {
 	valuePtr := unsafe.Pointer(&(*value)[0])
-	ret := C.bpf_map__lookup_elem(b.bpfMap, key, C.ulong(b.KeySize()), valuePtr, C.ulong(len(*value)), 0)
-	if ret != 0 {
-		return fmt.Errorf("failed to lookup value %v in map %s: %w", key, b.name, syscall.Errno(-ret))
-	}
-	return nil
-}
-
-func (b *BPFMap) setInitialValue(value unsafe.Pointer) error {
-	sz := b.ValueSize()
-	ret := C.bpf_map__set_initial_value(b.bpfMap, value, C.ulong(sz))
-	if ret != 0 {
-		return fmt.Errorf("failed to set inital value for map %s: %w", b.name, syscall.Errno(-ret))
-	}
-	return nil
-}
-
-func (b *BPFMap) getInitialValue() []byte {
-	value := make([]byte, b.ValueSize())
-	valuePtr := unsafe.Pointer(&value[0])
-	C.get_internal_map_init_value(b.bpfMap, valuePtr)
-	return value
-}
-
-// BPFMapBatchOpts mirrors the C structure bpf_map_batch_opts.
-type BPFMapBatchOpts struct {
-	Sz        uint64
-	ElemFlags uint64
-	Flags     uint64
-}
-
-func bpfMapBatchOptsToC(batchOpts *BPFMapBatchOpts) *C.struct_bpf_map_batch_opts {
-	if batchOpts == nil {
-		return nil
-	}
-	opts := C.struct_bpf_map_batch_opts{}
-	opts.sz = C.ulong(batchOpts.Sz)
-	opts.elem_flags = C.ulonglong(batchOpts.ElemFlags)
-	opts.flags = C.ulonglong(batchOpts.Flags)
-
-	return &opts
-}
-
-// GetValueBatch allows for batch lookups of multiple keys from the map.
-//
-// The first argument, keys, is a pointer to an array or slice of keys which will be populated with the keys returned from this operation.
-// It returns the associated values as a slice of slices of bytes.
-//
-// This API allows for batch lookups of multiple keys, potentially in steps over multiple iterations. For example,
-// you provide the last key seen (or nil) for the startKey, and the first key to start the next iteration with in nextKey.
-// Once the first iteration is complete you can provide the last key seen in the previous iteration as the startKey for the next iteration
-// and repeat until nextKey is nil.
-//
-// The last argument, count, is the number of keys to lookup. The kernel will update it with the count of the elements that were
-// retrieved.
-//
-// The API can return partial results even though an -1 is returned. In this case, errno will be set to `ENOENT` and the values slice and count
-// will be filled in with the elements that were read. See the inline comment in `GetValueAndDeleteBatch` for more context.
-func (b *BPFMap) GetValueBatch(keys unsafe.Pointer, startKey, nextKey unsafe.Pointer, count uint32) ([][]byte, error) {
-	var (
-		values    = make([]byte, b.ValueSize()*int(count))
-		valuesPtr = unsafe.Pointer(&values[0])
-		countC    = C.uint(count)
-	)
-
-	opts := &BPFMapBatchOpts{
-		Sz:        uint64(unsafe.Sizeof(BPFMapBatchOpts{})),
-		ElemFlags: C.BPF_ANY,
-		Flags:     C.BPF_ANY,
-	}
-
-	ret, errC := C.bpf_map_lookup_batch(b.fd, startKey, nextKey, keys, valuesPtr, &countC, bpfMapBatchOptsToC(opts))
-	processed := uint32(countC)
-
-	if ret != 0 && errC != syscall.ENOENT {
-		return nil, fmt.Errorf("failed to batch get value %v in map %s: ret %d (err: %s)", keys, b.name, ret, errC)
-	}
-
-	// Either some or all entries were read.
-	// ret = -1 && errno == syscall.ENOENT indicates a partial read.
-	return collectBatchValues(values, processed, b.ValueSize()), nil
-}
-
-// GetValueAndDeleteBatch allows for batch lookup and deletion of elements where each element is deleted after being retrieved from the map.
-//
-// The first argument, keys, is a pointer to an array or slice of keys which will be populated with the keys returned from this operation.
-// It returns the associated values as a slice of slices of bytes.
-//
-// This API allows for batch lookups and deletion of multiple keys, potentially in steps over multiple iterations. For example,
-// you provide the last key seen (or nil) for the startKey, and the first key to start the next iteration with in nextKey.
-// Once the first iteration is complete you can provide the last key seen in the previous iteration as the startKey for the next iteration
-// and repeat until nextKey is nil.
-//
-// The last argument, count, is the number of keys to lookup and delete. The kernel will update it with the count of the elements that were
-// retrieved and deleted.
-//
-// The API can return partial results even though an -1 is returned. In this case, errno will be set to `ENOENT` and the values slice and count
-// will be filled in with the elements that were read. See the comment below for more context.
-func (b *BPFMap) GetValueAndDeleteBatch(keys, startKey, nextKey unsafe.Pointer, count uint32) ([][]byte, error) {
-	var (
-		values    = make([]byte, b.ValueSize()*int(count))
-		valuesPtr = unsafe.Pointer(&values[0])
-		countC    = C.uint(count)
-	)
-
-	opts := &BPFMapBatchOpts{
-		Sz:        uint64(unsafe.Sizeof(BPFMapBatchOpts{})),
-		ElemFlags: C.BPF_ANY,
-		Flags:     C.BPF_ANY,
-	}
-
-	// Before libbpf 1.0 (without LIBBPF_STRICT_DIRECT_ERRS), the return value
-	// and errno are not modified [1]. On error, we will get a return value of
-	// -1 and errno will be set accordingly with most BPF calls.
-	//
-	// The batch APIs are a bit different in which they can return an error, but
-	// depending on the errno code, it might mean a complete error (nothing was
-	// done) or a partial success (some elements were processed).
-	//
-	// - On complete sucess, it will return 0, and errno won't be set.
-	// - On partial sucess, it will return -1, and errno will be set to ENOENT.
-	// - On error, it will return -1, and an errno different to ENOENT.
-	//
-	// [1] https://github.com/libbpf/libbpf/blob/b69f8ee93ef6aa3518f8fbfd9d1df6c2c84fd08f/src/libbpf_internal.h#L496
-	ret, errC := C.bpf_map_lookup_and_delete_batch(
-		b.fd,
-		startKey,
-		nextKey,
-		keys,
-		valuesPtr,
-		&countC,
-		bpfMapBatchOptsToC(opts))
-
-	processed := uint32(countC)
-
-	if ret != 0 && errC != syscall.ENOENT {
-		// ret = -1 && errno == syscall.ENOENT indicates a partial read and delete.
-		return nil, fmt.Errorf("failed to batch lookup and delete values %v in map %s: ret %d (err: %s)", keys, b.name, ret, errC)
-	}
-
-	// Either some or all entries were read and deleted.
-	parsedVals := collectBatchValues(values, processed, b.ValueSize())
-	return parsedVals, nil
-}
-
-func collectBatchValues(values []byte, count uint32, valueSize int) [][]byte {
-	var value []byte
-	var collected [][]byte
-	for i := 0; i < int(count*uint32(valueSize)); i += valueSize {
-		value = values[i : i+valueSize]
-		collected = append(collected, value)
-	}
-	return collected
-}
-
-// UpdateBatch updates multiple elements in the map by specified keys and their corresponding values.
-//
-// The first argument, keys, is a pointer to an array or slice of keys which will be updated using the second argument, values.
-// It returns the associated error if any occurred.
-//
-// The last argument, count, is the number of keys to update. Passing an argument that greater than the number of keys
-// in the map will cause the function to return a syscall.EPERM as an error.
-func (b *BPFMap) UpdateBatch(keys, values unsafe.Pointer, count uint32) error {
-	countC := C.uint(count)
-
-	opts := BPFMapBatchOpts{
-		Sz:        uint64(unsafe.Sizeof(BPFMapBatchOpts{})),
-		ElemFlags: C.BPF_ANY,
-		Flags:     C.BPF_ANY,
-	}
-
-	errC := C.bpf_map_update_batch(b.fd, keys, values, &countC, bpfMapBatchOptsToC(&opts))
-	if errC != 0 {
-		sc := syscall.Errno(-errC)
-		if sc != syscall.EFAULT {
-			if uint32(countC) != count {
-				return fmt.Errorf("failed to update ALL elements in map %s, updated (%d/%d): %w", b.name, uint32(countC), count, sc)
-			}
-		}
-		return fmt.Errorf("failed to batch update elements in map %s: %w", b.name, syscall.Errno(-errC))
+	retC := C.bpf_map__lookup_elem(m.bpfMap, key, C.ulong(m.KeySize()), valuePtr, C.ulong(len(*value)), 0)
+	if retC < 0 {
+		return fmt.Errorf("failed to lookup value %v in map %s: %w", key, m.Name(), syscall.Errno(-retC))
 	}
 
 	return nil
 }
 
-// DeleteKeyBatch allows for batch deletion of multiple elements in the map.
+// Update inserts or updates value in BPFMap that corresponds to a given key.
 //
-// `count` number of keys will be deleted from the map. Passing an argument that greater than the number of keys
-// in the map will cause the function to delete fewer keys than requested. See the inline comment in
-// `GetValueAndDeleteBatch` for more context.
-func (b *BPFMap) DeleteKeyBatch(keys unsafe.Pointer, count uint32) error {
-	countC := C.uint(count)
-
-	opts := &BPFMapBatchOpts{
-		Sz:        uint64(unsafe.Sizeof(BPFMapBatchOpts{})),
-		ElemFlags: C.BPF_ANY,
-		Flags:     C.BPF_ANY,
-	}
-
-	ret, errC := C.bpf_map_delete_batch(b.fd, keys, &countC, bpfMapBatchOptsToC(opts))
-
-	if ret != 0 && errC != syscall.ENOENT {
-		return fmt.Errorf("failed to batch delete keys %v in map %s: ret %d (err: %s)", keys, b.name, ret, errC)
-	}
-
-	// ret = -1 && errno == syscall.ENOENT indicates a partial deletion.
-	return nil
-}
-
-// DeleteKey takes a pointer to the key which is stored in the map.
-// It removes the key and associated value from the BPFMap.
-// All basic types, and structs are supported as keys.
+// This function accepts unsafe.Pointer references to both the key and value.
+// All basic types, and structs are supported.
 //
-// NOTE: Slices and arrays are also supported but special care
-// should be taken as to take a reference to the first element
-// in the slice or array instead of the slice/array itself, as to
-// avoid undefined behavior.
-func (b *BPFMap) DeleteKey(key unsafe.Pointer) error {
-	ret, errC := C.bpf_map_delete_elem(b.fd, key)
-	if ret != 0 {
-		return fmt.Errorf("failed to get lookup key %d from map %s: %w", key, b.name, errC)
-	}
-	return nil
-}
-
-// Update takes a pointer to a key and a value to associate it with in
-// the BPFMap. The unsafe.Pointer should be taken on a reference to the
-// underlying datatype. All basic types, and structs are supported
-//
-// NOTE: Slices and arrays are supported but references should be passed
-// to the first element in the slice or array.
+// NOTE: Slices and arrays are supported, but references should point to the first
+// element in the slice or array, instead of the slice or array itself. This is
+// crucial to prevent undefined behavior.
 //
 // For example:
 //
@@ -556,69 +340,140 @@ func (b *BPFMap) DeleteKey(key unsafe.Pointer) error {
 // keyPtr := unsafe.Pointer(&key)
 // valuePtr := unsafe.Pointer(&value[0])
 // bpfmap.Update(keyPtr, valuePtr)
-func (b *BPFMap) Update(key, value unsafe.Pointer) error {
-	return b.UpdateValueFlags(key, value, MapFlagUpdateAny)
+func (m *BPFMap) Update(key, value unsafe.Pointer) error {
+	return m.UpdateValueFlags(key, value, MapFlagUpdateAny)
 }
 
-func (b *BPFMap) UpdateValueFlags(key, value unsafe.Pointer, flags MapFlag) error {
-	errC := C.bpf_map_update_elem(b.fd, key, value, C.ulonglong(flags))
-	if errC != 0 {
-		return fmt.Errorf("failed to update map %s: %w", b.name, syscall.Errno(-errC))
+func (m *BPFMap) UpdateValueFlags(key, value unsafe.Pointer, flags MapFlag) error {
+	valueSize, err := calcMapValueSize(m.ValueSize(), m.Type())
+	if err != nil {
+		return fmt.Errorf("map %s %w", m.Name(), err)
 	}
+
+	retC := C.bpf_map__update_elem(
+		m.bpfMap,
+		key,
+		C.ulong(m.KeySize()),
+		value,
+		C.ulong(valueSize),
+		C.ulonglong(flags),
+	)
+	if retC < 0 {
+		return fmt.Errorf("failed to update map %s: %w", m.Name(), syscall.Errno(-retC))
+	}
+
 	return nil
 }
 
-// BPFMapIterator iterates over keys in a BPF map
-type BPFMapIterator struct {
-	b    *BPFMap
-	err  error
-	prev []byte
-	next []byte
+// DeleteKey removes a specified key and its associated value from the BPFMap.
+//
+// This function accepts an unsafe.Pointer that references the key to be
+// removed from the map.
+// All basic types, and structs are supported as keys.
+//
+// NOTE: Slices and arrays are supported, but references should point to the first
+// element in the slice or array, instead of the slice or array itself. This is
+// crucial to prevent undefined behavior.
+func (m *BPFMap) DeleteKey(key unsafe.Pointer) error {
+	retC := C.bpf_map__delete_elem(m.bpfMap, key, C.ulong(m.KeySize()), 0)
+	if retC < 0 {
+		return fmt.Errorf("failed to delete key %d in map %s: %w", key, m.Name(), syscall.Errno(-retC))
+	}
+
+	return nil
 }
 
-func (b *BPFMap) Iterator() *BPFMapIterator {
+// TODO: implement `bpf_map__get_next_key` wrapper
+// func (m *BPFMap) GetNextKey(key unsafe.Pointer) (unsafe.Pointer, error) {
+// }
+
+//
+// BPFMap Batch Operations (low-level API)
+//
+
+// GetValueBatch allows for batch lookups of multiple keys from the map.
+//
+// The first argument, keys, is a pointer to an array or slice of keys which will
+// be populated with the keys returned from this operation.
+// It returns the associated values as a slice of slices of bytes.
+//
+// This API allows for batch lookups of multiple keys, potentially in steps over
+// multiple iterations. For example, you provide the last key seen (or nil) for
+// the startKey, and the first key to start the next iteration with in nextKey.
+// Once the first iteration is complete you can provide the last key seen in the
+// previous iteration as the startKey for the next iteration and repeat until
+// nextKey is nil.
+//
+// The last argument, count, is the number of keys to lookup. The kernel will
+// update it with the count of the elements that were retrieved.
+//
+// The API can return partial results even though an -1 is returned. In this case,
+// errno will be set to `ENOENT` and the values slice and count will be filled in
+// with the elements that were read. See the comment in `BPFMapLow.GetValueBatch`
+// for more context.
+func (m *BPFMap) GetValueBatch(keys unsafe.Pointer, startKey, nextKey unsafe.Pointer, count uint32) ([][]byte, error) {
+	return m.bpfMapLow.GetValueBatch(keys, startKey, nextKey, count)
+}
+
+// GetValueAndDeleteBatch allows for batch lookup and deletion of elements where
+// each element is deleted after being retrieved from the map.
+//
+// The first argument, keys, is a pointer to an array or slice of keys which will
+// be populated with the keys returned from this operation.
+// It returns the associated values as a slice of slices of bytes.
+//
+// This API allows for batch lookups and deletion of multiple keys, potentially
+// in steps over multiple iterations. For example, you provide the last key seen
+// (or nil) for the startKey, and the first key to start the next iteration
+// with in nextKey.
+// Once the first iteration is complete you can provide the last key seen in the
+// previous iteration as the startKey for the next iteration and repeat until
+// nextKey is nil.
+//
+// The last argument, count, is the number of keys to lookup and delete. The kernel
+// will update it with the count of the elements that were retrieved and deleted.
+//
+// The API can return partial results even though an -1 is returned. In this case,
+// errno will be set to `ENOENT` and the values slice and count will be filled in
+// with the elements that were read. See the comment in `BPFMapLow.GetValueBatch`
+// for more context.
+func (m *BPFMap) GetValueAndDeleteBatch(keys, startKey, nextKey unsafe.Pointer, count uint32) ([][]byte, error) {
+	return m.bpfMapLow.GetValueAndDeleteBatch(keys, startKey, nextKey, count)
+}
+
+// UpdateBatch updates multiple elements in the map by specified keys and their
+// corresponding values.
+//
+// The first argument, keys, is a pointer to an array or slice of keys which will
+// be updated using the second argument, values.
+// It returns the associated error if any occurred.
+//
+// The last argument, count, is the number of keys to update. Passing an argument
+// that greater than the number of keys in the map will cause the function to
+// return a syscall.EPERM as an error.
+func (m *BPFMap) UpdateBatch(keys, values unsafe.Pointer, count uint32) error {
+	return m.bpfMapLow.UpdateBatch(keys, values, count)
+}
+
+// DeleteKeyBatch allows for batch deletion of multiple elements in the map.
+//
+// `count` number of keys will be deleted from the map. Passing an argument that
+// greater than the number of keys in the map will cause the function to delete
+// fewer keys than requested. See the comment in `BPFMapLow.GetValueBatch`
+// for more context.
+func (m *BPFMap) DeleteKeyBatch(keys unsafe.Pointer, count uint32) error {
+	return m.bpfMapLow.DeleteKeyBatch(keys, count)
+}
+
+//
+// BPFMap Iterator (low-level API)
+//
+
+func (m *BPFMap) Iterator() *BPFMapIterator {
 	return &BPFMapIterator{
-		b:    b,
-		prev: nil,
-		next: nil,
+		mapFD:   m.FileDescriptor(),
+		keySize: m.KeySize(),
+		prev:    nil,
+		next:    nil,
 	}
-}
-
-func (it *BPFMapIterator) Next() bool {
-	if it.err != nil {
-		return false
-	}
-
-	prevPtr := unsafe.Pointer(nil)
-	if it.next != nil {
-		prevPtr = unsafe.Pointer(&it.next[0])
-	}
-
-	next := make([]byte, it.b.KeySize())
-	nextPtr := unsafe.Pointer(&next[0])
-
-	errC, err := C.bpf_map_get_next_key(it.b.fd, prevPtr, nextPtr)
-	if errno, ok := err.(syscall.Errno); errC == -2 && ok && errno == C.ENOENT {
-		return false
-	}
-	if err != nil {
-		it.err = err
-		return false
-	}
-
-	it.prev = it.next
-	it.next = next
-
-	return true
-}
-
-// Key returns the current key value of the iterator, if the most recent call to Next returned true.
-// The slice is valid only until the next call to Next.
-func (it *BPFMapIterator) Key() []byte {
-	return it.next
-}
-
-// Err returns the last error that ocurred while table.Iter or iter.Next
-func (it *BPFMapIterator) Err() error {
-	return it.err
 }

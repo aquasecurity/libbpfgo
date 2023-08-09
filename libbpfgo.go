@@ -368,7 +368,10 @@ func (m *Module) InitGlobalVariable(name string, value interface{}) error {
 	}
 
 	// get current value
-	currMapValue := bpfMap.getInitialValue()
+	currMapValue, err := bpfMap.InitialValue()
+	if err != nil {
+		return err
+	}
 
 	// generate new value
 	newMapValue := make([]byte, bpfMap.ValueSize())
@@ -386,24 +389,71 @@ func (m *Module) InitGlobalVariable(name string, value interface{}) error {
 	copy(newMapValue[start:end], varValue)
 
 	// save new value
-	err = bpfMap.setInitialValue(unsafe.Pointer(&newMapValue[0]))
+	err = bpfMap.SetInitialValue(unsafe.Pointer(&newMapValue[0]))
 	return err
 }
 
 func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 	cs := C.CString(mapName)
-	bpfMap, errno := C.bpf_object__find_map_by_name(m.obj, cs)
+	bpfMapC, errno := C.bpf_object__find_map_by_name(m.obj, cs)
 	C.free(unsafe.Pointer(cs))
-	if bpfMap == nil {
+	if bpfMapC == nil {
 		return nil, fmt.Errorf("failed to find BPF map %s: %w", mapName, errno)
 	}
 
-	return &BPFMap{
-		bpfMap: bpfMap,
-		name:   mapName,
-		fd:     C.bpf_map__fd(bpfMap),
+	bpfMap := &BPFMap{
+		bpfMap: bpfMapC,
 		module: m,
-	}, nil
+	}
+
+	if !m.loaded {
+		bpfMap.bpfMapLow = &BPFMapLow{
+			fd:   -1,
+			info: &BPFMapInfo{},
+		}
+
+		return bpfMap, nil
+	}
+
+	fd := bpfMap.FileDescriptor()
+	info, err := GetMapInfoByFD(fd)
+	if err != nil {
+		// Compatibility Note: Some older kernels lack BTF (BPF Type Format)
+		// support for specific BPF map types. In such scenarios, libbpf may
+		// fail (EPERM) when attempting to retrieve information for these maps.
+		// Reference: https://elixir.bootlin.com/linux/v5.15.75/source/tools/lib/bpf/gen_loader.c#L401
+		//
+		// However, we can still get some map info from the BPF map high level API.
+		bpfMap.bpfMapLow = &BPFMapLow{
+			fd: fd,
+			info: &BPFMapInfo{
+				Type:                  bpfMap.Type(),
+				ID:                    0,
+				KeySize:               uint32(bpfMap.KeySize()),
+				ValueSize:             uint32(bpfMap.ValueSize()),
+				MaxEntries:            bpfMap.MaxEntries(),
+				MapFlags:              uint32(bpfMap.MapFlags()),
+				Name:                  bpfMap.Name(),
+				IfIndex:               bpfMap.IfIndex(),
+				BTFVmlinuxValueTypeID: 0,
+				NetnsDev:              0,
+				NetnsIno:              0,
+				BTFID:                 0,
+				BTFKeyTypeID:          0,
+				BTFValueTypeID:        0,
+				MapExtra:              bpfMap.MapExtra(),
+			},
+		}
+
+		return bpfMap, nil
+	}
+
+	bpfMap.bpfMapLow = &BPFMapLow{
+		fd:   fd,
+		info: info,
+	}
+
+	return bpfMap, nil
 }
 
 // BPFObjectProgramIterator iterates over maps in a BPF object
@@ -431,15 +481,33 @@ func (it *BPFObjectIterator) NextMap() *BPFMap {
 	if m == nil {
 		return nil
 	}
-	cName := C.bpf_map__name(m)
 
 	bpfMap := &BPFMap{
-		name:   C.GoString(cName),
 		bpfMap: m,
 		module: it.m,
 	}
-
 	it.prevMap = bpfMap
+
+	if !bpfMap.module.loaded {
+		bpfMap.bpfMapLow = &BPFMapLow{
+			fd:   -1,
+			info: &BPFMapInfo{},
+		}
+
+		return bpfMap
+	}
+
+	fd := bpfMap.FileDescriptor()
+	info, err := GetMapInfoByFD(fd)
+	if err != nil {
+		return nil
+	}
+
+	bpfMap.bpfMapLow = &BPFMapLow{
+		fd:   fd,
+		info: info,
+	}
+
 	return bpfMap
 }
 
@@ -1150,7 +1218,7 @@ func (m *Module) InitRingBuf(mapName string, eventsChan chan []byte) (*RingBuffe
 		return nil, fmt.Errorf("max ring buffers reached")
 	}
 
-	rb := C.cgo_init_ring_buf(bpfMap.fd, C.uintptr_t(slot))
+	rb := C.cgo_init_ring_buf(C.int(bpfMap.FileDescriptor()), C.uintptr_t(slot))
 	if rb == nil {
 		return nil, fmt.Errorf("failed to initialize ring buffer")
 	}
@@ -1264,7 +1332,7 @@ func (m *Module) InitPerfBuf(mapName string, eventsChan chan []byte, lostChan ch
 		return nil, fmt.Errorf("max number of ring/perf buffers reached")
 	}
 
-	pb := C.cgo_init_perf_buf(bpfMap.fd, C.int(pageCnt), C.uintptr_t(slot))
+	pb := C.cgo_init_perf_buf(C.int(bpfMap.FileDescriptor()), C.int(pageCnt), C.uintptr_t(slot))
 	if pb == nil {
 		eventChannels.remove(uint(slot))
 		return nil, fmt.Errorf("failed to initialize perf buffer")
