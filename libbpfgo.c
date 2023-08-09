@@ -38,12 +38,12 @@ int libbpf_print_fn(enum libbpf_print_level level, // libbpf print level
     return ret;
 }
 
-void set_print_fn()
+void cgo_libbpf_set_print_fn()
 {
     libbpf_set_print(libbpf_print_fn);
 }
 
-struct ring_buffer *init_ring_buf(int map_fd, uintptr_t ctx)
+struct ring_buffer *cgo_init_ring_buf(int map_fd, uintptr_t ctx)
 {
     struct ring_buffer *rb = NULL;
 
@@ -59,7 +59,7 @@ struct ring_buffer *init_ring_buf(int map_fd, uintptr_t ctx)
     return rb;
 }
 
-struct perf_buffer *init_perf_buf(int map_fd, int page_cnt, uintptr_t ctx)
+struct perf_buffer *cgo_init_perf_buf(int map_fd, int page_cnt, uintptr_t ctx)
 {
     struct perf_buffer_opts pb_opts = {};
     struct perf_buffer *pb = NULL;
@@ -78,7 +78,7 @@ struct perf_buffer *init_perf_buf(int map_fd, int page_cnt, uintptr_t ctx)
     return pb;
 }
 
-void get_internal_map_init_value(struct bpf_map *map, void *value)
+void cgo_bpf_map__initial_value(struct bpf_map *map, void *value)
 {
     size_t psize;
     const void *data;
@@ -86,9 +86,9 @@ void get_internal_map_init_value(struct bpf_map *map, void *value)
     memcpy(value, data, psize);
 }
 
-int bpf_prog_attach_cgroup_legacy(int prog_fd,   // eBPF program file descriptor
-                                  int target_fd, // cgroup directory file descriptor
-                                  int type)      // BPF_CGROUP_INET_{INGRESS,EGRESS}, ...
+int cgo_bpf_prog_attach_cgroup_legacy(int prog_fd,   // eBPF program file descriptor
+                                      int target_fd, // cgroup directory file descriptor
+                                      int type)      // BPF_CGROUP_INET_{INGRESS,EGRESS}, ...
 {
     union bpf_attr attr;
     memset(&attr, 0, sizeof(attr));
@@ -100,9 +100,9 @@ int bpf_prog_attach_cgroup_legacy(int prog_fd,   // eBPF program file descriptor
     return syscall(__NR_bpf, BPF_PROG_ATTACH, &attr, sizeof(attr));
 }
 
-int bpf_prog_detach_cgroup_legacy(int prog_fd,   // eBPF program file descriptor
-                                  int target_fd, // cgroup directory file descriptor
-                                  int type)      // BPF_CGROUP_INET_{INGRESS,EGRESS}, ...
+int cgo_bpf_prog_detach_cgroup_legacy(int prog_fd,   // eBPF program file descriptor
+                                      int target_fd, // cgroup directory file descriptor
+                                      int type)      // BPF_CGROUP_INET_{INGRESS,EGRESS}, ...
 {
     union bpf_attr attr;
     memset(&attr, 0, sizeof(attr));
@@ -113,13 +113,13 @@ int bpf_prog_detach_cgroup_legacy(int prog_fd,   // eBPF program file descriptor
     return syscall(__NR_bpf, BPF_PROG_DETACH, &attr, sizeof(attr));
 }
 
-struct bpf_iter_attach_opts *bpf_iter_attach_opts_new(__u32 map_fd,
-                                                      enum bpf_cgroup_iter_order order,
-                                                      __u32 cgroup_fd,
-                                                      __u64 cgroup_id,
-                                                      __u32 tid,
-                                                      __u32 pid,
-                                                      __u32 pid_fd)
+struct bpf_iter_attach_opts *cgo_bpf_iter_attach_opts_new(__u32 map_fd,
+                                                          enum bpf_cgroup_iter_order order,
+                                                          __u32 cgroup_fd,
+                                                          __u64 cgroup_id,
+                                                          __u32 tid,
+                                                          __u32 pid,
+                                                          __u32 pid_fd)
 {
     union bpf_iter_link_info *linfo;
     linfo = calloc(1, sizeof(*linfo));
@@ -148,7 +148,7 @@ struct bpf_iter_attach_opts *bpf_iter_attach_opts_new(__u32 map_fd,
     return opts;
 }
 
-void bpf_iter_attach_opts_free(struct bpf_iter_attach_opts *opts)
+void cgo_bpf_iter_attach_opts_free(struct bpf_iter_attach_opts *opts)
 {
     if (!opts)
         return;
@@ -157,9 +157,9 @@ void bpf_iter_attach_opts_free(struct bpf_iter_attach_opts *opts)
     free(opts);
 }
 
-struct bpf_object_open_opts *bpf_object_open_opts_new(const char *btf_file_path,
-                                                      const char *kconfig_path,
-                                                      const char *bpf_obj_name)
+struct bpf_object_open_opts *cgo_bpf_object_open_opts_new(const char *btf_file_path,
+                                                          const char *kconfig_path,
+                                                          const char *bpf_obj_name)
 {
     struct bpf_object_open_opts *opts;
     opts = calloc(1, sizeof(*opts));
@@ -174,7 +174,7 @@ struct bpf_object_open_opts *bpf_object_open_opts_new(const char *btf_file_path,
     return opts;
 }
 
-void bpf_object_open_opts_free(struct bpf_object_open_opts *opts)
+void cgo_bpf_object_open_opts_free(struct bpf_object_open_opts *opts)
 {
     free(opts);
 }
