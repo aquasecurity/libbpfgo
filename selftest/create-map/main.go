@@ -37,8 +37,6 @@ func main() {
 	defer bpfModule.Close()
 
 	bpfModule.BPFLoadObject()
-	opts := bpf.BPFMapCreateOpts{}
-	opts.Size = uint64(unsafe.Sizeof(opts))
 
 	m, err := bpf.CreateMap(bpf.MapTypeHash, "foobar", 4, 4, 420, nil)
 	if err != nil {
