@@ -82,7 +82,11 @@ void cgo_bpf_map__initial_value(struct bpf_map *map, void *value)
 {
     size_t psize;
     const void *data;
+
     data = bpf_map__initial_value(map, &psize);
+    if (!data)
+        return;
+
     memcpy(value, data, psize);
 }
 
