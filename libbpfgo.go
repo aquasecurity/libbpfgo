@@ -231,7 +231,7 @@ func NewModuleFromFileArgs(args NewModuleArgs) (*Module, error) {
 	if err != nil {
 		return nil, err
 	}
-	C.set_print_fn()
+	C.cgo_libbpf_set_print_fn()
 
 	// If skipped, we rely on libbpf to do the bumping if deemed necessary
 	if !args.SkipMemlockBump {
@@ -284,7 +284,7 @@ func NewModuleFromBufferArgs(args NewModuleArgs) (*Module, error) {
 	if err != nil {
 		return nil, err
 	}
-	C.set_print_fn()
+	C.cgo_libbpf_set_print_fn()
 
 	// TODO: remove this once libbpf memory limit bump issue is solved
 	if err := bumpMemlockRlimit(); err != nil {
@@ -309,11 +309,11 @@ func NewModuleFromBufferArgs(args NewModuleArgs) (*Module, error) {
 		cKconfigPath = nil
 	}
 
-	cOpts, errno := C.bpf_object_open_opts_new(cBTFFilePath, cKconfigPath, cBPFObjName)
+	cOpts, errno := C.cgo_bpf_object_open_opts_new(cBTFFilePath, cKconfigPath, cBPFObjName)
 	if cOpts == nil {
 		return nil, fmt.Errorf("failed to create bpf_object_open_opts to %s: %w", args.BPFObjName, errno)
 	}
-	defer C.bpf_object_open_opts_free(cOpts)
+	defer C.cgo_bpf_object_open_opts_free(cOpts)
 
 	obj, errno := C.bpf_object__open_mem(cBPFBuff, cBPFBuffSize, cOpts)
 	if obj == nil {
@@ -816,7 +816,7 @@ func (p *BPFProg) AttachCgroupLegacy(cgroupV2DirPath string, attachType BPFAttac
 	}
 	defer syscall.Close(cgroupDirFD)
 	progFD := C.bpf_program__fd(p.prog)
-	ret := C.bpf_prog_attach_cgroup_legacy(progFD, C.int(cgroupDirFD), C.int(attachType))
+	ret := C.cgo_bpf_prog_attach_cgroup_legacy(progFD, C.int(cgroupDirFD), C.int(attachType))
 	if ret < 0 {
 		return nil, fmt.Errorf("failed to attach (legacy) program %s to cgroupv2 %s", p.name, cgroupV2DirPath)
 	}
@@ -850,7 +850,7 @@ func (p *BPFProg) DetachCgroupLegacy(cgroupV2DirPath string, attachType BPFAttac
 	}
 	defer syscall.Close(cgroupDirFD)
 	progFD := C.bpf_program__fd(p.prog)
-	ret := C.bpf_prog_detach_cgroup_legacy(progFD, C.int(cgroupDirFD), C.int(attachType))
+	ret := C.cgo_bpf_prog_detach_cgroup_legacy(progFD, C.int(cgroupDirFD), C.int(attachType))
 	if ret < 0 {
 		return fmt.Errorf("failed to detach (legacy) program %s from cgroupv2 %s", p.name, cgroupV2DirPath)
 	}
@@ -1009,11 +1009,11 @@ func (p *BPFProg) AttachIter(opts IterOpts) (*BPFLink, error) {
 	tid := C.uint(opts.Tid)
 	pid := C.uint(opts.Pid)
 	pidFd := C.uint(opts.PidFd)
-	cOpts, errno := C.bpf_iter_attach_opts_new(mapFd, cgroupIterOrder, cgroupFd, cgroupId, tid, pid, pidFd)
+	cOpts, errno := C.cgo_bpf_iter_attach_opts_new(mapFd, cgroupIterOrder, cgroupFd, cgroupId, tid, pid, pidFd)
 	if cOpts == nil {
 		return nil, fmt.Errorf("failed to create iter_attach_opts to program %s: %w", p.name, errno)
 	}
-	defer C.bpf_iter_attach_opts_free(cOpts)
+	defer C.cgo_bpf_iter_attach_opts_free(cOpts)
 
 	link, errno := C.bpf_program__attach_iter(p.prog, cOpts)
 	if link == nil {
@@ -1150,7 +1150,7 @@ func (m *Module) InitRingBuf(mapName string, eventsChan chan []byte) (*RingBuffe
 		return nil, fmt.Errorf("max ring buffers reached")
 	}
 
-	rb := C.init_ring_buf(bpfMap.fd, C.uintptr_t(slot))
+	rb := C.cgo_init_ring_buf(bpfMap.fd, C.uintptr_t(slot))
 	if rb == nil {
 		return nil, fmt.Errorf("failed to initialize ring buffer")
 	}
@@ -1264,7 +1264,7 @@ func (m *Module) InitPerfBuf(mapName string, eventsChan chan []byte, lostChan ch
 		return nil, fmt.Errorf("max number of ring/perf buffers reached")
 	}
 
-	pb := C.init_perf_buf(bpfMap.fd, C.int(pageCnt), C.uintptr_t(slot))
+	pb := C.cgo_init_perf_buf(bpfMap.fd, C.int(pageCnt), C.uintptr_t(slot))
 	if pb == nil {
 		eventChannels.remove(uint(slot))
 		return nil, fmt.Errorf("failed to initialize perf buffer")
