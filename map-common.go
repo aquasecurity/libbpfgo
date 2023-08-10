@@ -125,6 +125,16 @@ type BPFMapInfo struct {
 	MapExtra              uint64
 }
 
+// GetMapFDByID returns a file descriptor for the map with the given ID.
+func GetMapFDByID(id uint32) (int, error) {
+	fdC := C.bpf_map_get_fd_by_id(C.uint(id))
+	if fdC < 0 {
+		return int(fdC), fmt.Errorf("could not find map id %d: %w", id, syscall.Errno(-fdC))
+	}
+
+	return int(fdC), nil
+}
+
 // GetMapInfoByFD returns the BPFMapInfo for the map with the given file descriptor.
 func GetMapInfoByFD(fd int) (*BPFMapInfo, error) {
 	var info C.struct_bpf_map_info
