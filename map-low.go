@@ -81,6 +81,24 @@ func CreateMap(mapType MapType, mapName string, keySize, valueSize, maxEntries i
 	}, nil
 }
 
+// GetMapByID returns a BPFMapLow instance for the map with the given ID.
+func GetMapByID(id uint32) (*BPFMapLow, error) {
+	fd, err := GetMapFDByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	info, err := GetMapInfoByFD(fd)
+	if err != nil {
+		return nil, err
+	}
+
+	return &BPFMapLow{
+		fd:   fd,
+		info: info,
+	}, nil
+}
+
 //
 // BPFMapLow Specs
 //
