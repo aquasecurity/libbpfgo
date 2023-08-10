@@ -33,6 +33,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	if newFD == testerMap.FileDescriptor() {
+		log.Fatal("New FD should be different from the old one")
+	}
 
 	// Get info about the "tester" map again, this time using the new FD
 	infoNewFD, err := bpf.GetMapInfoByFD(newFD)
