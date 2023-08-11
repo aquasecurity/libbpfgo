@@ -283,9 +283,25 @@ func (m *BPFMap) Unpin(pinPath string) error {
 // func (m *BPFMap) InnerMap() *BPFMap {
 // }
 
-// TODO: implement `bpf_map__set_inner_map_fd` wrapper
-// func (m *BPFMap) SetInnerMapFD(innerMapFD int) error {
-// }
+// SetInnerMap configures the inner map prototype for a BPFMap that represents
+// a map of maps.
+//
+// This function accepts the file descriptor of another map, which will serve as
+// a prototype.
+//
+// NOTE: It must be called before the module is loaded.
+func (m *BPFMap) SetInnerMap(templateMapFD int) error {
+	if templateMapFD < 0 {
+		return fmt.Errorf("invalid inner map fd %d", templateMapFD)
+	}
+
+	retC := C.bpf_map__set_inner_map_fd(m.bpfMap, C.int(templateMapFD))
+	if retC < 0 {
+		return fmt.Errorf("failed to set inner map for %s: %w", m.Name(), syscall.Errno(-retC))
+	}
+
+	return nil
+}
 
 //
 // BPFMap Operations
