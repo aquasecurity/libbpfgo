@@ -168,13 +168,13 @@ func (m *BPFMap) SetValueSize(size uint32) error {
 	return nil
 }
 
-// TODO: implement `bpf_map__btf_key_type_id` wrapper
-// func (m *BPFMap) BTFKeyTypeID() uint32 {
-// }
+func (m *BPFMap) BTFKeyTypeID() uint32 {
+	return uint32(C.bpf_map__btf_key_type_id(m.bpfMap))
+}
 
-// TODO: implement `bpf_map__btf_value_type_id` wrapper
-// func (m *BPFMap) BTFValueTypeID() uint32 {
-// }
+func (m *BPFMap) BTFValueTypeID() uint32 {
+	return uint32(C.bpf_map__btf_value_type_id(m.bpfMap))
+}
 
 func (m *BPFMap) IfIndex() uint32 {
 	return uint32(C.bpf_map__ifindex(m.bpfMap))
@@ -279,9 +279,44 @@ func (m *BPFMap) Unpin(pinPath string) error {
 // BPFMap Map of Maps
 //
 
-// TODO: implement `bpf_map__inner_map` wrapper
-// func (m *BPFMap) InnerMap() *BPFMap {
-// }
+// InnerMap retrieves the inner map prototype information associated with a
+// BPFMap that represents a map of maps.
+//
+// NOTE: It must be called before the module is loaded, since it is a prototype
+// destroyed right after the outer map is created.
+//
+// Reference:
+// https://lore.kernel.org/bpf/20200429002739.48006-4-andriin@fb.com/
+func (m *BPFMap) InnerMapInfo() (*BPFMapInfo, error) {
+	innerMapC, errno := C.bpf_map__inner_map(m.bpfMap)
+	if innerMapC == nil {
+		return nil, fmt.Errorf("failed to get inner map for %s: %w", m.Name(), errno)
+	}
+
+	innerBPFMap := &BPFMap{
+		bpfMap: innerMapC,
+		module: m.module,
+	}
+
+	return &BPFMapInfo{
+		// as it is a prototype, some values are not available
+		Type:                  innerBPFMap.Type(),
+		ID:                    0,
+		KeySize:               uint32(innerBPFMap.KeySize()),
+		ValueSize:             uint32(innerBPFMap.ValueSize()),
+		MaxEntries:            innerBPFMap.MaxEntries(),
+		MapFlags:              uint32(innerBPFMap.MapFlags()),
+		Name:                  innerBPFMap.Name(),
+		IfIndex:               innerBPFMap.IfIndex(),
+		BTFVmlinuxValueTypeID: 0,
+		NetnsDev:              0,
+		NetnsIno:              0,
+		BTFID:                 0,
+		BTFKeyTypeID:          innerBPFMap.BTFKeyTypeID(),
+		BTFValueTypeID:        innerBPFMap.BTFValueTypeID(),
+		MapExtra:              innerBPFMap.MapExtra(),
+	}, nil
+}
 
 // SetInnerMap configures the inner map prototype for a BPFMap that represents
 // a map of maps.
