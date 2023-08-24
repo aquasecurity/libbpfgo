@@ -119,12 +119,11 @@ func CompareKernelRelease(base, given string) (KernelVersionComparison, error) {
 			return KernelVersionInvalid, fmt.Errorf("invalid base kernel version value: %s issue with: %s", base, b[n])
 		}
 
-		if givenValue > baseValue {
+		switch {
+		case givenValue > baseValue:
 			return KernelVersionNewer, nil
-		} else if givenValue < baseValue {
+		case givenValue < baseValue:
 			return KernelVersionOlder, nil
-		} else {
-			continue
 		}
 	}
 	return KernelVersionEqual, nil
