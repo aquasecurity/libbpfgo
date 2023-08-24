@@ -52,8 +52,24 @@ jobs:
         run: |
           make lint-check
         shell: bash
-  unit-tests:
-    name: Unit Tests
+  libbpfgo-unit-tests:
+    name: libbpfgo Unit Tests
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        go-version: [ 1.18, 1.19, '1.20', 'stable' ]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Install Dependencies
+        uses: ./.github/actions/build-dependencies
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Test libbpfgo
+        run: |
+          make libbpfgo-static-test
+  helpers-unit-tests:
+    name: Helpers Unit Tests
     runs-on: ubuntu-22.04
     strategy:
       matrix:
