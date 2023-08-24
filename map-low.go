@@ -69,7 +69,7 @@ func CreateMap(mapType MapType, mapName string, keySize, valueSize, maxEntries i
 	info, errInfo := GetMapInfoByFD(int(fdC))
 	if errInfo != nil {
 		if errClose := syscall.Close(int(fdC)); errClose != nil {
-			return nil, fmt.Errorf("could not create map %s: %w, %w", mapName, errInfo, errClose)
+			return nil, fmt.Errorf("could not create map %s: %w, %v", mapName, errInfo, errClose)
 		}
 
 		return nil, fmt.Errorf("could not create map %s: %w", mapName, errInfo)
