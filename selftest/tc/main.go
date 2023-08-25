@@ -28,6 +28,12 @@ func main() {
 	}
 
 	hook := bpfModule.TcHookInit()
+	defer func() {
+		if err := hook.Destroy(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+	}()
+
 	err = hook.SetInterfaceByName("lo")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "failed to set tc hook on interface lo: %v", err)
