@@ -214,7 +214,7 @@ func (p *BPFProg) AttachCgroupLegacy(cgroupV2DirPath string, attachType BPFAttac
 	}
 	dirName := strings.ReplaceAll(cgroupV2DirPath[1:], "/", "-")
 
-	bpfLinkLegacy := &BPFLinkLegacy{
+	bpfLinkLegacy := &bpfLinkLegacy{
 		attachType: attachType,
 		cgroupDir:  cgroupV2DirPath,
 	}

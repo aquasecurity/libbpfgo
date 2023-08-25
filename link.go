@@ -36,24 +36,20 @@ const (
 )
 
 //
-// BPFLinkLegacy
+// BPFLink
 //
 
-type BPFLinkLegacy struct {
+type bpfLinkLegacy struct {
 	attachType BPFAttachType
 	cgroupDir  string
 }
-
-//
-// BPFLink
-//
 
 type BPFLink struct {
 	link      *C.struct_bpf_link
 	prog      *BPFProg
 	linkType  LinkType
 	eventName string
-	legacy    *BPFLinkLegacy // if set, this is a fake BPFLink
+	legacy    *bpfLinkLegacy // if set, this is a fake BPFLink
 }
 
 func (l *BPFLink) DestroyLegacy(linkType LinkType) error {
