@@ -95,12 +95,13 @@ func (pb *PerfBuffer) poll(timeout int) error {
 		case <-pb.stop:
 			return nil
 		default:
-			err := C.perf_buffer__poll(pb.pb, C.int(timeout))
-			if err < 0 {
-				if syscall.Errno(-err) == syscall.EINTR {
+			retC := C.perf_buffer__poll(pb.pb, C.int(timeout))
+			if retC < 0 {
+				errno := syscall.Errno(-retC)
+				if errno == syscall.EINTR {
 					continue
 				}
-				return fmt.Errorf("error polling perf buffer: %d", err)
+				return fmt.Errorf("error polling perf buffer: %w", errno)
 			}
 		}
 	}

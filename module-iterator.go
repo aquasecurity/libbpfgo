@@ -18,18 +18,18 @@ type BPFObjectIterator struct {
 }
 
 func (it *BPFObjectIterator) NextMap() *BPFMap {
-	var startMap *C.struct_bpf_map
+	var startMapC *C.struct_bpf_map
 	if it.prevMap != nil && it.prevMap.bpfMap != nil {
-		startMap = it.prevMap.bpfMap
+		startMapC = it.prevMap.bpfMap
 	}
 
-	m := C.bpf_object__next_map(it.m.obj, startMap)
-	if m == nil {
+	bpfMapC := C.bpf_object__next_map(it.m.obj, startMapC)
+	if bpfMapC == nil {
 		return nil
 	}
 
 	bpfMap := &BPFMap{
-		bpfMap: m,
+		bpfMap: bpfMapC,
 		module: it.m,
 	}
 	it.prevMap = bpfMap
@@ -63,15 +63,15 @@ func (it *BPFObjectIterator) NextProgram() *BPFProg {
 		startProg = it.prevProg.prog
 	}
 
-	p := C.bpf_object__next_program(it.m.obj, startProg)
-	if p == nil {
+	progC := C.bpf_object__next_program(it.m.obj, startProg)
+	if progC == nil {
 		return nil
 	}
-	cName := C.bpf_program__name(p)
+	nameC := C.bpf_program__name(progC)
 
 	prog := &BPFProg{
-		name:   C.GoString(cName),
-		prog:   p,
+		name:   C.GoString(nameC),
+		prog:   progC,
 		module: it.m,
 	}
 	it.prevProg = prog

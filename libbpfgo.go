@@ -77,19 +77,19 @@ func SetStrictMode(mode LibbpfStrictMode) {
 //
 
 func BPFProgramTypeIsSupported(progType BPFProgType) (bool, error) {
-	cSupported := C.libbpf_probe_bpf_prog_type(C.enum_bpf_prog_type(int(progType)), nil)
-	if cSupported < 1 {
-		return false, syscall.Errno(-cSupported)
+	supportedC := C.libbpf_probe_bpf_prog_type(C.enum_bpf_prog_type(int(progType)), nil)
+	if supportedC < 1 {
+		return false, syscall.Errno(-supportedC)
 	}
-	return cSupported == 1, nil
+	return supportedC == 1, nil
 }
 
 func BPFMapTypeIsSupported(mapType MapType) (bool, error) {
-	cSupported := C.libbpf_probe_bpf_map_type(C.enum_bpf_map_type(int(mapType)), nil)
-	if cSupported < 1 {
-		return false, syscall.Errno(-cSupported)
+	supportedC := C.libbpf_probe_bpf_map_type(C.enum_bpf_map_type(int(mapType)), nil)
+	if supportedC < 1 {
+		return false, syscall.Errno(-supportedC)
 	}
-	return cSupported == 1, nil
+	return supportedC == 1, nil
 }
 
 //
@@ -97,9 +97,9 @@ func BPFMapTypeIsSupported(mapType MapType) (bool, error) {
 //
 
 func NumPossibleCPUs() (int, error) {
-	numCPUs, errC := C.libbpf_num_possible_cpus()
-	if numCPUs < 0 {
-		return 0, fmt.Errorf("failed to retrieve the number of CPUs: %w", errC)
+	nCPUsC := C.libbpf_num_possible_cpus()
+	if nCPUsC < 0 {
+		return 0, fmt.Errorf("failed to retrieve the number of CPUs: %w", syscall.Errno(-nCPUsC))
 	}
-	return int(numCPUs), nil
+	return int(nCPUsC), nil
 }

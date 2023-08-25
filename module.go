@@ -63,33 +63,33 @@ func NewModuleFromFileArgs(args NewModuleArgs) (*Module, error) {
 		}
 	}
 
-	opts := C.struct_bpf_object_open_opts{}
-	opts.sz = C.sizeof_struct_bpf_object_open_opts
+	optsC := C.struct_bpf_object_open_opts{}
+	optsC.sz = C.sizeof_struct_bpf_object_open_opts
 
-	bpfFile := C.CString(args.BPFObjPath)
-	defer C.free(unsafe.Pointer(bpfFile))
+	bpfFileC := C.CString(args.BPFObjPath)
+	defer C.free(unsafe.Pointer(bpfFileC))
 
 	// instruct libbpf to use user provided kernel BTF file
 	if args.BTFObjPath != "" {
-		btfFile := C.CString(args.BTFObjPath)
-		opts.btf_custom_path = btfFile
-		defer C.free(unsafe.Pointer(btfFile))
+		btfFileC := C.CString(args.BTFObjPath)
+		optsC.btf_custom_path = btfFileC
+		defer C.free(unsafe.Pointer(btfFileC))
 	}
 
 	// instruct libbpf to use user provided KConfigFile
 	if args.KConfigFilePath != "" {
-		kConfigFile := C.CString(args.KConfigFilePath)
-		opts.kconfig = kConfigFile
-		defer C.free(unsafe.Pointer(kConfigFile))
+		kConfigFileC := C.CString(args.KConfigFilePath)
+		optsC.kconfig = kConfigFileC
+		defer C.free(unsafe.Pointer(kConfigFileC))
 	}
 
-	obj, errno := C.bpf_object__open_file(bpfFile, &opts)
-	if obj == nil {
+	objC, errno := C.bpf_object__open_file(bpfFileC, &optsC)
+	if objC == nil {
 		return nil, fmt.Errorf("failed to open BPF object at path %s: %w", args.BPFObjPath, errno)
 	}
 
 	return &Module{
-		obj: obj,
+		obj: objC,
 		elf: f,
 	}, nil
 }
@@ -117,33 +117,33 @@ func NewModuleFromBufferArgs(args NewModuleArgs) (*Module, error) {
 		args.BTFObjPath = "/sys/kernel/btf/vmlinux"
 	}
 
-	cBTFFilePath := C.CString(args.BTFObjPath)
-	defer C.free(unsafe.Pointer(cBTFFilePath))
-	cKconfigPath := C.CString(args.KConfigFilePath)
-	defer C.free(unsafe.Pointer(cKconfigPath))
-	cBPFObjName := C.CString(args.BPFObjName)
-	defer C.free(unsafe.Pointer(cBPFObjName))
-	cBPFBuff := unsafe.Pointer(C.CBytes(args.BPFObjBuff))
-	defer C.free(cBPFBuff)
-	cBPFBuffSize := C.size_t(len(args.BPFObjBuff))
+	btfFilePathC := C.CString(args.BTFObjPath)
+	defer C.free(unsafe.Pointer(btfFilePathC))
+	kConfigPathC := C.CString(args.KConfigFilePath)
+	defer C.free(unsafe.Pointer(kConfigPathC))
+	bpfObjNameC := C.CString(args.BPFObjName)
+	defer C.free(unsafe.Pointer(bpfObjNameC))
+	bpfBuffC := unsafe.Pointer(C.CBytes(args.BPFObjBuff))
+	defer C.free(bpfBuffC)
+	bpfBuffSizeC := C.size_t(len(args.BPFObjBuff))
 
 	if len(args.KConfigFilePath) <= 2 {
-		cKconfigPath = nil
+		kConfigPathC = nil
 	}
 
-	cOpts, errno := C.cgo_bpf_object_open_opts_new(cBTFFilePath, cKconfigPath, cBPFObjName)
-	if cOpts == nil {
+	optsC, errno := C.cgo_bpf_object_open_opts_new(btfFilePathC, kConfigPathC, bpfObjNameC)
+	if optsC == nil {
 		return nil, fmt.Errorf("failed to create bpf_object_open_opts to %s: %w", args.BPFObjName, errno)
 	}
-	defer C.cgo_bpf_object_open_opts_free(cOpts)
+	defer C.cgo_bpf_object_open_opts_free(optsC)
 
-	obj, errno := C.bpf_object__open_mem(cBPFBuff, cBPFBuffSize, cOpts)
-	if obj == nil {
+	objC, errno := C.bpf_object__open_mem(bpfBuffC, bpfBuffSizeC, optsC)
+	if objC == nil {
 		return nil, fmt.Errorf("failed to open BPF object %s: %w", args.BPFObjName, errno)
 	}
 
 	return &Module{
-		obj: obj,
+		obj: objC,
 		elf: f,
 	}, nil
 }
@@ -182,9 +182,9 @@ func (m *Module) Close() {
 }
 
 func (m *Module) BPFLoadObject() error {
-	ret := C.bpf_object__load(m.obj)
-	if ret != 0 {
-		return fmt.Errorf("failed to load BPF object: %w", syscall.Errno(-ret))
+	retC := C.bpf_object__load(m.obj)
+	if retC < 0 {
+		return fmt.Errorf("failed to load BPF object: %w", syscall.Errno(-retC))
 	}
 	m.loaded = true
 	m.elf.Close()
@@ -234,9 +234,9 @@ func (m *Module) InitGlobalVariable(name string, value interface{}) error {
 }
 
 func (m *Module) GetMap(mapName string) (*BPFMap, error) {
-	cs := C.CString(mapName)
-	bpfMapC, errno := C.bpf_object__find_map_by_name(m.obj, cs)
-	C.free(unsafe.Pointer(cs))
+	mapNameC := C.CString(mapName)
+	bpfMapC, errno := C.bpf_object__find_map_by_name(m.obj, mapNameC)
+	C.free(unsafe.Pointer(mapNameC))
 	if bpfMapC == nil {
 		return nil, fmt.Errorf("failed to find BPF map %s: %w", mapName, errno)
 	}
@@ -297,16 +297,16 @@ func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 }
 
 func (m *Module) GetProgram(progName string) (*BPFProg, error) {
-	cs := C.CString(progName)
-	prog, errno := C.bpf_object__find_program_by_name(m.obj, cs)
-	C.free(unsafe.Pointer(cs))
-	if prog == nil {
+	progNameC := C.CString(progName)
+	progC, errno := C.bpf_object__find_program_by_name(m.obj, progNameC)
+	C.free(unsafe.Pointer(progNameC))
+	if progC == nil {
 		return nil, fmt.Errorf("failed to find BPF program %s: %w", progName, errno)
 	}
 
 	return &BPFProg{
 		name:   progName,
-		prog:   prog,
+		prog:   progC,
 		module: m,
 	}, nil
 }
@@ -326,13 +326,13 @@ func (m *Module) InitRingBuf(mapName string, eventsChan chan []byte) (*RingBuffe
 		return nil, fmt.Errorf("max ring buffers reached")
 	}
 
-	rb := C.cgo_init_ring_buf(C.int(bpfMap.FileDescriptor()), C.uintptr_t(slot))
-	if rb == nil {
+	rbC := C.cgo_init_ring_buf(C.int(bpfMap.FileDescriptor()), C.uintptr_t(slot))
+	if rbC == nil {
 		return nil, fmt.Errorf("failed to initialize ring buffer")
 	}
 
 	ringBuf := &RingBuffer{
-		rb:     rb,
+		rb:     rbC,
 		bpfMap: bpfMap,
 		slot:   uint(slot),
 	}
@@ -360,13 +360,13 @@ func (m *Module) InitPerfBuf(mapName string, eventsChan chan []byte, lostChan ch
 		return nil, fmt.Errorf("max number of ring/perf buffers reached")
 	}
 
-	pb := C.cgo_init_perf_buf(C.int(bpfMap.FileDescriptor()), C.int(pageCnt), C.uintptr_t(slot))
-	if pb == nil {
+	pbC := C.cgo_init_perf_buf(C.int(bpfMap.FileDescriptor()), C.int(pageCnt), C.uintptr_t(slot))
+	if pbC == nil {
 		eventChannels.remove(uint(slot))
 		return nil, fmt.Errorf("failed to initialize perf buffer")
 	}
 
-	perfBuf.pb = pb
+	perfBuf.pb = pbC
 	perfBuf.slot = uint(slot)
 
 	m.perfBufs = append(m.perfBufs, perfBuf)

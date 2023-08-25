@@ -67,8 +67,8 @@ func (l *BPFLink) Destroy() error {
 	if l.legacy != nil {
 		return l.DestroyLegacy(l.linkType)
 	}
-	if ret := C.bpf_link__destroy(l.link); ret < 0 {
-		return syscall.Errno(-ret)
+	if retC := C.bpf_link__destroy(l.link); retC < 0 {
+		return syscall.Errno(-retC)
 	}
 	l.link = nil
 	return nil
@@ -84,21 +84,21 @@ func (l *BPFLink) GetFd() int {
 }
 
 func (l *BPFLink) Pin(pinPath string) error {
-	path := C.CString(pinPath)
-	errC := C.bpf_link__pin(l.link, path)
-	C.free(unsafe.Pointer(path))
-	if errC != 0 {
-		return fmt.Errorf("failed to pin link %s to path %s: %w", l.eventName, pinPath, syscall.Errno(-errC))
+	pathC := C.CString(pinPath)
+	retC := C.bpf_link__pin(l.link, pathC)
+	C.free(unsafe.Pointer(pathC))
+	if retC < 0 {
+		return fmt.Errorf("failed to pin link %s to path %s: %w", l.eventName, pinPath, syscall.Errno(-retC))
 	}
 	return nil
 }
 
 func (l *BPFLink) Unpin(pinPath string) error {
-	path := C.CString(pinPath)
-	errC := C.bpf_link__unpin(l.link)
-	C.free(unsafe.Pointer(path))
-	if errC != 0 {
-		return fmt.Errorf("failed to unpin link %s from path %s: %w", l.eventName, pinPath, syscall.Errno(-errC))
+	pathC := C.CString(pinPath)
+	retC := C.bpf_link__unpin(l.link)
+	C.free(unsafe.Pointer(pathC))
+	if retC < 0 {
+		return fmt.Errorf("failed to unpin link %s from path %s: %w", l.eventName, pinPath, syscall.Errno(-retC))
 	}
 	return nil
 }
@@ -108,12 +108,12 @@ func (l *BPFLink) Unpin(pinPath string) error {
 //
 
 func (l *BPFLink) Reader() (*BPFLinkReader, error) {
-	fd, errno := C.bpf_iter_create(C.int(l.FileDescriptor()))
-	if fd < 0 {
-		return nil, fmt.Errorf("failed to create reader: %w", errno)
+	fdC := C.bpf_iter_create(C.int(l.FileDescriptor()))
+	if fdC < 0 {
+		return nil, fmt.Errorf("failed to create reader: %w", syscall.Errno(-fdC))
 	}
 	return &BPFLinkReader{
 		l:  l,
-		fd: int(uintptr(fd)),
+		fd: int(fdC),
 	}, nil
 }
