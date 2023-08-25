@@ -68,6 +68,7 @@ func (b LibbpfStrictMode) String() (str string) {
 	return str
 }
 
+// SetStrictMode is no-op as of libbpf v1.0
 func SetStrictMode(mode LibbpfStrictMode) {
 	C.libbpf_set_strict_mode(uint32(mode))
 }
