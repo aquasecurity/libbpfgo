@@ -63,27 +63,30 @@ func NewModuleFromFileArgs(args NewModuleArgs) (*Module, error) {
 		}
 	}
 
-	optsC := C.struct_bpf_object_open_opts{}
-	optsC.sz = C.sizeof_struct_bpf_object_open_opts
+	var btfFilePathC *C.char
+	var kconfigPathC *C.char
+
+	// instruct libbpf to use user provided kernel BTF file
+	if args.BTFObjPath != "" {
+		btfFilePathC = C.CString(args.BTFObjPath)
+		defer C.free(unsafe.Pointer(btfFilePathC))
+	}
+	// instruct libbpf to use user provided KConfigFile
+	if args.KConfigFilePath != "" {
+		kconfigPathC = C.CString(args.KConfigFilePath)
+		defer C.free(unsafe.Pointer(kconfigPathC))
+	}
+
+	optsC, errno := C.cgo_bpf_object_open_opts_new(btfFilePathC, kconfigPathC, nil)
+	if optsC == nil {
+		return nil, fmt.Errorf("failed to create bpf_object_open_opts: %w", errno)
+	}
+	defer C.cgo_bpf_object_open_opts_free(optsC)
 
 	bpfFileC := C.CString(args.BPFObjPath)
 	defer C.free(unsafe.Pointer(bpfFileC))
 
-	// instruct libbpf to use user provided kernel BTF file
-	if args.BTFObjPath != "" {
-		btfFileC := C.CString(args.BTFObjPath)
-		optsC.btf_custom_path = btfFileC
-		defer C.free(unsafe.Pointer(btfFileC))
-	}
-
-	// instruct libbpf to use user provided KConfigFile
-	if args.KConfigFilePath != "" {
-		kConfigFileC := C.CString(args.KConfigFilePath)
-		optsC.kconfig = kConfigFileC
-		defer C.free(unsafe.Pointer(kConfigFileC))
-	}
-
-	objC, errno := C.bpf_object__open_file(bpfFileC, &optsC)
+	objC, errno := C.bpf_object__open_file(bpfFileC, optsC)
 	if objC == nil {
 		return nil, fmt.Errorf("failed to open BPF object at path %s: %w", args.BPFObjPath, errno)
 	}
@@ -133,7 +136,7 @@ func NewModuleFromBufferArgs(args NewModuleArgs) (*Module, error) {
 
 	optsC, errno := C.cgo_bpf_object_open_opts_new(btfFilePathC, kConfigPathC, bpfObjNameC)
 	if optsC == nil {
-		return nil, fmt.Errorf("failed to create bpf_object_open_opts to %s: %w", args.BPFObjName, errno)
+		return nil, fmt.Errorf("failed to create bpf_object_open_opts: %w", errno)
 	}
 	defer C.cgo_bpf_object_open_opts_free(optsC)
 
@@ -374,11 +377,8 @@ func (m *Module) InitPerfBuf(mapName string, eventsChan chan []byte, lostChan ch
 }
 
 func (m *Module) TcHookInit() *TcHook {
-	hook := C.struct_bpf_tc_hook{}
-	hook.sz = C.sizeof_struct_bpf_tc_hook
-
 	return &TcHook{
-		hook: &hook,
+		hook: C.cgo_bpf_tc_hook_new(),
 	}
 }
 

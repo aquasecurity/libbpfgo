@@ -137,30 +137,31 @@ func GetMapFDByID(id uint32) (int, error) {
 
 // GetMapInfoByFD returns the BPFMapInfo for the map with the given file descriptor.
 func GetMapInfoByFD(fd int) (*BPFMapInfo, error) {
-	var info C.struct_bpf_map_info
-	var infoLen C.uint = C.uint(C.sizeof_struct_bpf_map_info)
+	infoC := C.cgo_bpf_map_info_new()
+	defer C.cgo_bpf_map_info_free(infoC)
 
-	retC := C.bpf_map_get_info_by_fd(C.int(fd), &info, &infoLen)
+	infoLenC := C.cgo_bpf_map_info_size()
+	retC := C.bpf_map_get_info_by_fd(C.int(fd), infoC, &infoLenC)
 	if retC < 0 {
 		return nil, fmt.Errorf("failed to get map info for fd %d: %w", fd, syscall.Errno(-retC))
 	}
 
 	return &BPFMapInfo{
-		Type:                  MapType(uint32(info._type)),
-		ID:                    uint32(info.id),
-		KeySize:               uint32(info.key_size),
-		ValueSize:             uint32(info.value_size),
-		MaxEntries:            uint32(info.max_entries),
-		MapFlags:              uint32(info.map_flags),
-		Name:                  C.GoString(&info.name[0]),
-		IfIndex:               uint32(info.ifindex),
-		BTFVmlinuxValueTypeID: uint32(info.btf_vmlinux_value_type_id),
-		NetnsDev:              uint64(info.netns_dev),
-		NetnsIno:              uint64(info.netns_ino),
-		BTFID:                 uint32(info.btf_id),
-		BTFKeyTypeID:          uint32(info.btf_key_type_id),
-		BTFValueTypeID:        uint32(info.btf_value_type_id),
-		MapExtra:              uint64(info.map_extra),
+		Type:                  MapType(C.cgo_bpf_map_info_type(infoC)),
+		ID:                    uint32(C.cgo_bpf_map_info_id(infoC)),
+		KeySize:               uint32(C.cgo_bpf_map_info_key_size(infoC)),
+		ValueSize:             uint32(C.cgo_bpf_map_info_value_size(infoC)),
+		MaxEntries:            uint32(C.cgo_bpf_map_info_max_entries(infoC)),
+		MapFlags:              uint32(C.cgo_bpf_map_info_map_flags(infoC)),
+		Name:                  C.GoString(C.cgo_bpf_map_info_name(infoC)),
+		IfIndex:               uint32(C.cgo_bpf_map_info_ifindex(infoC)),
+		BTFVmlinuxValueTypeID: uint32(C.cgo_bpf_map_info_btf_vmlinux_value_type_id(infoC)),
+		NetnsDev:              uint64(C.cgo_bpf_map_info_netns_dev(infoC)),
+		NetnsIno:              uint64(C.cgo_bpf_map_info_netns_ino(infoC)),
+		BTFID:                 uint32(C.cgo_bpf_map_info_btf_id(infoC)),
+		BTFKeyTypeID:          uint32(C.cgo_bpf_map_info_btf_key_type_id(infoC)),
+		BTFValueTypeID:        uint32(C.cgo_bpf_map_info_btf_value_type_id(infoC)),
+		MapExtra:              uint64(C.cgo_bpf_map_info_map_extra(infoC)),
 	}, nil
 }
 
