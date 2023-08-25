@@ -48,18 +48,18 @@ func (hook *TcHook) SetParent(a int, b int) {
 }
 
 func (hook *TcHook) Create() error {
-	errC := C.bpf_tc_hook_create(hook.hook)
-	if errC < 0 {
-		return fmt.Errorf("failed to create tc hook: %w", syscall.Errno(-errC))
+	retC := C.bpf_tc_hook_create(hook.hook)
+	if retC < 0 {
+		return fmt.Errorf("failed to create tc hook: %w", syscall.Errno(-retC))
 	}
 
 	return nil
 }
 
 func (hook *TcHook) Destroy() error {
-	errC := C.bpf_tc_hook_destroy(hook.hook)
-	if errC < 0 {
-		return fmt.Errorf("failed to destroy tc hook: %w", syscall.Errno(-errC))
+	retC := C.bpf_tc_hook_destroy(hook.hook)
+	if retC < 0 {
+		return fmt.Errorf("failed to destroy tc hook: %w", syscall.Errno(-retC))
 	}
 
 	return nil

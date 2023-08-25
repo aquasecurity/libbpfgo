@@ -90,16 +90,17 @@ func (rb *RingBuffer) poll(timeout int) error {
 	defer rb.wg.Done()
 
 	for {
-		err := C.ring_buffer__poll(rb.rb, C.int(timeout))
+		retC := C.ring_buffer__poll(rb.rb, C.int(timeout))
 		if rb.isStopped() {
 			break
 		}
 
-		if err < 0 {
-			if syscall.Errno(-err) == syscall.EINTR {
+		if retC < 0 {
+			errno := syscall.Errno(-retC)
+			if errno == syscall.EINTR {
 				continue
 			}
-			return fmt.Errorf("error polling ring buffer: %d", err)
+			return fmt.Errorf("error polling ring buffer: %w", errno)
 		}
 	}
 	return nil
