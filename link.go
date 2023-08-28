@@ -85,8 +85,9 @@ func (l *BPFLink) GetFd() int {
 
 func (l *BPFLink) Pin(pinPath string) error {
 	pathC := C.CString(pinPath)
+	defer C.free(unsafe.Pointer(pathC))
+
 	retC := C.bpf_link__pin(l.link, pathC)
-	C.free(unsafe.Pointer(pathC))
 	if retC < 0 {
 		return fmt.Errorf("failed to pin link %s to path %s: %w", l.eventName, pinPath, syscall.Errno(-retC))
 	}

@@ -42,8 +42,9 @@ func (p *BPFProg) Pin(path string) error {
 	}
 
 	absPathC := C.CString(absPath)
+	defer C.free(unsafe.Pointer(absPathC))
+
 	retC := C.bpf_program__pin(p.prog, absPathC)
-	C.free(unsafe.Pointer(absPathC))
 	if retC < 0 {
 		return fmt.Errorf("failed to pin program %s to %s: %w", p.name, path, syscall.Errno(-retC))
 	}
@@ -53,8 +54,9 @@ func (p *BPFProg) Pin(path string) error {
 
 func (p *BPFProg) Unpin(path string) error {
 	pathC := C.CString(path)
+	defer C.free(unsafe.Pointer(pathC))
+
 	retC := C.bpf_program__unpin(p.prog, pathC)
-	C.free(unsafe.Pointer(pathC))
 	if retC < 0 {
 		return fmt.Errorf("failed to unpin program %s to %s: %w", p.name, path, syscall.Errno(-retC))
 	}
@@ -126,8 +128,9 @@ func (p *BPFProg) AttachGeneric() (*BPFLink, error) {
 // the BPF program to. To attach to a kernel function specify attachProgFD as 0
 func (p *BPFProg) SetAttachTarget(attachProgFD int, attachFuncName string) error {
 	attachFuncNameC := C.CString(attachFuncName)
+	defer C.free(unsafe.Pointer(attachFuncNameC))
+
 	retC := C.bpf_program__set_attach_target(p.prog, C.int(attachProgFD), attachFuncNameC)
-	C.free(unsafe.Pointer(attachFuncNameC))
 	if retC < 0 {
 		return fmt.Errorf("failed to set attach target for program %s %s %w", p.name, attachFuncName, syscall.Errno(-retC))
 	}
@@ -276,10 +279,11 @@ func (p *BPFProg) AttachXDP(deviceName string) (*BPFLink, error) {
 
 func (p *BPFProg) AttachTracepoint(category, name string) (*BPFLink, error) {
 	tpCategoryC := C.CString(category)
+	defer C.free(unsafe.Pointer(tpCategoryC))
 	tpNameC := C.CString(name)
+	defer C.free(unsafe.Pointer(tpNameC))
+
 	linkC, errno := C.bpf_program__attach_tracepoint(p.prog, tpCategoryC, tpNameC)
-	C.free(unsafe.Pointer(tpCategoryC))
-	C.free(unsafe.Pointer(tpNameC))
 	if linkC == nil {
 		return nil, fmt.Errorf("failed to attach tracepoint %s to program %s: %w", name, p.name, errno)
 	}
@@ -296,8 +300,9 @@ func (p *BPFProg) AttachTracepoint(category, name string) (*BPFLink, error) {
 
 func (p *BPFProg) AttachRawTracepoint(tpEvent string) (*BPFLink, error) {
 	tpEventC := C.CString(tpEvent)
+	defer C.free(unsafe.Pointer(tpEventC))
+
 	linkC, errno := C.bpf_program__attach_raw_tracepoint(p.prog, tpEventC)
-	C.free(unsafe.Pointer(tpEventC))
 	if linkC == nil {
 		return nil, fmt.Errorf("failed to attach raw tracepoint %s to program %s: %w", tpEvent, p.name, errno)
 	}
@@ -354,8 +359,9 @@ func (p *BPFProg) AttachKretprobe(kp string) (*BPFLink, error) {
 
 func doAttachKprobe(prog *BPFProg, kp string, isKretprobe bool) (*BPFLink, error) {
 	kpC := C.CString(kp)
+	defer C.free(unsafe.Pointer(kpC))
+
 	linkC, errno := C.bpf_program__attach_kprobe(prog.prog, C.bool(isKretprobe), kpC)
-	C.free(unsafe.Pointer(kpC))
 	if linkC == nil {
 		return nil, fmt.Errorf("failed to attach %s k(ret)probe to program %s: %w", kp, prog.name, errno)
 	}
@@ -467,6 +473,8 @@ func (p *BPFProg) AttachURetprobe(pid int, path string, offset uint32) (*BPFLink
 
 func doAttachUprobe(prog *BPFProg, isUretprobe bool, pid int, path string, offset uint32) (*BPFLink, error) {
 	pathC := C.CString(path)
+	defer C.free(unsafe.Pointer(pathC))
+
 	linkC, errno := C.bpf_program__attach_uprobe(
 		prog.prog,
 		C.bool(isUretprobe),
@@ -474,7 +482,6 @@ func doAttachUprobe(prog *BPFProg, isUretprobe bool, pid int, path string, offse
 		pathC,
 		C.size_t(offset),
 	)
-	C.free(unsafe.Pointer(pathC))
 	if linkC == nil {
 		return nil, fmt.Errorf("failed to attach u(ret)probe to program %s:%d with pid %d: %w ", path, offset, pid, errno)
 	}

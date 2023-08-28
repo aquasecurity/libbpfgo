@@ -238,8 +238,9 @@ func (m *Module) InitGlobalVariable(name string, value interface{}) error {
 
 func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 	mapNameC := C.CString(mapName)
+	defer C.free(unsafe.Pointer(mapNameC))
+
 	bpfMapC, errno := C.bpf_object__find_map_by_name(m.obj, mapNameC)
-	C.free(unsafe.Pointer(mapNameC))
 	if bpfMapC == nil {
 		return nil, fmt.Errorf("failed to find BPF map %s: %w", mapName, errno)
 	}
@@ -301,8 +302,9 @@ func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 
 func (m *Module) GetProgram(progName string) (*BPFProg, error) {
 	progNameC := C.CString(progName)
+	defer C.free(unsafe.Pointer(progNameC))
+
 	progC, errno := C.bpf_object__find_program_by_name(m.obj, progNameC)
-	C.free(unsafe.Pointer(progNameC))
 	if progC == nil {
 		return nil, fmt.Errorf("failed to find BPF program %s: %w", progName, errno)
 	}
