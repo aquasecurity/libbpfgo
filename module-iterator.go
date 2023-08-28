@@ -23,8 +23,9 @@ func (it *BPFObjectIterator) NextMap() *BPFMap {
 		startMapC = it.prevMap.bpfMap
 	}
 
-	bpfMapC := C.bpf_object__next_map(it.m.obj, startMapC)
+	bpfMapC, errno := C.bpf_object__next_map(it.m.obj, startMapC)
 	if bpfMapC == nil {
+		_ = errno // intentionally ignored
 		return nil
 	}
 
@@ -63,8 +64,9 @@ func (it *BPFObjectIterator) NextProgram() *BPFProg {
 		startProg = it.prevProg.prog
 	}
 
-	progC := C.bpf_object__next_program(it.m.obj, startProg)
+	progC, errno := C.bpf_object__next_program(it.m.obj, startProg)
 	if progC == nil {
+		_ = errno // intentionally ignored
 		return nil
 	}
 

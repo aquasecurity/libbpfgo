@@ -330,9 +330,9 @@ func (m *Module) InitRingBuf(mapName string, eventsChan chan []byte) (*RingBuffe
 		return nil, fmt.Errorf("max ring buffers reached")
 	}
 
-	rbC := C.cgo_init_ring_buf(C.int(bpfMap.FileDescriptor()), C.uintptr_t(slot))
+	rbC, errno := C.cgo_init_ring_buf(C.int(bpfMap.FileDescriptor()), C.uintptr_t(slot))
 	if rbC == nil {
-		return nil, fmt.Errorf("failed to initialize ring buffer")
+		return nil, fmt.Errorf("failed to initialize ring buffer: %w", errno)
 	}
 
 	ringBuf := &RingBuffer{
@@ -365,10 +365,10 @@ func (m *Module) InitPerfBuf(mapName string, eventsChan chan []byte, lostChan ch
 		return nil, fmt.Errorf("max number of ring/perf buffers reached")
 	}
 
-	pbC := C.cgo_init_perf_buf(C.int(bpfMap.FileDescriptor()), C.int(pageCnt), C.uintptr_t(slot))
+	pbC, errno := C.cgo_init_perf_buf(C.int(bpfMap.FileDescriptor()), C.int(pageCnt), C.uintptr_t(slot))
 	if pbC == nil {
 		eventChannels.remove(uint(slot))
-		return nil, fmt.Errorf("failed to initialize perf buffer")
+		return nil, fmt.Errorf("failed to initialize perf buffer: %w", errno)
 	}
 
 	perfBuf.pb = pbC
