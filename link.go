@@ -93,12 +93,10 @@ func (l *BPFLink) Pin(pinPath string) error {
 	return nil
 }
 
-func (l *BPFLink) Unpin(pinPath string) error {
-	pathC := C.CString(pinPath)
+func (l *BPFLink) Unpin() error {
 	retC := C.bpf_link__unpin(l.link)
-	C.free(unsafe.Pointer(pathC))
 	if retC < 0 {
-		return fmt.Errorf("failed to unpin link %s from path %s: %w", l.eventName, pinPath, syscall.Errno(-retC))
+		return fmt.Errorf("failed to unpin link %s: %w", l.eventName, syscall.Errno(-retC))
 	}
 	return nil
 }
