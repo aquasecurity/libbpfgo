@@ -65,6 +65,7 @@ func (b LibbpfStrictMode) String() (str string) {
 	if !ok {
 		str = LibbpfStrictModeNone.String()
 	}
+
 	return str
 }
 
@@ -82,6 +83,7 @@ func BPFProgramTypeIsSupported(progType BPFProgType) (bool, error) {
 	if supportedC < 1 {
 		return false, syscall.Errno(-supportedC)
 	}
+
 	return supportedC == 1, nil
 }
 
@@ -90,6 +92,7 @@ func BPFMapTypeIsSupported(mapType MapType) (bool, error) {
 	if supportedC < 1 {
 		return false, syscall.Errno(-supportedC)
 	}
+
 	return supportedC == 1, nil
 }
 
@@ -102,5 +105,6 @@ func NumPossibleCPUs() (int, error) {
 	if nCPUsC < 0 {
 		return 0, fmt.Errorf("failed to retrieve the number of CPUs: %w", syscall.Errno(-nCPUsC))
 	}
+
 	return int(nCPUsC), nil
 }

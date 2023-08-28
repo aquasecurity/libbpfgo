@@ -60,6 +60,7 @@ func (l *BPFLink) DestroyLegacy(linkType LinkType) error {
 			l.legacy.attachType,
 		)
 	}
+
 	return fmt.Errorf("unable to destroy legacy link")
 }
 
@@ -70,7 +71,9 @@ func (l *BPFLink) Destroy() error {
 	if retC := C.bpf_link__destroy(l.link); retC < 0 {
 		return syscall.Errno(-retC)
 	}
+
 	l.link = nil
+
 	return nil
 }
 
@@ -91,6 +94,7 @@ func (l *BPFLink) Pin(pinPath string) error {
 	if retC < 0 {
 		return fmt.Errorf("failed to pin link %s to path %s: %w", l.eventName, pinPath, syscall.Errno(-retC))
 	}
+
 	return nil
 }
 
@@ -99,6 +103,7 @@ func (l *BPFLink) Unpin() error {
 	if retC < 0 {
 		return fmt.Errorf("failed to unpin link %s: %w", l.eventName, syscall.Errno(-retC))
 	}
+
 	return nil
 }
 
@@ -111,6 +116,7 @@ func (l *BPFLink) Reader() (*BPFLinkReader, error) {
 	if fdC < 0 {
 		return nil, fmt.Errorf("failed to create reader: %w", syscall.Errno(-fdC))
 	}
+
 	return &BPFLinkReader{
 		l:  l,
 		fd: int(fdC),

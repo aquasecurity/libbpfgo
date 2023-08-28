@@ -349,6 +349,7 @@ func (m *Module) InitPerfBuf(mapName string, eventsChan chan []byte, lostChan ch
 	if err != nil {
 		return nil, fmt.Errorf("failed to init perf buffer: %v", err)
 	}
+
 	if eventsChan == nil {
 		return nil, fmt.Errorf("failed to init perf buffer: events channel can not be nil")
 	}
