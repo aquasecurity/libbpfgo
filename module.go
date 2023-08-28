@@ -310,7 +310,6 @@ func (m *Module) GetProgram(progName string) (*BPFProg, error) {
 	}
 
 	return &BPFProg{
-		name:   progName,
 		prog:   progC,
 		module: m,
 	}, nil

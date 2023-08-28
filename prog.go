@@ -20,7 +20,6 @@ import (
 //
 
 type BPFProg struct {
-	name       string
 	prog       *C.struct_bpf_program
 	module     *Module
 	pinnedPath string
@@ -46,7 +45,7 @@ func (p *BPFProg) Pin(path string) error {
 
 	retC := C.bpf_program__pin(p.prog, absPathC)
 	if retC < 0 {
-		return fmt.Errorf("failed to pin program %s to %s: %w", p.name, path, syscall.Errno(-retC))
+		return fmt.Errorf("failed to pin program %s to %s: %w", p.Name(), path, syscall.Errno(-retC))
 	}
 	p.pinnedPath = absPath
 	return nil
@@ -58,7 +57,7 @@ func (p *BPFProg) Unpin(path string) error {
 
 	retC := C.bpf_program__unpin(p.prog, pathC)
 	if retC < 0 {
-		return fmt.Errorf("failed to unpin program %s to %s: %w", p.name, path, syscall.Errno(-retC))
+		return fmt.Errorf("failed to unpin program %s to %s: %w", p.Name(), path, syscall.Errno(-retC))
 	}
 	p.pinnedPath = ""
 	return nil
@@ -119,7 +118,7 @@ func (p *BPFProg) AttachGeneric() (*BPFLink, error) {
 		link:      linkC,
 		prog:      p,
 		linkType:  Tracing,
-		eventName: fmt.Sprintf("tracing-%s", p.name),
+		eventName: fmt.Sprintf("tracing-%s", p.Name()),
 	}
 	return bpfLink, nil
 }
@@ -132,7 +131,7 @@ func (p *BPFProg) SetAttachTarget(attachProgFD int, attachFuncName string) error
 
 	retC := C.bpf_program__set_attach_target(p.prog, C.int(attachProgFD), attachFuncNameC)
 	if retC < 0 {
-		return fmt.Errorf("failed to set attach target for program %s %s %w", p.name, attachFuncName, syscall.Errno(-retC))
+		return fmt.Errorf("failed to set attach target for program %s %s %w", p.Name(), attachFuncName, syscall.Errno(-retC))
 	}
 	return nil
 }
@@ -170,7 +169,7 @@ func (p *BPFProg) AttachCgroup(cgroupV2DirPath string) (*BPFLink, error) {
 
 	linkC, errno := C.bpf_program__attach_cgroup(p.prog, C.int(cgroupDirFD))
 	if linkC == nil {
-		return nil, fmt.Errorf("failed to attach cgroup on cgroupv2 %s to program %s: %w", cgroupV2DirPath, p.name, errno)
+		return nil, fmt.Errorf("failed to attach cgroup on cgroupv2 %s to program %s: %w", cgroupV2DirPath, p.Name(), errno)
 	}
 
 	// dirName will be used in bpfLink.eventName. eventName follows a format
@@ -183,7 +182,7 @@ func (p *BPFProg) AttachCgroup(cgroupV2DirPath string) (*BPFLink, error) {
 		link:      linkC,
 		prog:      p,
 		linkType:  Cgroup,
-		eventName: fmt.Sprintf("cgroup-%s-%s", p.name, dirName),
+		eventName: fmt.Sprintf("cgroup-%s-%s", p.Name(), dirName),
 	}
 	p.module.links = append(p.module.links, bpfLink)
 	return bpfLink, nil
@@ -215,7 +214,7 @@ func (p *BPFProg) AttachCgroupLegacy(cgroupV2DirPath string, attachType BPFAttac
 		C.int(attachType),
 	)
 	if retC < 0 {
-		return nil, fmt.Errorf("failed to attach (legacy) program %s to cgroupv2 %s: %w", p.name, cgroupV2DirPath, errno)
+		return nil, fmt.Errorf("failed to attach (legacy) program %s to cgroupv2 %s: %w", p.Name(), cgroupV2DirPath, errno)
 	}
 	dirName := strings.ReplaceAll(cgroupV2DirPath[1:], "/", "-")
 
@@ -226,7 +225,7 @@ func (p *BPFProg) AttachCgroupLegacy(cgroupV2DirPath string, attachType BPFAttac
 	fakeBpfLink := &BPFLink{
 		link:      nil, // detach/destroy made with progfd
 		prog:      p,
-		eventName: fmt.Sprintf("cgroup-%s-%s", p.name, dirName),
+		eventName: fmt.Sprintf("cgroup-%s-%s", p.Name(), dirName),
 		// info bellow needed for detach (there isn't a real ebpf link)
 		linkType: CgroupLegacy,
 		legacy:   bpfLinkLegacy,
@@ -252,7 +251,7 @@ func (p *BPFProg) DetachCgroupLegacy(cgroupV2DirPath string, attachType BPFAttac
 		C.int(attachType),
 	)
 	if retC < 0 {
-		return fmt.Errorf("failed to detach (legacy) program %s from cgroupv2 %s: %w", p.name, cgroupV2DirPath, errno)
+		return fmt.Errorf("failed to detach (legacy) program %s from cgroupv2 %s: %w", p.Name(), cgroupV2DirPath, errno)
 	}
 	return nil
 }
@@ -264,14 +263,14 @@ func (p *BPFProg) AttachXDP(deviceName string) (*BPFLink, error) {
 	}
 	linkC, errno := C.bpf_program__attach_xdp(p.prog, C.int(iface.Index))
 	if linkC == nil {
-		return nil, fmt.Errorf("failed to attach xdp on device %s to program %s: %w", deviceName, p.name, errno)
+		return nil, fmt.Errorf("failed to attach xdp on device %s to program %s: %w", deviceName, p.Name(), errno)
 	}
 
 	bpfLink := &BPFLink{
 		link:      linkC,
 		prog:      p,
 		linkType:  XDP,
-		eventName: fmt.Sprintf("xdp-%s-%s", p.name, deviceName),
+		eventName: fmt.Sprintf("xdp-%s-%s", p.Name(), deviceName),
 	}
 	p.module.links = append(p.module.links, bpfLink)
 	return bpfLink, nil
@@ -285,7 +284,7 @@ func (p *BPFProg) AttachTracepoint(category, name string) (*BPFLink, error) {
 
 	linkC, errno := C.bpf_program__attach_tracepoint(p.prog, tpCategoryC, tpNameC)
 	if linkC == nil {
-		return nil, fmt.Errorf("failed to attach tracepoint %s to program %s: %w", name, p.name, errno)
+		return nil, fmt.Errorf("failed to attach tracepoint %s to program %s: %w", name, p.Name(), errno)
 	}
 
 	bpfLink := &BPFLink{
@@ -304,7 +303,7 @@ func (p *BPFProg) AttachRawTracepoint(tpEvent string) (*BPFLink, error) {
 
 	linkC, errno := C.bpf_program__attach_raw_tracepoint(p.prog, tpEventC)
 	if linkC == nil {
-		return nil, fmt.Errorf("failed to attach raw tracepoint %s to program %s: %w", tpEvent, p.name, errno)
+		return nil, fmt.Errorf("failed to attach raw tracepoint %s to program %s: %w", tpEvent, p.Name(), errno)
 	}
 
 	bpfLink := &BPFLink{
@@ -320,7 +319,7 @@ func (p *BPFProg) AttachRawTracepoint(tpEvent string) (*BPFLink, error) {
 func (p *BPFProg) AttachLSM() (*BPFLink, error) {
 	linkC, errno := C.bpf_program__attach_lsm(p.prog)
 	if linkC == nil {
-		return nil, fmt.Errorf("failed to attach lsm to program %s: %w", p.name, errno)
+		return nil, fmt.Errorf("failed to attach lsm to program %s: %w", p.Name(), errno)
 	}
 
 	bpfLink := &BPFLink{
@@ -335,7 +334,7 @@ func (p *BPFProg) AttachLSM() (*BPFLink, error) {
 func (p *BPFProg) AttachPerfEvent(fd int) (*BPFLink, error) {
 	linkC, errno := C.bpf_program__attach_perf_event(p.prog, C.int(fd))
 	if linkC == nil {
-		return nil, fmt.Errorf("failed to attach perf event to program %s: %w", p.name, errno)
+		return nil, fmt.Errorf("failed to attach perf event to program %s: %w", p.Name(), errno)
 	}
 
 	bpfLink := &BPFLink{
@@ -363,7 +362,7 @@ func doAttachKprobe(prog *BPFProg, kp string, isKretprobe bool) (*BPFLink, error
 
 	linkC, errno := C.bpf_program__attach_kprobe(prog.prog, C.bool(isKretprobe), kpC)
 	if linkC == nil {
-		return nil, fmt.Errorf("failed to attach %s k(ret)probe to program %s: %w", kp, prog.name, errno)
+		return nil, fmt.Errorf("failed to attach %s k(ret)probe to program %s: %w", kp, prog.Name(), errno)
 	}
 
 	kpType := Kprobe
@@ -388,7 +387,7 @@ func (p *BPFProg) AttachNetns(networkNamespacePath string) (*BPFLink, error) {
 	}
 	linkC, errno := C.bpf_program__attach_netns(p.prog, C.int(fd))
 	if linkC == nil {
-		return nil, fmt.Errorf("failed to attach network namespace on %s to program %s: %w", networkNamespacePath, p.name, errno)
+		return nil, fmt.Errorf("failed to attach network namespace on %s to program %s: %w", networkNamespacePath, p.Name(), errno)
 	}
 
 	// fileName will be used in bpfLink.eventName. eventName follows a format
@@ -401,7 +400,7 @@ func (p *BPFProg) AttachNetns(networkNamespacePath string) (*BPFLink, error) {
 		link:      linkC,
 		prog:      p,
 		linkType:  Netns,
-		eventName: fmt.Sprintf("netns-%s-%s", p.name, fileName),
+		eventName: fmt.Sprintf("netns-%s-%s", p.Name(), fileName),
 	}
 	p.module.links = append(p.module.links, bpfLink)
 	return bpfLink, nil
@@ -428,15 +427,15 @@ func (p *BPFProg) AttachIter(opts IterOpts) (*BPFLink, error) {
 		C.uint(opts.PidFd),
 	)
 	if optsC == nil {
-		return nil, fmt.Errorf("failed to create iter_attach_opts to program %s: %w", p.name, errno)
+		return nil, fmt.Errorf("failed to create iter_attach_opts to program %s: %w", p.Name(), errno)
 	}
 	defer C.cgo_bpf_iter_attach_opts_free(optsC)
 
 	linkC, errno := C.bpf_program__attach_iter(p.prog, optsC)
 	if linkC == nil {
-		return nil, fmt.Errorf("failed to attach iter to program %s: %w", p.name, errno)
+		return nil, fmt.Errorf("failed to attach iter to program %s: %w", p.Name(), errno)
 	}
-	eventName := fmt.Sprintf("iter-%s-%d", p.name, opts.MapFd)
+	eventName := fmt.Sprintf("iter-%s-%d", p.Name(), opts.MapFd)
 	bpfLink := &BPFLink{
 		link:      linkC,
 		prog:      p,
