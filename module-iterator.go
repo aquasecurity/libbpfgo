@@ -67,10 +67,8 @@ func (it *BPFObjectIterator) NextProgram() *BPFProg {
 	if progC == nil {
 		return nil
 	}
-	nameC := C.bpf_program__name(progC)
 
 	prog := &BPFProg{
-		name:   C.GoString(nameC),
 		prog:   progC,
 		module: it.m,
 	}
