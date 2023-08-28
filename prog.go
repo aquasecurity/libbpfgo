@@ -47,7 +47,9 @@ func (p *BPFProg) Pin(path string) error {
 	if retC < 0 {
 		return fmt.Errorf("failed to pin program %s to %s: %w", p.Name(), path, syscall.Errno(-retC))
 	}
+
 	p.pinnedPath = absPath
+
 	return nil
 }
 
@@ -59,7 +61,9 @@ func (p *BPFProg) Unpin(path string) error {
 	if retC < 0 {
 		return fmt.Errorf("failed to unpin program %s to %s: %w", p.Name(), path, syscall.Errno(-retC))
 	}
+
 	p.pinnedPath = ""
+
 	return nil
 }
 
@@ -103,6 +107,7 @@ func (p *BPFProg) SetAutoload(autoload bool) error {
 	if retC < 0 {
 		return fmt.Errorf("failed to set bpf program autoload: %w", syscall.Errno(-retC))
 	}
+
 	return nil
 }
 
@@ -114,13 +119,13 @@ func (p *BPFProg) AttachGeneric() (*BPFLink, error) {
 	if linkC == nil {
 		return nil, fmt.Errorf("failed to attach program: %w", errno)
 	}
-	bpfLink := &BPFLink{
+
+	return &BPFLink{
 		link:      linkC,
 		prog:      p,
 		linkType:  Tracing,
 		eventName: fmt.Sprintf("tracing-%s", p.Name()),
-	}
-	return bpfLink, nil
+	}, nil
 }
 
 // SetAttachTarget can be used to specify the program and/or function to attach
@@ -133,6 +138,7 @@ func (p *BPFProg) SetAttachTarget(attachProgFD int, attachFuncName string) error
 	if retC < 0 {
 		return fmt.Errorf("failed to set attach target for program %s %s %w", p.Name(), attachFuncName, syscall.Errno(-retC))
 	}
+
 	return nil
 }
 
@@ -152,10 +158,12 @@ func getCgroupDirFD(cgroupV2DirPath string) (int, error) {
 		O_RDONLY    int = syscall.O_RDONLY
 	)
 	// revive:enable
+
 	fd, err := syscall.Open(cgroupV2DirPath, O_DIRECTORY|O_RDONLY, 0)
 	if fd < 0 {
 		return 0, fmt.Errorf("failed to open cgroupv2 directory path %s: %w", cgroupV2DirPath, err)
 	}
+
 	return fd, nil
 }
 
@@ -178,6 +186,7 @@ func (p *BPFProg) AttachCgroup(cgroupV2DirPath string) (*BPFLink, error) {
 	// cgroup-progName-/sys/fs/cgroup/unified/ would look weird so replace it
 	// to be cgroup-progName-sys-fs-cgroup-unified instead.
 	dirName := strings.ReplaceAll(cgroupV2DirPath[1:], "/", "-")
+
 	bpfLink := &BPFLink{
 		link:      linkC,
 		prog:      p,
@@ -185,6 +194,7 @@ func (p *BPFProg) AttachCgroup(cgroupV2DirPath string) (*BPFLink, error) {
 		eventName: fmt.Sprintf("cgroup-%s-%s", p.Name(), dirName),
 	}
 	p.module.links = append(p.module.links, bpfLink)
+
 	return bpfLink, nil
 }
 
@@ -202,12 +212,14 @@ func (p *BPFProg) AttachCgroupLegacy(cgroupV2DirPath string, attachType BPFAttac
 	if err == nil {
 		return bpfLink, nil
 	}
+
 	// Try the legacy attachment method before fully failing
 	cgroupDirFD, err := getCgroupDirFD(cgroupV2DirPath)
 	if err != nil {
 		return nil, err
 	}
 	defer syscall.Close(cgroupDirFD)
+
 	retC, errno := C.cgo_bpf_prog_attach_cgroup_legacy(
 		C.int(p.FileDescriptor()),
 		C.int(cgroupDirFD),
@@ -216,6 +228,7 @@ func (p *BPFProg) AttachCgroupLegacy(cgroupV2DirPath string, attachType BPFAttac
 	if retC < 0 {
 		return nil, fmt.Errorf("failed to attach (legacy) program %s to cgroupv2 %s: %w", p.Name(), cgroupV2DirPath, errno)
 	}
+
 	dirName := strings.ReplaceAll(cgroupV2DirPath[1:], "/", "-")
 
 	bpfLinkLegacy := &bpfLinkLegacy{
@@ -230,6 +243,7 @@ func (p *BPFProg) AttachCgroupLegacy(cgroupV2DirPath string, attachType BPFAttac
 		linkType: CgroupLegacy,
 		legacy:   bpfLinkLegacy,
 	}
+
 	return fakeBpfLink, nil
 }
 
@@ -245,6 +259,7 @@ func (p *BPFProg) DetachCgroupLegacy(cgroupV2DirPath string, attachType BPFAttac
 		return err
 	}
 	defer syscall.Close(cgroupDirFD)
+
 	retC, errno := C.cgo_bpf_prog_detach_cgroup_legacy(
 		C.int(p.FileDescriptor()),
 		C.int(cgroupDirFD),
@@ -253,6 +268,7 @@ func (p *BPFProg) DetachCgroupLegacy(cgroupV2DirPath string, attachType BPFAttac
 	if retC < 0 {
 		return fmt.Errorf("failed to detach (legacy) program %s from cgroupv2 %s: %w", p.Name(), cgroupV2DirPath, errno)
 	}
+
 	return nil
 }
 
@@ -261,6 +277,7 @@ func (p *BPFProg) AttachXDP(deviceName string) (*BPFLink, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to find device by name %s: %w", deviceName, err)
 	}
+
 	linkC, errno := C.bpf_program__attach_xdp(p.prog, C.int(iface.Index))
 	if linkC == nil {
 		return nil, fmt.Errorf("failed to attach xdp on device %s to program %s: %w", deviceName, p.Name(), errno)
@@ -273,6 +290,7 @@ func (p *BPFProg) AttachXDP(deviceName string) (*BPFLink, error) {
 		eventName: fmt.Sprintf("xdp-%s-%s", p.Name(), deviceName),
 	}
 	p.module.links = append(p.module.links, bpfLink)
+
 	return bpfLink, nil
 }
 
@@ -294,6 +312,7 @@ func (p *BPFProg) AttachTracepoint(category, name string) (*BPFLink, error) {
 		eventName: name,
 	}
 	p.module.links = append(p.module.links, bpfLink)
+
 	return bpfLink, nil
 }
 
@@ -313,6 +332,7 @@ func (p *BPFProg) AttachRawTracepoint(tpEvent string) (*BPFLink, error) {
 		eventName: tpEvent,
 	}
 	p.module.links = append(p.module.links, bpfLink)
+
 	return bpfLink, nil
 }
 
@@ -328,6 +348,7 @@ func (p *BPFProg) AttachLSM() (*BPFLink, error) {
 		linkType: LSM,
 	}
 	p.module.links = append(p.module.links, bpfLink)
+
 	return bpfLink, nil
 }
 
@@ -343,6 +364,7 @@ func (p *BPFProg) AttachPerfEvent(fd int) (*BPFLink, error) {
 		linkType: PerfEvent,
 	}
 	p.module.links = append(p.module.links, bpfLink)
+
 	return bpfLink, nil
 }
 
@@ -377,6 +399,7 @@ func doAttachKprobe(prog *BPFProg, kp string, isKretprobe bool) (*BPFLink, error
 		eventName: kp,
 	}
 	prog.module.links = append(prog.module.links, bpfLink)
+
 	return bpfLink, nil
 }
 
@@ -385,6 +408,7 @@ func (p *BPFProg) AttachNetns(networkNamespacePath string) (*BPFLink, error) {
 	if fd < 0 {
 		return nil, fmt.Errorf("failed to open network namespace path %s: %w", networkNamespacePath, err)
 	}
+
 	linkC, errno := C.bpf_program__attach_netns(p.prog, C.int(fd))
 	if linkC == nil {
 		return nil, fmt.Errorf("failed to attach network namespace on %s to program %s: %w", networkNamespacePath, p.Name(), errno)
@@ -396,6 +420,7 @@ func (p *BPFProg) AttachNetns(networkNamespacePath string) (*BPFLink, error) {
 	// netns-progName-/proc/self/ns/net would look weird so replace it
 	// to be netns-progName-proc-self-ns-net instead.
 	fileName := strings.ReplaceAll(networkNamespacePath[1:], "/", "-")
+
 	bpfLink := &BPFLink{
 		link:      linkC,
 		prog:      p,
@@ -403,6 +428,7 @@ func (p *BPFProg) AttachNetns(networkNamespacePath string) (*BPFLink, error) {
 		eventName: fmt.Sprintf("netns-%s-%s", p.Name(), fileName),
 	}
 	p.module.links = append(p.module.links, bpfLink)
+
 	return bpfLink, nil
 }
 
@@ -435,14 +461,15 @@ func (p *BPFProg) AttachIter(opts IterOpts) (*BPFLink, error) {
 	if linkC == nil {
 		return nil, fmt.Errorf("failed to attach iter to program %s: %w", p.Name(), errno)
 	}
-	eventName := fmt.Sprintf("iter-%s-%d", p.Name(), opts.MapFd)
+
 	bpfLink := &BPFLink{
 		link:      linkC,
 		prog:      p,
 		linkType:  Iter,
-		eventName: eventName,
+		eventName: fmt.Sprintf("iter-%s-%d", p.Name(), opts.MapFd),
 	}
 	p.module.links = append(p.module.links, bpfLink)
+
 	return bpfLink, nil
 }
 
@@ -496,6 +523,7 @@ func doAttachUprobe(prog *BPFProg, isUretprobe bool, pid int, path string, offse
 		linkType:  upType,
 		eventName: fmt.Sprintf("%s:%d:%d", path, pid, offset),
 	}
+
 	return bpfLink, nil
 }
 
@@ -510,6 +538,7 @@ func (p *BPFProg) AttachGenericFD(targetFd int, attachType BPFAttachType, flags 
 	if retC < 0 {
 		return fmt.Errorf("failed to attach: %w", syscall.Errno(-retC))
 	}
+
 	return nil
 }
 
@@ -523,5 +552,6 @@ func (p *BPFProg) DetachGenericFD(targetFd int, attachType BPFAttachType) error 
 	if retC < 0 {
 		return fmt.Errorf("failed to detach: %w", syscall.Errno(-retC))
 	}
+
 	return nil
 }

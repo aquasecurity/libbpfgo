@@ -72,6 +72,8 @@ func (it *BPFObjectIterator) NextProgram() *BPFProg {
 		prog:   progC,
 		module: it.m,
 	}
+
 	it.prevProg = prog
+
 	return prog
 }

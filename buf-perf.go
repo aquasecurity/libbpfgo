@@ -41,45 +41,48 @@ func (pb *PerfBuffer) Start() {
 }
 
 func (pb *PerfBuffer) Stop() {
-	if pb.stop != nil {
-		// Tell the poll goroutine that it's time to exit
-		close(pb.stop)
+	if pb.stop == nil {
+		return
+	}
 
-		// The event and lost channels should be drained here since the consumer
-		// may have stopped at this point. Failure to drain it will
-		// result in a deadlock: the channel will fill up and the poll
-		// goroutine will block in the callback.
-		go func() {
-			// revive:disable:empty-block
-			for range pb.eventsChan {
-			}
+	// Signal the poll goroutine to exit
+	close(pb.stop)
 
-			if pb.lostChan != nil {
-				for range pb.lostChan {
-				}
-			}
-			// revive:enable:empty-block
-		}()
-
-		// Wait for the poll goroutine to exit
-		pb.wg.Wait()
-
-		// Close the channel -- this is useful for the consumer but
-		// also to terminate the drain goroutine above.
-		close(pb.eventsChan)
-		if pb.lostChan != nil {
-			close(pb.lostChan)
+	// The event and lost channels should be drained here since the consumer
+	// may have stopped at this point. Failure to drain it will
+	// result in a deadlock: the channel will fill up and the poll
+	// goroutine will block in the callback.
+	go func() {
+		// revive:disable:empty-block
+		for range pb.eventsChan {
 		}
 
-		// This allows Stop() to be called multiple times safely
-		pb.stop = nil
+		if pb.lostChan != nil {
+			for range pb.lostChan {
+			}
+		}
+		// revive:enable:empty-block
+	}()
+
+	// Wait for the poll goroutine to exit
+	pb.wg.Wait()
+
+	// Close the channel -- this is useful for the consumer but
+	// also to terminate the drain goroutine above.
+	close(pb.eventsChan)
+	if pb.lostChan != nil {
+		close(pb.lostChan)
 	}
+
+	// Reset pb.stop to allow multiple safe calls to Stop()
+	pb.stop = nil
 }
 
 func (pb *PerfBuffer) Close() {
 	if pb.closed {
 		return
 	}
+
 	pb.Stop()
 	C.perf_buffer__free(pb.pb)
 	eventChannels.remove(pb.slot)
@@ -101,6 +104,7 @@ func (pb *PerfBuffer) poll(timeout int) error {
 				if errno == syscall.EINTR {
 					continue
 				}
+
 				return fmt.Errorf("error polling perf buffer: %w", errno)
 			}
 		}
