@@ -418,12 +418,9 @@ func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 	fd := bpfMap.FileDescriptor()
 	info, err := GetMapInfoByFD(fd)
 	if err != nil {
-		// Compatibility Note: Some older kernels lack BTF (BPF Type Format)
-		// support for specific BPF map types. In such scenarios, libbpf may
-		// fail (EPERM) when attempting to retrieve information for these maps.
-		// Reference: https://elixir.bootlin.com/linux/v5.15.75/source/tools/lib/bpf/gen_loader.c#L401
-		//
-		// However, we can still get some map info from the BPF map high level API.
+		// The consumer of this API may not have sufficient privileges to get
+		// map info via BPF syscall. However, "some" map info still can be
+		// retrieved from the BPF object itself.
 		bpfMap.bpfMapLow = &BPFMapLow{
 			fd: fd,
 			info: &BPFMapInfo{
