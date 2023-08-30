@@ -96,6 +96,10 @@ func (t BPFProgType) String() string {
 	return str
 }
 
+func (t BPFProgType) Name() string {
+	return C.GoString(C.libbpf_bpf_prog_type_str(C.enum_bpf_prog_type(t)))
+}
+
 //
 // BPFAttachType
 //
@@ -197,10 +201,14 @@ var bpfAttachTypeToString = map[BPFAttachType]string{
 func (t BPFAttachType) String() string {
 	str, ok := bpfAttachTypeToString[t]
 	if !ok {
-		return "Unspecified"
+		return "BPFAttachType unspecified"
 	}
 
 	return str
+}
+
+func (t BPFAttachType) Name() string {
+	return C.GoString(C.libbpf_bpf_attach_type_str(C.enum_bpf_attach_type(t)))
 }
 
 //
