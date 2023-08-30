@@ -86,7 +86,13 @@ var mapTypeToString = map[MapType]string{
 }
 
 func (t MapType) String() string {
-	return mapTypeToString[t]
+	str, ok := mapTypeToString[t]
+	if !ok {
+		// MapTypeUnspec must exist in mapTypeToString to avoid infinite recursion.
+		return BPFProgTypeUnspec.String()
+	}
+
+	return str
 }
 
 //
