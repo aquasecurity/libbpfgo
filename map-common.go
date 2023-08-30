@@ -95,6 +95,10 @@ func (t MapType) String() string {
 	return str
 }
 
+func (t MapType) Name() string {
+	return C.GoString(C.libbpf_bpf_map_type_str(C.enum_bpf_map_type(t)))
+}
+
 //
 // MapFlag
 //
