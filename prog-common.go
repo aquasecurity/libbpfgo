@@ -148,6 +148,61 @@ const (
 	BPFAttachTypeTraceKprobeMulti           BPFAttachType = C.BPF_TRACE_KPROBE_MULTI
 )
 
+var bpfAttachTypeToString = map[BPFAttachType]string{
+	BPFAttachTypeCgroupInetIngress:          "BPF_CGROUP_INET_INGRESS",
+	BPFAttachTypeCgroupInetEgress:           "BPF_CGROUP_INET_EGRESS",
+	BPFAttachTypeCgroupInetSockCreate:       "BPF_CGROUP_INET_SOCK_CREATE",
+	BPFAttachTypeCgroupSockOps:              "BPF_CGROUP_SOCK_OPS",
+	BPFAttachTypeSKSKBStreamParser:          "BPF_SK_SKB_STREAM_PARSER",
+	BPFAttachTypeSKSKBStreamVerdict:         "BPF_SK_SKB_STREAM_VERDICT",
+	BPFAttachTypeCgroupDevice:               "BPF_CGROUP_DEVICE",
+	BPFAttachTypeSKMSGVerdict:               "BPF_SK_MSG_VERDICT",
+	BPFAttachTypeCgroupInet4Bind:            "BPF_CGROUP_INET4_BIND",
+	BPFAttachTypeCgroupInet6Bind:            "BPF_CGROUP_INET6_BIND",
+	BPFAttachTypeCgroupInet4Connect:         "BPF_CGROUP_INET4_CONNECT",
+	BPFAttachTypeCgroupInet6Connect:         "BPF_CGROUP_INET6_CONNECT",
+	BPFAttachTypeCgroupInet4PostBind:        "BPF_CGROUP_INET4_POST_BIND",
+	BPFAttachTypeCgroupInet6PostBind:        "BPF_CGROUP_INET6_POST_BIND",
+	BPFAttachTypeCgroupUDP4SendMsg:          "BPF_CGROUP_UDP4_SENDMSG",
+	BPFAttachTypeCgroupUDP6SendMsg:          "BPF_CGROUP_UDP6_SENDMSG",
+	BPFAttachTypeLircMode2:                  "BPF_LIRC_MODE2",
+	BPFAttachTypeFlowDissector:              "BPF_FLOW_DISSECTOR",
+	BPFAttachTypeCgroupSysctl:               "BPF_CGROUP_SYSCTL",
+	BPFAttachTypeCgroupUDP4RecvMsg:          "BPF_CGROUP_UDP4_RECVMSG",
+	BPFAttachTypeCgroupUDP6RecvMsg:          "BPF_CGROUP_UDP6_RECVMSG",
+	BPFAttachTypeCgroupGetSockOpt:           "BPF_CGROUP_GETSOCKOPT",
+	BPFAttachTypeCgroupSetSockOpt:           "BPF_CGROUP_SETSOCKOPT",
+	BPFAttachTypeTraceRawTP:                 "BPF_TRACE_RAW_TP",
+	BPFAttachTypeTraceFentry:                "BPF_TRACE_FENTRY",
+	BPFAttachTypeTraceFexit:                 "BPF_TRACE_FEXIT",
+	BPFAttachTypeModifyReturn:               "BPF_MODIFY_RETURN",
+	BPFAttachTypeLSMMac:                     "BPF_LSM_MAC",
+	BPFAttachTypeTraceIter:                  "BPF_TRACE_ITER",
+	BPFAttachTypeCgroupInet4GetPeerName:     "BPF_CGROUP_INET4_GETPEERNAME",
+	BPFAttachTypeCgroupInet6GetPeerName:     "BPF_CGROUP_INET6_GETPEERNAME",
+	BPFAttachTypeCgroupInet4GetSockName:     "BPF_CGROUP_INET4_GETSOCKNAME",
+	BPFAttachTypeCgroupInet6GetSockName:     "BPF_CGROUP_INET6_GETSOCKNAME",
+	BPFAttachTypeXDPDevMap:                  "BPF_XDP_DEVMAP",
+	BPFAttachTypeCgroupInetSockRelease:      "BPF_CGROUP_INET_SOCK_RELEASE",
+	BPFAttachTypeXDPCPUMap:                  "BPF_XDP_CPUMAP",
+	BPFAttachTypeSKLookup:                   "BPF_SK_LOOKUP",
+	BPFAttachTypeXDP:                        "BPF_XDP",
+	BPFAttachTypeSKSKBVerdict:               "BPF_SK_SKB_VERDICT",
+	BPFAttachTypeSKReusePortSelect:          "BPF_SK_REUSEPORT_SELECT",
+	BPFAttachTypeSKReusePortSelectorMigrate: "BPF_SK_REUSEPORT_SELECT_OR_MIGRATE",
+	BPFAttachTypePerfEvent:                  "BPF_PERF_EVENT",
+	BPFAttachTypeTraceKprobeMulti:           "BPF_TRACE_KPROBE_MULTI",
+}
+
+func (t BPFAttachType) String() string {
+	str, ok := bpfAttachTypeToString[t]
+	if !ok {
+		return "Unspecified"
+	}
+
+	return str
+}
+
 //
 // BPFCgroupIterOrder
 //
