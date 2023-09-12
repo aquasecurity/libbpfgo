@@ -393,6 +393,34 @@ func (m *Module) InitGlobalVariable(name string, value interface{}) error {
 	return err
 }
 
+// GetMapsByName retrieves BPF maps with the specified name.
+func GetMapsByName(name string) []*BPFMapLow {
+	bpfMaps := []*BPFMapLow{}
+
+	startId := C.uint(0)
+	nextId := C.uint(0)
+
+	for {
+		err := C.bpf_map_get_next_id(startId, &nextId)
+		if err != 0 {
+			return bpfMaps
+		}
+
+		startId = nextId + 1
+
+		bpfMapLow, errMap := GetMapByID(uint32(nextId))
+		if errMap != nil {
+			return bpfMaps
+		}
+
+		if bpfMapLow.Name() != name {
+			continue
+		}
+
+		bpfMaps = append(bpfMaps, bpfMapLow)
+	}
+}
+
 func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 	cs := C.CString(mapName)
 	bpfMapC, errno := C.bpf_object__find_map_by_name(m.obj, cs)
