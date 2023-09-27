@@ -2650,3 +2650,322 @@ func ParseMmapFlags(rawValue uint64) MmapFlagArgument {
 
 	return MmapFlagArgument{stringValue: strings.Join(f, "|"), rawValue: uint32(rawValue)}
 }
+
+type IoUringSetupFlag struct {
+	rawValue    uint32
+	stringValue string
+}
+
+const IoUringSetupFlagShiftMax = 15
+
+// revive:disable
+
+// These values are copied from uapi/linux/io_uring.h
+var (
+	IORING_SETUP_IOPOLL             = IoUringSetupFlag{rawValue: 1 << 0, stringValue: "IORING_SETUP_IOPOLL"}
+	IORING_SETUP_SQPOLL             = IoUringSetupFlag{rawValue: 1 << 1, stringValue: "IORING_SETUP_SQPOLL"}
+	IORING_SETUP_SQ_AFF             = IoUringSetupFlag{rawValue: 1 << 2, stringValue: "IORING_SETUP_SQ_AFF"}
+	IORING_SETUP_CQSIZE             = IoUringSetupFlag{rawValue: 1 << 3, stringValue: "IORING_SETUP_CQSIZE"}
+	IORING_SETUP_CLAMP              = IoUringSetupFlag{rawValue: 1 << 4, stringValue: "IORING_SETUP_CLAMP"}
+	IORING_SETUP_ATTACH_WQ          = IoUringSetupFlag{rawValue: 1 << 5, stringValue: "IORING_SETUP_ATTACH_WQ"}
+	IORING_SETUP_R_DISABLED         = IoUringSetupFlag{rawValue: 1 << 6, stringValue: "IORING_SETUP_R_DISABLED"}
+	IORING_SETUP_SUBMIT_ALL         = IoUringSetupFlag{rawValue: 1 << 7, stringValue: "IORING_SETUP_SUBMIT_ALL"}
+	IORING_SETUP_COOP_TASKRUN       = IoUringSetupFlag{rawValue: 1 << 8, stringValue: "IORING_SETUP_COOP_TASKRUN"}
+	IORING_SETUP_TASKRUN_FLAG       = IoUringSetupFlag{rawValue: 1 << 9, stringValue: "IORING_SETUP_TASKRUN_FLAG"}
+	IORING_SETUP_SQE128             = IoUringSetupFlag{rawValue: 1 << 10, stringValue: "IORING_SETUP_SQE128"}
+	IORING_SETUP_CQE32              = IoUringSetupFlag{rawValue: 1 << 11, stringValue: "IORING_SETUP_CQE32"}
+	IORING_SETUP_SINGLE_ISSUER      = IoUringSetupFlag{rawValue: 1 << 12, stringValue: "IORING_SETUP_SINGLE_ISSUER"}
+	IORING_SETUP_DEFER_TASKRUN      = IoUringSetupFlag{rawValue: 1 << 13, stringValue: "IORING_SETUP_DEFER_TASKRUN"}
+	IORING_SETUP_NO_MMAP            = IoUringSetupFlag{rawValue: 1 << 14, stringValue: "IORING_SETUP_NO_MMAP"}
+	IORING_SETUP_REGISTERED_FD_ONLY = IoUringSetupFlag{rawValue: 1 << 15, stringValue: "IORING_SETUP_REGISTERED_FD_ONLY"}
+)
+
+// revive:enable
+
+var ioUringSetupFlagMap = map[uint64]IoUringSetupFlag{
+	IORING_SETUP_IOPOLL.Value():             IORING_SETUP_IOPOLL,
+	IORING_SETUP_SQPOLL.Value():             IORING_SETUP_SQPOLL,
+	IORING_SETUP_SQ_AFF.Value():             IORING_SETUP_SQ_AFF,
+	IORING_SETUP_CQSIZE.Value():             IORING_SETUP_CQSIZE,
+	IORING_SETUP_CLAMP.Value():              IORING_SETUP_CLAMP,
+	IORING_SETUP_ATTACH_WQ.Value():          IORING_SETUP_ATTACH_WQ,
+	IORING_SETUP_R_DISABLED.Value():         IORING_SETUP_R_DISABLED,
+	IORING_SETUP_SUBMIT_ALL.Value():         IORING_SETUP_SUBMIT_ALL,
+	IORING_SETUP_COOP_TASKRUN.Value():       IORING_SETUP_COOP_TASKRUN,
+	IORING_SETUP_TASKRUN_FLAG.Value():       IORING_SETUP_TASKRUN_FLAG,
+	IORING_SETUP_SQE128.Value():             IORING_SETUP_SQE128,
+	IORING_SETUP_CQE32.Value():              IORING_SETUP_CQE32,
+	IORING_SETUP_SINGLE_ISSUER.Value():      IORING_SETUP_SINGLE_ISSUER,
+	IORING_SETUP_DEFER_TASKRUN.Value():      IORING_SETUP_DEFER_TASKRUN,
+	IORING_SETUP_NO_MMAP.Value():            IORING_SETUP_NO_MMAP,
+	IORING_SETUP_REGISTERED_FD_ONLY.Value(): IORING_SETUP_REGISTERED_FD_ONLY,
+}
+
+func (iusf IoUringSetupFlag) Value() uint64 {
+	return uint64(iusf.rawValue)
+}
+
+func (iusf IoUringSetupFlag) String() string {
+	return iusf.stringValue
+}
+
+// ParseIoUringSetupFlags parses the `flags` bitmask argument of the `io_uring_setup` syscall
+func ParseIoUringSetupFlags(rawValue uint64) IoUringSetupFlag {
+	var f []string
+	for i := 0; i <= IoUringSetupFlagShiftMax; i++ {
+		var flagMask uint64 = 1 << i
+
+		if (rawValue & flagMask) != 0 {
+			flag, ok := ioUringSetupFlagMap[flagMask]
+			if ok {
+				f = append(f, flag.String())
+			} else {
+				f = append(f, fmt.Sprintf("UNKNOWN_FLAG_0X%s", strings.ToUpper(strconv.FormatUint(flagMask, 16))))
+			}
+		}
+	}
+
+	return IoUringSetupFlag{stringValue: strings.Join(f, "|"), rawValue: uint32(rawValue)}
+}
+
+type IoUringOp struct {
+	rawValue    uint32
+	stringValue string
+}
+
+// revive:disable
+
+// These values are copied from uapi/linux/io_uring.h
+var (
+	IORING_OP_NOP             = IoUringOp{rawValue: 0, stringValue: "IORING_OP_NOP"}
+	IORING_OP_READV           = IoUringOp{rawValue: 1, stringValue: "IORING_OP_READV"}
+	IORING_OP_WRITEV          = IoUringOp{rawValue: 2, stringValue: "IORING_OP_WRITEV"}
+	IORING_OP_FSYNC           = IoUringOp{rawValue: 3, stringValue: "IORING_OP_FSYNC"}
+	IORING_OP_READ_FIXED      = IoUringOp{rawValue: 4, stringValue: "IORING_OP_READ_FIXED"}
+	IORING_OP_WRITE_FIXED     = IoUringOp{rawValue: 5, stringValue: "IORING_OP_WRITE_FIXED"}
+	IORING_OP_POLL_ADD        = IoUringOp{rawValue: 6, stringValue: "IORING_OP_POLL_ADD"}
+	IORING_OP_POLL_REMOVE     = IoUringOp{rawValue: 7, stringValue: "IORING_OP_POLL_REMOVE"}
+	IORING_OP_SYNC_FILE_RANGE = IoUringOp{rawValue: 8, stringValue: "IORING_OP_SYNC_FILE_RANGE"}
+	IORING_OP_SENDMSG         = IoUringOp{rawValue: 9, stringValue: "IORING_OP_SENDMSG"}
+	IORING_OP_RECVMSG         = IoUringOp{rawValue: 10, stringValue: "IORING_OP_RECVMSG"}
+	IORING_OP_TIMEOUT         = IoUringOp{rawValue: 11, stringValue: "IORING_OP_TIMEOUT"}
+	IORING_OP_TIMEOUT_REMOVE  = IoUringOp{rawValue: 12, stringValue: "IORING_OP_TIMEOUT_REMOVE"}
+	IORING_OP_ACCEPT          = IoUringOp{rawValue: 13, stringValue: "IORING_OP_ACCEPT"}
+	IORING_OP_ASYNC_CANCEL    = IoUringOp{rawValue: 14, stringValue: "IORING_OP_ASYNC_CANCEL"}
+	IORING_OP_LINK_TIMEOUT    = IoUringOp{rawValue: 15, stringValue: "IORING_OP_LINK_TIMEOUT"}
+	IORING_OP_CONNECT         = IoUringOp{rawValue: 16, stringValue: "IORING_OP_CONNECT"}
+	IORING_OP_FALLOCATE       = IoUringOp{rawValue: 17, stringValue: "IORING_OP_FALLOCATE"}
+	IORING_OP_OPENAT          = IoUringOp{rawValue: 18, stringValue: "IORING_OP_OPENAT"}
+	IORING_OP_CLOSE           = IoUringOp{rawValue: 19, stringValue: "IORING_OP_CLOSE"}
+	IORING_OP_FILES_UPDATE    = IoUringOp{rawValue: 20, stringValue: "IORING_OP_FILES_UPDATE"}
+	IORING_OP_STATX           = IoUringOp{rawValue: 21, stringValue: "IORING_OP_STATX"}
+	IORING_OP_READ            = IoUringOp{rawValue: 22, stringValue: "IORING_OP_READ"}
+	IORING_OP_WRITE           = IoUringOp{rawValue: 23, stringValue: "IORING_OP_WRITE"}
+	IORING_OP_FADVISE         = IoUringOp{rawValue: 24, stringValue: "IORING_OP_FADVISE"}
+	IORING_OP_MADVISE         = IoUringOp{rawValue: 25, stringValue: "IORING_OP_MADVISE"}
+	IORING_OP_SEND            = IoUringOp{rawValue: 26, stringValue: "IORING_OP_SEND"}
+	IORING_OP_RECV            = IoUringOp{rawValue: 27, stringValue: "IORING_OP_RECV"}
+	IORING_OP_OPENAT2         = IoUringOp{rawValue: 28, stringValue: "IORING_OP_OPENAT2"}
+	IORING_OP_EPOLL_CTL       = IoUringOp{rawValue: 29, stringValue: "IORING_OP_EPOLL_CTL"}
+	IORING_OP_SPLICE          = IoUringOp{rawValue: 30, stringValue: "IORING_OP_SPLICE"}
+	IORING_OP_PROVIDE_BUFFERS = IoUringOp{rawValue: 31, stringValue: "IORING_OP_PROVIDE_BUFFERS"}
+	IORING_OP_REMOVE_BUFFERS  = IoUringOp{rawValue: 32, stringValue: "IORING_OP_REMOVE_BUFFERS"}
+	IORING_OP_TEE             = IoUringOp{rawValue: 33, stringValue: "IORING_OP_TEE"}
+	IORING_OP_SHUTDOWN        = IoUringOp{rawValue: 34, stringValue: "IORING_OP_SHUTDOWN"}
+	IORING_OP_RENAMEAT        = IoUringOp{rawValue: 35, stringValue: "IORING_OP_RENAMEAT"}
+	IORING_OP_UNLINKAT        = IoUringOp{rawValue: 36, stringValue: "IORING_OP_UNLINKAT"}
+	IORING_OP_MKDIRAT         = IoUringOp{rawValue: 37, stringValue: "IORING_OP_MKDIRAT"}
+	IORING_OP_SYMLINKAT       = IoUringOp{rawValue: 38, stringValue: "IORING_OP_SYMLINKAT"}
+	IORING_OP_LINKAT          = IoUringOp{rawValue: 39, stringValue: "IORING_OP_LINKAT"}
+	IORING_OP_MSG_RING        = IoUringOp{rawValue: 40, stringValue: "IORING_OP_MSG_RING"}
+	IORING_OP_FSETXATTR       = IoUringOp{rawValue: 41, stringValue: "IORING_OP_FSETXATTR"}
+	IORING_OP_SETXATTR        = IoUringOp{rawValue: 42, stringValue: "IORING_OP_SETXATTR"}
+	IORING_OP_FGETXATTR       = IoUringOp{rawValue: 43, stringValue: "IORING_OP_FGETXATTR"}
+	IORING_OP_GETXATTR        = IoUringOp{rawValue: 44, stringValue: "IORING_OP_GETXATTR"}
+	IORING_OP_SOCKET          = IoUringOp{rawValue: 45, stringValue: "IORING_OP_SOCKET"}
+	IORING_OP_URING_CMD       = IoUringOp{rawValue: 46, stringValue: "IORING_OP_URING_CMD"}
+	IORING_OP_SEND_ZC         = IoUringOp{rawValue: 47, stringValue: "IORING_OP_SEND_ZC"}
+	IORING_OP_SENDMSG_ZC      = IoUringOp{rawValue: 48, stringValue: "IORING_OP_SENDMSG_ZC"}
+	IORING_OP_LAST            = IoUringOp{rawValue: 49, stringValue: "IORING_OP_LAST"}
+)
+
+// revive:enable
+
+var ioUringOpMap = map[uint64]IoUringOp{
+	IORING_OP_NOP.Value():             IORING_OP_NOP,
+	IORING_OP_READV.Value():           IORING_OP_READV,
+	IORING_OP_WRITEV.Value():          IORING_OP_WRITEV,
+	IORING_OP_FSYNC.Value():           IORING_OP_FSYNC,
+	IORING_OP_READ_FIXED.Value():      IORING_OP_READ_FIXED,
+	IORING_OP_WRITE_FIXED.Value():     IORING_OP_WRITE_FIXED,
+	IORING_OP_POLL_ADD.Value():        IORING_OP_POLL_ADD,
+	IORING_OP_POLL_REMOVE.Value():     IORING_OP_POLL_REMOVE,
+	IORING_OP_SYNC_FILE_RANGE.Value(): IORING_OP_SYNC_FILE_RANGE,
+	IORING_OP_SENDMSG.Value():         IORING_OP_SENDMSG,
+	IORING_OP_RECVMSG.Value():         IORING_OP_RECVMSG,
+	IORING_OP_TIMEOUT.Value():         IORING_OP_TIMEOUT,
+	IORING_OP_TIMEOUT_REMOVE.Value():  IORING_OP_TIMEOUT_REMOVE,
+	IORING_OP_ACCEPT.Value():          IORING_OP_ACCEPT,
+	IORING_OP_ASYNC_CANCEL.Value():    IORING_OP_ASYNC_CANCEL,
+	IORING_OP_LINK_TIMEOUT.Value():    IORING_OP_LINK_TIMEOUT,
+	IORING_OP_CONNECT.Value():         IORING_OP_CONNECT,
+	IORING_OP_FALLOCATE.Value():       IORING_OP_FALLOCATE,
+	IORING_OP_OPENAT.Value():          IORING_OP_OPENAT,
+	IORING_OP_CLOSE.Value():           IORING_OP_CLOSE,
+	IORING_OP_FILES_UPDATE.Value():    IORING_OP_FILES_UPDATE,
+	IORING_OP_STATX.Value():           IORING_OP_STATX,
+	IORING_OP_READ.Value():            IORING_OP_READ,
+	IORING_OP_WRITE.Value():           IORING_OP_WRITE,
+	IORING_OP_FADVISE.Value():         IORING_OP_FADVISE,
+	IORING_OP_MADVISE.Value():         IORING_OP_MADVISE,
+	IORING_OP_SEND.Value():            IORING_OP_SEND,
+	IORING_OP_RECV.Value():            IORING_OP_RECV,
+	IORING_OP_OPENAT2.Value():         IORING_OP_OPENAT2,
+	IORING_OP_EPOLL_CTL.Value():       IORING_OP_EPOLL_CTL,
+	IORING_OP_SPLICE.Value():          IORING_OP_SPLICE,
+	IORING_OP_PROVIDE_BUFFERS.Value(): IORING_OP_PROVIDE_BUFFERS,
+	IORING_OP_REMOVE_BUFFERS.Value():  IORING_OP_REMOVE_BUFFERS,
+	IORING_OP_TEE.Value():             IORING_OP_TEE,
+	IORING_OP_SHUTDOWN.Value():        IORING_OP_SHUTDOWN,
+	IORING_OP_RENAMEAT.Value():        IORING_OP_RENAMEAT,
+	IORING_OP_UNLINKAT.Value():        IORING_OP_UNLINKAT,
+	IORING_OP_MKDIRAT.Value():         IORING_OP_MKDIRAT,
+	IORING_OP_SYMLINKAT.Value():       IORING_OP_SYMLINKAT,
+	IORING_OP_LINKAT.Value():          IORING_OP_LINKAT,
+	IORING_OP_MSG_RING.Value():        IORING_OP_MSG_RING,
+	IORING_OP_FSETXATTR.Value():       IORING_OP_FSETXATTR,
+	IORING_OP_SETXATTR.Value():        IORING_OP_SETXATTR,
+	IORING_OP_FGETXATTR.Value():       IORING_OP_FGETXATTR,
+	IORING_OP_GETXATTR.Value():        IORING_OP_GETXATTR,
+	IORING_OP_SOCKET.Value():          IORING_OP_SOCKET,
+	IORING_OP_URING_CMD.Value():       IORING_OP_URING_CMD,
+	IORING_OP_SEND_ZC.Value():         IORING_OP_SEND_ZC,
+	IORING_OP_SENDMSG_ZC.Value():      IORING_OP_SENDMSG_ZC,
+	IORING_OP_LAST.Value():            IORING_OP_LAST,
+}
+
+func (iuo IoUringOp) Value() uint64 {
+	return uint64(iuo.rawValue)
+}
+
+func (iuo IoUringOp) String() string {
+	return iuo.stringValue
+}
+
+// ParseIoUringOp parses the opcode of io_uring operation
+func ParseIoUringOp(rawValue uint64) (IoUringOp, error) {
+	v, ok := ioUringOpMap[rawValue]
+	if !ok {
+		return IoUringOp{}, fmt.Errorf("not a valid argument: %d", rawValue)
+	}
+	return v, nil
+}
+
+// =====================================================
+
+type IoUringRequestFlag struct {
+	rawValue    uint32
+	stringValue string
+}
+
+const IoUringRequestFlagShiftMax = 14
+
+// revive:disable
+
+// These values are copied from include/linux/io_uring_types.h
+var (
+	REQ_F_FIXED_FILE      = IoUringRequestFlag{rawValue: 1 << 0, stringValue: "REQ_F_FIXED_FILE"}
+	REQ_F_IO_DRAIN        = IoUringRequestFlag{rawValue: 1 << 1, stringValue: "REQ_F_IO_DRAIN"}
+	REQ_F_LINK            = IoUringRequestFlag{rawValue: 1 << 2, stringValue: "REQ_F_LINK"}
+	REQ_F_HARDLINK        = IoUringRequestFlag{rawValue: 1 << 3, stringValue: "REQ_F_HARDLINK"}
+	REQ_F_FORCE_ASYNC     = IoUringRequestFlag{rawValue: 1 << 4, stringValue: "REQ_F_FORCE_ASYNC"}
+	REQ_F_BUFFER_SELECT   = IoUringRequestFlag{rawValue: 1 << 5, stringValue: "REQ_F_BUFFER_SELECT"}
+	REQ_F_CQE_SKIP        = IoUringRequestFlag{rawValue: 1 << 6, stringValue: "REQ_F_CQE_SKIP"}
+	REQ_F_FAIL            = IoUringRequestFlag{rawValue: 1 << 7, stringValue: "REQ_F_FAIL"}
+	REQ_F_INFLIGHT        = IoUringRequestFlag{rawValue: 1 << 8, stringValue: "REQ_F_INFLIGHT"}
+	REQ_F_CUR_POS         = IoUringRequestFlag{rawValue: 1 << 9, stringValue: "REQ_F_CUR_POS"}
+	REQ_F_NOWAIT          = IoUringRequestFlag{rawValue: 1 << 10, stringValue: "REQ_F_NOWAIT"}
+	REQ_F_LINK_TIMEOUT    = IoUringRequestFlag{rawValue: 1 << 11, stringValue: "REQ_F_LINK_TIMEOUT"}
+	REQ_F_NEED_CLEANUP    = IoUringRequestFlag{rawValue: 1 << 12, stringValue: "REQ_F_NEED_CLEANUP"}
+	REQ_F_POLLED          = IoUringRequestFlag{rawValue: 1 << 13, stringValue: "REQ_F_POLLED"}
+	REQ_F_BUFFER_SELECTED = IoUringRequestFlag{rawValue: 1 << 14, stringValue: "REQ_F_BUFFER_SELECTED"}
+	REQ_F_BUFFER_RING     = IoUringRequestFlag{rawValue: 1 << 15, stringValue: "REQ_F_BUFFER_RING"}
+	REQ_F_REISSUE         = IoUringRequestFlag{rawValue: 1 << 0, stringValue: "REQ_F_REISSUE"}
+	REQ_F_SUPPORT_NOWAIT  = IoUringRequestFlag{rawValue: 1 << 1, stringValue: "REQ_F_SUPPORT_NOWAIT"}
+	REQ_F_ISREG           = IoUringRequestFlag{rawValue: 1 << 2, stringValue: "REQ_F_ISREG"}
+	REQ_F_CREDS           = IoUringRequestFlag{rawValue: 1 << 3, stringValue: "REQ_F_CREDS"}
+	REQ_F_REFCOUNT        = IoUringRequestFlag{rawValue: 1 << 4, stringValue: "REQ_F_REFCOUNT"}
+	REQ_F_ARM_LTIMEOUT    = IoUringRequestFlag{rawValue: 1 << 5, stringValue: "REQ_F_ARM_LTIMEOUT"}
+	REQ_F_ASYNC_DATA      = IoUringRequestFlag{rawValue: 1 << 6, stringValue: "REQ_F_ASYNC_DATA"}
+	REQ_F_SKIP_LINK_CQES  = IoUringRequestFlag{rawValue: 1 << 7, stringValue: "REQ_F_SKIP_LINK_CQES"}
+	REQ_F_SINGLE_POLL     = IoUringRequestFlag{rawValue: 1 << 8, stringValue: "REQ_F_SINGLE_POLL"}
+	REQ_F_DOUBLE_POLL     = IoUringRequestFlag{rawValue: 1 << 9, stringValue: "REQ_F_DOUBLE_POLL"}
+	REQ_F_PARTIAL_IO      = IoUringRequestFlag{rawValue: 1 << 10, stringValue: "REQ_F_PARTIAL_IO"}
+	REQ_F_APOLL_MULTISHOT = IoUringRequestFlag{rawValue: 1 << 11, stringValue: "REQ_F_APOLL_MULTISHOT"}
+	REQ_F_CQE32_INIT      = IoUringRequestFlag{rawValue: 1 << 12, stringValue: "REQ_F_CQE32_INIT"}
+	REQ_F_CLEAR_POLLIN    = IoUringRequestFlag{rawValue: 1 << 13, stringValue: "REQ_F_CLEAR_POLLIN"}
+	REQ_F_HASH_LOCKED     = IoUringRequestFlag{rawValue: 1 << 14, stringValue: "REQ_F_HASH_LOCKED"}
+)
+
+// revive:enable
+
+var ioUringRequestFlagMap = map[uint64]IoUringRequestFlag{
+	REQ_F_FIXED_FILE.Value():      REQ_F_FIXED_FILE,
+	REQ_F_IO_DRAIN.Value():        REQ_F_IO_DRAIN,
+	REQ_F_LINK.Value():            REQ_F_LINK,
+	REQ_F_HARDLINK.Value():        REQ_F_HARDLINK,
+	REQ_F_FORCE_ASYNC.Value():     REQ_F_FORCE_ASYNC,
+	REQ_F_BUFFER_SELECT.Value():   REQ_F_BUFFER_SELECT,
+	REQ_F_CQE_SKIP.Value():        REQ_F_CQE_SKIP,
+	REQ_F_FAIL.Value():            REQ_F_FAIL,
+	REQ_F_INFLIGHT.Value():        REQ_F_INFLIGHT,
+	REQ_F_CUR_POS.Value():         REQ_F_CUR_POS,
+	REQ_F_NOWAIT.Value():          REQ_F_NOWAIT,
+	REQ_F_LINK_TIMEOUT.Value():    REQ_F_LINK_TIMEOUT,
+	REQ_F_NEED_CLEANUP.Value():    REQ_F_NEED_CLEANUP,
+	REQ_F_POLLED.Value():          REQ_F_POLLED,
+	REQ_F_BUFFER_SELECTED.Value(): REQ_F_BUFFER_SELECTED,
+	REQ_F_BUFFER_RING.Value():     REQ_F_BUFFER_RING,
+	REQ_F_REISSUE.Value():         REQ_F_REISSUE,
+	REQ_F_SUPPORT_NOWAIT.Value():  REQ_F_SUPPORT_NOWAIT,
+	REQ_F_ISREG.Value():           REQ_F_ISREG,
+	REQ_F_CREDS.Value():           REQ_F_CREDS,
+	REQ_F_REFCOUNT.Value():        REQ_F_REFCOUNT,
+	REQ_F_ARM_LTIMEOUT.Value():    REQ_F_ARM_LTIMEOUT,
+	REQ_F_ASYNC_DATA.Value():      REQ_F_ASYNC_DATA,
+	REQ_F_SKIP_LINK_CQES.Value():  REQ_F_SKIP_LINK_CQES,
+	REQ_F_SINGLE_POLL.Value():     REQ_F_SINGLE_POLL,
+	REQ_F_DOUBLE_POLL.Value():     REQ_F_DOUBLE_POLL,
+	REQ_F_PARTIAL_IO.Value():      REQ_F_PARTIAL_IO,
+	REQ_F_APOLL_MULTISHOT.Value(): REQ_F_APOLL_MULTISHOT,
+	REQ_F_CQE32_INIT.Value():      REQ_F_CQE32_INIT,
+	REQ_F_CLEAR_POLLIN.Value():    REQ_F_CLEAR_POLLIN,
+	REQ_F_HASH_LOCKED.Value():     REQ_F_HASH_LOCKED,
+}
+
+func (iurf IoUringRequestFlag) Value() uint64 {
+	return uint64(iurf.rawValue)
+}
+
+func (iurf IoUringRequestFlag) String() string {
+	return iurf.stringValue
+}
+
+// ParseIoUringRequestFlags parses the flags bitmask if io_uring request
+func ParseIoUringRequestFlags(rawValue uint64) IoUringRequestFlag {
+	var f []string
+	for i := 0; i <= IoUringRequestFlagShiftMax; i++ {
+		var flagMask uint64 = 1 << i
+
+		if (rawValue & flagMask) != 0 {
+			flag, ok := ioUringRequestFlagMap[flagMask]
+			if ok {
+				f = append(f, flag.String())
+			} else {
+				f = append(f, fmt.Sprintf("UNKNOWN_FLAG_0X%s", strings.ToUpper(strconv.FormatUint(flagMask, 16))))
+			}
+		}
+	}
+
+	return IoUringRequestFlag{stringValue: strings.Join(f, "|"), rawValue: uint32(rawValue)}
+}
