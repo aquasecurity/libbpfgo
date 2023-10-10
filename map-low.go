@@ -105,11 +105,10 @@ func GetMapByID(id uint32) (*BPFMapLow, error) {
 func GetMapsIDsByName(name string) ([]uint32, error) {
 	bpfMapsIds := []uint32{}
 
-	startId := C.uint(0)
-	nextId := C.uint(0)
+	id := C.uint(0)
 
 	for {
-		retC := C.bpf_map_get_next_id(startId, &nextId)
+		retC := C.bpf_map_get_next_id(id, &id)
 		errno := syscall.Errno(-retC)
 		if retC < 0 {
 			if errno == syscall.ENOENT {
@@ -119,9 +118,7 @@ func GetMapsIDsByName(name string) ([]uint32, error) {
 			return bpfMapsIds, fmt.Errorf("failed to get next map id: %w", errno)
 		}
 
-		startId = nextId + 1
-
-		bpfMapLow, err := GetMapByID(uint32(nextId))
+		bpfMapLow, err := GetMapByID(uint32(id))
 		if err != nil {
 			return bpfMapsIds, err
 		}
