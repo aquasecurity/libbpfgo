@@ -13,6 +13,7 @@ import (
 const (
 	BPFMapNameToNotFind = "not_found"
 	// The following properties are used to identify the map
+	BPFHashMapNameToFind   = "test_hash_name"
 	BPFMapNameToFind       = "test_name"
 	BPFMapTypeToFind       = bpf.MapTypeArray
 	BPFMapMaxEntriesToFind = 1
@@ -32,6 +33,11 @@ func main() {
 	notFoundMapsIDs, err := bpf.GetMapsIDsByName(BPFMapNameToNotFind)
 	if len(notFoundMapsIDs) != 0 {
 		log.Fatalf("the %s map should not be found, but it was found with ids: %v", BPFMapNameToNotFind, notFoundMapsIDs)
+	}
+
+	bpfHashMapsIDs, err := bpf.GetMapsIDsByName(BPFHashMapNameToFind)
+	if len(bpfHashMapsIDs) == 0 {
+		log.Fatalf("the %s map should be found", BPFHashMapNameToFind)
 	}
 
 	mapsIDs, err := bpf.GetMapsIDsByName(BPFMapNameToFind)
