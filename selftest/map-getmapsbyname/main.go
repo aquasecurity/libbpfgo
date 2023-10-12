@@ -36,6 +36,9 @@ func main() {
 	}
 
 	bpfHashMapsIDs, err := bpf.GetMapsIDsByName(BPFHashMapNameToFind)
+	if err != nil {
+		log.Fatal(err)
+	}
 	if len(bpfHashMapsIDs) == 0 {
 		log.Fatalf("the %s map should be found", BPFHashMapNameToFind)
 	}
