@@ -3062,3 +3062,98 @@ func ParseGUPFlags(rawValue uint64) GUPFlag {
 
 	return GUPFlag{stringValue: strings.Join(f, "|"), rawValue: uint32(rawValue)}
 }
+
+// =====================================================
+
+// LegacyGUPFlag represents GUP (Get User Pages) flags up to version 6.3
+type LegacyGUPFlag struct {
+	rawValue    uint32
+	stringValue string
+}
+
+const LegacyGupFlagShiftMax = 22
+
+// revive:disable
+
+// These values are copied from include/linux/mm.h
+var (
+	LEGACY_FOLL_WRITE     = LegacyGUPFlag{rawValue: 1 << 0, stringValue: "FOLL_WRITE"}
+	LEGACY_FOLL_TOUCH     = LegacyGUPFlag{rawValue: 1 << 1, stringValue: "FOLL_TOUCH"}
+	LEGACY_FOLL_GET       = LegacyGUPFlag{rawValue: 1 << 2, stringValue: "FOLL_GET"}
+	LEGACY_FOLL_DUMP      = LegacyGUPFlag{rawValue: 1 << 3, stringValue: "FOLL_DUMP"}
+	LEGACY_FOLL_FORCE     = LegacyGUPFlag{rawValue: 1 << 4, stringValue: "FOLL_FORCE"}
+	LEGACY_FOLL_NOWAIT    = LegacyGUPFlag{rawValue: 1 << 5, stringValue: "FOLL_NOWAIT"}
+	LEGACY_FOLL_POPULATE  = LegacyGUPFlag{rawValue: 1 << 6, stringValue: "FOLL_POPULATE"}
+	LEGACY_FOLL_SPLIT     = LegacyGUPFlag{rawValue: 1 << 7, stringValue: "FOLL_SPLIT"}
+	LEGACY_FOLL_HWPOISON  = LegacyGUPFlag{rawValue: 1 << 8, stringValue: "FOLL_HWPOISON"}
+	LEGACY_FOLL_NUMA      = LegacyGUPFlag{rawValue: 1 << 9, stringValue: "FOLL_NUMA"}
+	LEGACY_FOLL_MIGRATION = LegacyGUPFlag{rawValue: 1 << 10, stringValue: "FOLL_MIGRATION"}
+	LEGACY_FOLL_TRIED     = LegacyGUPFlag{rawValue: 1 << 11, stringValue: "FOLL_TRIED"}
+	LEGACY_FOLL_MLOCK     = LegacyGUPFlag{rawValue: 1 << 12, stringValue: "FOLL_MLOCK"}
+	LEGACY_FOLL_REMOTE    = LegacyGUPFlag{rawValue: 1 << 16, stringValue: "FOLL_REMOTE"}
+	LEGACY_FOLL_COW       = LegacyGUPFlag{rawValue: 1 << 17, stringValue: "FOLL_COW"}
+	LEGACY_FOLL_ANON      = LegacyGUPFlag{rawValue: 1 << 18, stringValue: "FOLL_ANON"}
+	LEGACY_FOLL_LONGTERM  = LegacyGUPFlag{rawValue: 1 << 19, stringValue: "FOLL_LONGTERM"}
+	LEGACY_FOLL_SPLIT_PMD = LegacyGUPFlag{rawValue: 1 << 20, stringValue: "FOLL_SPLIT_PMD"}
+	LEGACY_FOLL_PIN       = LegacyGUPFlag{rawValue: 1 << 21, stringValue: "FOLL_PIN"}
+	LEGACY_FOLL_FAST_ONLY = LegacyGUPFlag{rawValue: 1 << 22, stringValue: "FOLL_FAST_ONLY"}
+)
+
+// revive:enable
+
+var LegacyGUPFlagMap = map[uint64]LegacyGUPFlag{
+	LEGACY_FOLL_WRITE.Value():     LEGACY_FOLL_WRITE,
+	LEGACY_FOLL_TOUCH.Value():     LEGACY_FOLL_TOUCH,
+	LEGACY_FOLL_GET.Value():       LEGACY_FOLL_GET,
+	LEGACY_FOLL_DUMP.Value():      LEGACY_FOLL_DUMP,
+	LEGACY_FOLL_FORCE.Value():     LEGACY_FOLL_FORCE,
+	LEGACY_FOLL_NOWAIT.Value():    LEGACY_FOLL_NOWAIT,
+	LEGACY_FOLL_POPULATE.Value():  LEGACY_FOLL_POPULATE,
+	LEGACY_FOLL_SPLIT.Value():     LEGACY_FOLL_SPLIT,
+	LEGACY_FOLL_HWPOISON.Value():  LEGACY_FOLL_HWPOISON,
+	LEGACY_FOLL_NUMA.Value():      LEGACY_FOLL_NUMA,
+	LEGACY_FOLL_MIGRATION.Value(): LEGACY_FOLL_MIGRATION,
+	LEGACY_FOLL_TRIED.Value():     LEGACY_FOLL_TRIED,
+	LEGACY_FOLL_MLOCK.Value():     LEGACY_FOLL_MLOCK,
+	LEGACY_FOLL_REMOTE.Value():    LEGACY_FOLL_REMOTE,
+	LEGACY_FOLL_COW.Value():       LEGACY_FOLL_COW,
+	LEGACY_FOLL_ANON.Value():      LEGACY_FOLL_ANON,
+	LEGACY_FOLL_LONGTERM.Value():  LEGACY_FOLL_LONGTERM,
+	LEGACY_FOLL_SPLIT_PMD.Value(): LEGACY_FOLL_SPLIT_PMD,
+	LEGACY_FOLL_PIN.Value():       LEGACY_FOLL_PIN,
+	LEGACY_FOLL_FAST_ONLY.Value(): LEGACY_FOLL_FAST_ONLY,
+}
+
+func (lgupf LegacyGUPFlag) Value() uint64 {
+	return uint64(lgupf.rawValue)
+}
+
+func (lgupf LegacyGUPFlag) String() string {
+	return lgupf.stringValue
+}
+
+// ParseLegacyGUPFlags parses the flags bitmask of gup (get user pages) operation for kernels up to
+// version 6.3
+func ParseLegacyGUPFlags(rawValue uint64) LegacyGUPFlag {
+	var f []string
+	for i := 0; i <= LegacyGupFlagShiftMax; i++ {
+		var flagMask uint64 = 1 << i
+
+		if (rawValue & flagMask) != 0 {
+			flag, ok := LegacyGUPFlagMap[flagMask]
+			if ok {
+				f = append(f, flag.String())
+			} else {
+				f = append(
+					f,
+					fmt.Sprintf(
+						"UNKNOWN_FLAG_0X%s",
+						strings.ToUpper(strconv.FormatUint(flagMask, 16)),
+					),
+				)
+			}
+		}
+	}
+
+	return LegacyGUPFlag{stringValue: strings.Join(f, "|"), rawValue: uint32(rawValue)}
+}
