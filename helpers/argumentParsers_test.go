@@ -273,3 +273,29 @@ func TestParseLegacyGupFlags(t *testing.T) {
 		})
 	}
 }
+
+func TestParseVmFlags(t *testing.T) {
+	testCases := []struct {
+		name          string
+		parseValue    uint64
+		expectedSting string
+	}{
+		{
+			name:          "Single value",
+			parseValue:    VM_IO.Value(),
+			expectedSting: "VM_IO",
+		},
+		{
+			name:          "Multiple values",
+			parseValue:    VM_MAYSHARE.Value() | VM_SEQ_READ.Value() | VM_PAT.Value(),
+			expectedSting: "VM_MAYSHARE|VM_SEQ_READ|VM_PAT",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			flags := ParseVmFlags(testCase.parseValue)
+			assert.Equal(t, testCase.expectedSting, flags.String())
+		})
+	}
+}
