@@ -247,3 +247,29 @@ func TestParseGupFlags(t *testing.T) {
 		})
 	}
 }
+
+func TestParseLegacyGupFlags(t *testing.T) {
+	testCases := []struct {
+		name          string
+		parseValue    uint64
+		expectedSting string
+	}{
+		{
+			name:          "Single value",
+			parseValue:    LEGACY_FOLL_PIN.Value(),
+			expectedSting: "FOLL_PIN",
+		},
+		{
+			name:          "Multiple values",
+			parseValue:    LEGACY_FOLL_TOUCH.Value() | LEGACY_FOLL_MIGRATION.Value() | LEGACY_FOLL_PIN.Value(),
+			expectedSting: "FOLL_TOUCH|FOLL_MIGRATION|FOLL_PIN",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			flags := ParseLegacyGUPFlags(testCase.parseValue)
+			assert.Equal(t, testCase.expectedSting, flags.String())
+		})
+	}
+}
