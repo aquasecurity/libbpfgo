@@ -2969,3 +2969,96 @@ func ParseIoUringRequestFlags(rawValue uint64) IoUringRequestFlag {
 
 	return IoUringRequestFlag{stringValue: strings.Join(f, "|"), rawValue: uint32(rawValue)}
 }
+
+// =====================================================
+
+// GUPFlag represents GUP (Get User Pages) flags since version 6.3
+type GUPFlag struct {
+	rawValue    uint32
+	stringValue string
+}
+
+const GupFlagShiftMax = 21
+
+// revive:disable
+
+// These values are copied from include/linux/mm_types.h and include/lunux/internal.h
+var (
+	FOLL_WRITE            = GUPFlag{rawValue: 1 << 0, stringValue: "FOLL_WRITE"}
+	FOLL_GET              = GUPFlag{rawValue: 1 << 1, stringValue: "FOLL_GET"}
+	FOLL_DUMP             = GUPFlag{rawValue: 1 << 2, stringValue: "FOLL_DUMP"}
+	FOLL_FORCE            = GUPFlag{rawValue: 1 << 3, stringValue: "FOLL_FORCE"}
+	FOLL_NOWAIT           = GUPFlag{rawValue: 1 << 4, stringValue: "FOLL_NOWAIT"}
+	FOLL_NOFAULT          = GUPFlag{rawValue: 1 << 5, stringValue: "FOLL_NOFAULT"}
+	FOLL_HWPOISON         = GUPFlag{rawValue: 1 << 6, stringValue: "FOLL_HWPOISON"}
+	FOLL_ANON             = GUPFlag{rawValue: 1 << 7, stringValue: "FOLL_ANON"}
+	FOLL_LONGTERM         = GUPFlag{rawValue: 1 << 8, stringValue: "FOLL_LONGTERM"}
+	FOLL_SPLIT_PMD        = GUPFlag{rawValue: 1 << 9, stringValue: "FOLL_SPLIT_PMD"}
+	FOLL_PCI_P2PDMA       = GUPFlag{rawValue: 1 << 10, stringValue: "FOLL_PCI_P2PDMA"}
+	FOLL_INTERRUPTIBLE    = GUPFlag{rawValue: 1 << 11, stringValue: "FOLL_INTERRUPTIBLE"}
+	FOLL_HONOR_NUMA_FAULT = GUPFlag{rawValue: 1 << 12, stringValue: "FOLL_HONOR_NUMA_FAULT"}
+	FOLL_TOUCH            = GUPFlag{rawValue: 1 << 16, stringValue: "FOLL_TOUCH"}
+	FOLL_TRIED            = GUPFlag{rawValue: 1 << 17, stringValue: "FOLL_TRIED"}
+	FOLL_REMOTE           = GUPFlag{rawValue: 1 << 18, stringValue: "FOLL_REMOTE"}
+	FOLL_PIN              = GUPFlag{rawValue: 1 << 19, stringValue: "FOLL_PIN"}
+	FOLL_FAST_ONLY        = GUPFlag{rawValue: 1 << 20, stringValue: "FOLL_FAST_ONLY"}
+	FOLL_UNLOCKABLE       = GUPFlag{rawValue: 1 << 21, stringValue: "FOLL_UNLOCKABLE"}
+)
+
+// revive:enable
+
+var GUPFlagMap = map[uint64]GUPFlag{
+	FOLL_WRITE.Value():            FOLL_WRITE,
+	FOLL_GET.Value():              FOLL_GET,
+	FOLL_DUMP.Value():             FOLL_DUMP,
+	FOLL_FORCE.Value():            FOLL_FORCE,
+	FOLL_NOWAIT.Value():           FOLL_NOWAIT,
+	FOLL_NOFAULT.Value():          FOLL_NOFAULT,
+	FOLL_HWPOISON.Value():         FOLL_HWPOISON,
+	FOLL_ANON.Value():             FOLL_ANON,
+	FOLL_LONGTERM.Value():         FOLL_LONGTERM,
+	FOLL_SPLIT_PMD.Value():        FOLL_SPLIT_PMD,
+	FOLL_PCI_P2PDMA.Value():       FOLL_PCI_P2PDMA,
+	FOLL_INTERRUPTIBLE.Value():    FOLL_INTERRUPTIBLE,
+	FOLL_HONOR_NUMA_FAULT.Value(): FOLL_HONOR_NUMA_FAULT,
+	FOLL_TOUCH.Value():            FOLL_TOUCH,
+	FOLL_TRIED.Value():            FOLL_TRIED,
+	FOLL_REMOTE.Value():           FOLL_REMOTE,
+	FOLL_PIN.Value():              FOLL_PIN,
+	FOLL_FAST_ONLY.Value():        FOLL_FAST_ONLY,
+	FOLL_UNLOCKABLE.Value():       FOLL_UNLOCKABLE,
+}
+
+func (gupf GUPFlag) Value() uint64 {
+	return uint64(gupf.rawValue)
+}
+
+func (gupf GUPFlag) String() string {
+	return gupf.stringValue
+}
+
+// ParseGUPFlags parses the flags bitmask of gup (get user pages) operation for kernels since
+// version 6.3
+func ParseGUPFlags(rawValue uint64) GUPFlag {
+	var f []string
+	for i := 0; i <= GupFlagShiftMax; i++ {
+		var flagMask uint64 = 1 << i
+
+		if (rawValue & flagMask) != 0 {
+			flag, ok := GUPFlagMap[flagMask]
+			if ok {
+				f = append(f, flag.String())
+			} else {
+				f = append(
+					f,
+					fmt.Sprintf(
+						"UNKNOWN_FLAG_0X%s",
+						strings.ToUpper(strconv.FormatUint(flagMask, 16)),
+					),
+				)
+			}
+		}
+	}
+
+	return GUPFlag{stringValue: strings.Join(f, "|"), rawValue: uint32(rawValue)}
+}

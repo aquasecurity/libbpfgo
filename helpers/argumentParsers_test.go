@@ -221,3 +221,29 @@ func TestParseMmapFlags(t *testing.T) {
 		})
 	}
 }
+
+func TestParseGupFlags(t *testing.T) {
+	testCases := []struct {
+		name          string
+		parseValue    uint64
+		expectedSting string
+	}{
+		{
+			name:          "Single value",
+			parseValue:    FOLL_PIN.Value(),
+			expectedSting: "FOLL_PIN",
+		},
+		{
+			name:          "Multiple values",
+			parseValue:    FOLL_NOWAIT.Value() | FOLL_ANON.Value() | FOLL_PIN.Value(),
+			expectedSting: "FOLL_NOWAIT|FOLL_ANON|FOLL_PIN",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			flags := ParseGUPFlags(testCase.parseValue)
+			assert.Equal(t, testCase.expectedSting, flags.String())
+		})
+	}
+}
