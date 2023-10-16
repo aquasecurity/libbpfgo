@@ -3157,3 +3157,129 @@ func ParseLegacyGUPFlags(rawValue uint64) LegacyGUPFlag {
 
 	return LegacyGUPFlag{stringValue: strings.Join(f, "|"), rawValue: uint32(rawValue)}
 }
+
+// =====================================================
+
+// VmFlag represents the flags in the `vm_area_struct` in x86 64bit architecture
+type VmFlag struct {
+	rawValue    uint64
+	stringValue string
+}
+
+const VmFlagShiftMax = 37
+
+// revive:disable
+
+// These values are copied from include/linux/mm.h
+var (
+	VM_READ         = VmFlag{rawValue: 1 << 0, stringValue: "VM_READ"}
+	VM_WRITE        = VmFlag{rawValue: 1 << 1, stringValue: "VM_WRITE"}
+	VM_EXEC         = VmFlag{rawValue: 1 << 2, stringValue: "VM_EXEC"}
+	VM_SHARED       = VmFlag{rawValue: 1 << 3, stringValue: "VM_SHARED"}
+	VM_MAYREAD      = VmFlag{rawValue: 1 << 4, stringValue: "VM_MAYREAD"}
+	VM_MAYWRITE     = VmFlag{rawValue: 1 << 5, stringValue: "VM_MAYWRITE"}
+	VM_MAYEXEC      = VmFlag{rawValue: 1 << 6, stringValue: "VM_MAYEXEC"}
+	VM_MAYSHARE     = VmFlag{rawValue: 1 << 7, stringValue: "VM_MAYSHARE"}
+	VM_GROWSDOWN    = VmFlag{rawValue: 1 << 8, stringValue: "VM_GROWSDOWN"}
+	VM_UFFD_MISSING = VmFlag{rawValue: 1 << 9, stringValue: "VM_UFFD_MISSING"}
+	VM_PFNMAP       = VmFlag{rawValue: 1 << 10, stringValue: "VM_PFNMAP"}
+	VM_UFFD_WP      = VmFlag{rawValue: 1 << 12, stringValue: "VM_UFFD_WP"}
+	VM_LOCKED       = VmFlag{rawValue: 1 << 13, stringValue: "VM_LOCKED"}
+	VM_IO           = VmFlag{rawValue: 1 << 14, stringValue: "VM_IO"}
+	VM_SEQ_READ     = VmFlag{rawValue: 1 << 15, stringValue: "VM_SEQ_READ"}
+	VM_RAND_READ    = VmFlag{rawValue: 1 << 16, stringValue: "VM_RAND_READ"}
+	VM_DONTCOPY     = VmFlag{rawValue: 1 << 17, stringValue: "VM_DONTCOPY"}
+	VM_DONTEXPAND   = VmFlag{rawValue: 1 << 18, stringValue: "VM_DONTEXPAND"}
+	VM_LOCKONFAULT  = VmFlag{rawValue: 1 << 19, stringValue: "VM_LOCKONFAULT"}
+	VM_ACCOUNT      = VmFlag{rawValue: 1 << 20, stringValue: "VM_ACCOUNT"}
+	VM_NORESERVE    = VmFlag{rawValue: 1 << 21, stringValue: "VM_NORESERVE"}
+	VM_HUGETLB      = VmFlag{rawValue: 1 << 22, stringValue: "VM_HUGETLB"}
+	VM_SYNC         = VmFlag{rawValue: 1 << 23, stringValue: "VM_SYNC"}
+	VM_PAT          = VmFlag{rawValue: 1 << 24, stringValue: "VM_PAT"}
+	VM_WIPEONFORK   = VmFlag{rawValue: 1 << 25, stringValue: "VM_WIPEONFORK"}
+	VM_DONTDUMP     = VmFlag{rawValue: 1 << 26, stringValue: "VM_DONTDUMP"}
+	VM_SOFTDIRTY    = VmFlag{rawValue: 1 << 27, stringValue: "VM_SOFTDIRTY"}
+	VM_MIXEDMAP     = VmFlag{rawValue: 1 << 28, stringValue: "VM_MIXEDMAP"}
+	VM_HUGEPAGE     = VmFlag{rawValue: 1 << 29, stringValue: "VM_HUGEPAGE"}
+	VM_NOHUGEPAGE   = VmFlag{rawValue: 1 << 30, stringValue: "VM_NOHUGEPAGE"}
+	VM_MERGEABLE    = VmFlag{rawValue: 1 << 31, stringValue: "VM_MERGEABLE"}
+	VM_PKEY_BIT0    = VmFlag{rawValue: 1 << 32, stringValue: "VM_PKEY_BIT0"}
+	VM_PKEY_BIT1    = VmFlag{rawValue: 1 << 33, stringValue: "VM_PKEY_BIT1"}
+	VM_PKEY_BIT3    = VmFlag{rawValue: 1 << 34, stringValue: "VM_PKEY_BIT3"}
+	VM_PKEY_BIT4    = VmFlag{rawValue: 1 << 35, stringValue: "VM_PKEY_BIT4"}
+	VM_UFFD_MINOR   = VmFlag{rawValue: 1 << 37, stringValue: "VM_UFFD_MINOR"}
+)
+
+// revive:enable
+
+var VmFlagMap = map[uint64]VmFlag{
+	VM_READ.Value():         VM_READ,
+	VM_WRITE.Value():        VM_WRITE,
+	VM_EXEC.Value():         VM_EXEC,
+	VM_SHARED.Value():       VM_SHARED,
+	VM_MAYREAD.Value():      VM_MAYREAD,
+	VM_MAYWRITE.Value():     VM_MAYWRITE,
+	VM_MAYEXEC.Value():      VM_MAYEXEC,
+	VM_MAYSHARE.Value():     VM_MAYSHARE,
+	VM_GROWSDOWN.Value():    VM_GROWSDOWN,
+	VM_UFFD_MISSING.Value(): VM_UFFD_MISSING,
+	VM_PFNMAP.Value():       VM_PFNMAP,
+	VM_UFFD_WP.Value():      VM_UFFD_WP,
+	VM_LOCKED.Value():       VM_LOCKED,
+	VM_IO.Value():           VM_IO,
+	VM_SEQ_READ.Value():     VM_SEQ_READ,
+	VM_RAND_READ.Value():    VM_RAND_READ,
+	VM_DONTCOPY.Value():     VM_DONTCOPY,
+	VM_DONTEXPAND.Value():   VM_DONTEXPAND,
+	VM_LOCKONFAULT.Value():  VM_LOCKONFAULT,
+	VM_ACCOUNT.Value():      VM_ACCOUNT,
+	VM_NORESERVE.Value():    VM_NORESERVE,
+	VM_HUGETLB.Value():      VM_HUGETLB,
+	VM_SYNC.Value():         VM_SYNC,
+	VM_PAT.Value():          VM_PAT,
+	VM_WIPEONFORK.Value():   VM_WIPEONFORK,
+	VM_DONTDUMP.Value():     VM_DONTDUMP,
+	VM_SOFTDIRTY.Value():    VM_SOFTDIRTY,
+	VM_MIXEDMAP.Value():     VM_MIXEDMAP,
+	VM_HUGEPAGE.Value():     VM_HUGEPAGE,
+	VM_NOHUGEPAGE.Value():   VM_NOHUGEPAGE,
+	VM_MERGEABLE.Value():    VM_MERGEABLE,
+	VM_PKEY_BIT0.Value():    VM_PKEY_BIT0,
+	VM_PKEY_BIT1.Value():    VM_PKEY_BIT1,
+	VM_PKEY_BIT3.Value():    VM_PKEY_BIT3,
+	VM_PKEY_BIT4.Value():    VM_PKEY_BIT4,
+	VM_UFFD_MINOR.Value():   VM_UFFD_MINOR,
+}
+
+func (vmf VmFlag) Value() uint64 {
+	return vmf.rawValue
+}
+
+func (vmf VmFlag) String() string {
+	return vmf.stringValue
+}
+
+// ParseVmFlags parses the flags of vm_area_struct for x86 64bit architecture
+func ParseVmFlags(rawValue uint64) VmFlag {
+	var f []string
+	for i := 0; i <= VmFlagShiftMax; i++ {
+		var flagMask uint64 = 1 << i
+
+		if (rawValue & flagMask) != 0 {
+			flag, ok := VmFlagMap[flagMask]
+			if ok {
+				f = append(f, flag.String())
+			} else {
+				f = append(
+					f,
+					fmt.Sprintf(
+						"UNKNOWN_FLAG_0X%s",
+						strings.ToUpper(strconv.FormatUint(flagMask, 16)),
+					),
+				)
+			}
+		}
+	}
+
+	return VmFlag{stringValue: strings.Join(f, "|"), rawValue: rawValue}
+}
