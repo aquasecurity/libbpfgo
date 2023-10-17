@@ -7,6 +7,7 @@ package libbpfgo
 import "C"
 
 import (
+	"errors"
 	"fmt"
 	"syscall"
 	"unsafe"
@@ -34,6 +35,29 @@ type BPFMapCreateOpts struct {
 	MapExtra              uint64
 	NumaNode              uint32
 	MapIfIndex            uint32
+}
+
+// GetMapNextIDENOENTError is a custom error type that represents the "no entry" error
+// when attempting to get the next map ID.
+type GetMapNextIDENOENTError struct{}
+
+// GetMapNextIDEPERMError is a custom error type that represents the "permission denied" error
+// when attempting to get the next map ID.
+type GetMapNextIDEPERMError struct{}
+
+// GetMapNextIDEINVALError is a custom error type that represents the "invalid value" error
+// when attempting to get the next map ID.
+type GetMapNextIDEINVALError struct{}
+
+func (g GetMapNextIDENOENTError) Error() string {
+	return fmt.Sprintf("Error no entry")
+}
+
+func (g GetMapNextIDEPERMError) Error() string {
+	return fmt.Sprintf("Error permission denied")
+}
+func (g GetMapNextIDEINVALError) Error() string {
+	return fmt.Sprintf("Error invalid value")
 }
 
 // CreateMap creates a new BPF map with the given parameters.
@@ -99,26 +123,70 @@ func GetMapByID(id uint32) (*BPFMapLow, error) {
 	}, nil
 }
 
-// GetMapsIDsByName searches for maps with a given name.
-// It returns a slice of unsigned 32-bit integers representing the IDs of matching maps.
-// If no maps are found, it returns an empty slice and no error.
-func GetMapsIDsByName(name string) ([]uint32, error) {
-	bpfMapsIds := []uint32{}
+// GetMapNextID retrieves the next available map ID after the given startID.
+// It returns the next map ID and an error if one occurs during the operation.
+func GetMapNextID(id uint32) (uint32, error) {
+	startID := C.uint(id)
+	retC := C.bpf_map_get_next_id(startID, &startID)
+	if retC == 0 {
+		return uint32(startID), nil
+	}
 
-	id := C.uint(0)
+	errno := syscall.Errno(-retC)
+	switch errno {
+	case syscall.ENOENT:
+		return uint32(startID), GetMapNextIDENOENTError{}
+	case syscall.EINVAL:
+		return uint32(startID), GetMapNextIDEINVALError{}
+	case syscall.EPERM:
+		return uint32(startID), GetMapNextIDEPERMError{}
+	default:
+		return uint32(startID), fmt.Errorf("failed to get next map id: %w", errno)
+	}
+}
+
+// GetMapsIDsByName searches for maps with a specified name and collects their IDs.
+// It starts the search from the given 'startId' and continues until no more matching maps are found.
+// The function returns a slice of unsigned 32-bit integers representing the IDs of matching maps.
+// If no maps with the provided 'name' are found, it returns an empty slice and no error.
+// The 'startId' is modified and returned as the last processed map ID.
+//
+// Example Usage:
+//
+//	name := "myMap"          // The name of the map you want to find.
+//	startId := uint32(0)     // The map ID to start the search from.
+//
+//	var mapIDs []uint32      // Initialize an empty slice to collect map IDs.
+//	var err error            // Initialize an error variable.
+//
+//	// Retry mechanism in case of errors using the last processed 'startId'.
+//	for {
+//	    mapIDs, err = GetMapsIDsByName(name, startId)
+//	    if err != nil {
+//	        // Handle other errors, possibly with a retry mechanism.
+//	        // You can use the 'startId' who contains the last processed map ID to continue the search.
+//	    } else {
+//	        // Successful search, use the 'mapIDs' slice containing the IDs of matching maps.
+//	        // Update 'startId' to the last processed map ID to continue the search.
+//	    }
+//	}
+func GetMapsIDsByName(name string, startId uint32) ([]uint32, error) {
+	var (
+		bpfMapsIds []uint32
+		err        error
+	)
 
 	for {
-		retC := C.bpf_map_get_next_id(id, &id)
-		errno := syscall.Errno(-retC)
-		if retC < 0 {
-			if errno == syscall.ENOENT {
+		startId, err = GetMapNextID(startId)
+		if err != nil {
+			if errors.Is(err, GetMapNextIDENOENTError{}) {
 				return bpfMapsIds, nil
 			}
 
-			return bpfMapsIds, fmt.Errorf("failed to get next map id: %w", errno)
+			return bpfMapsIds, err
 		}
 
-		bpfMapLow, err := GetMapByID(uint32(id))
+		bpfMapLow, err := GetMapByID(startId)
 		if err != nil {
 			return bpfMapsIds, err
 		}
