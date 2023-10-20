@@ -37,29 +37,6 @@ type BPFMapCreateOpts struct {
 	MapIfIndex            uint32
 }
 
-// GetMapNextIDENOENTError is a custom error type that represents the "no entry" error
-// when attempting to get the next map ID.
-type GetMapNextIDENOENTError struct{}
-
-// GetMapNextIDEPERMError is a custom error type that represents the "permission denied" error
-// when attempting to get the next map ID.
-type GetMapNextIDEPERMError struct{}
-
-// GetMapNextIDEINVALError is a custom error type that represents the "invalid value" error
-// when attempting to get the next map ID.
-type GetMapNextIDEINVALError struct{}
-
-func (g GetMapNextIDENOENTError) Error() string {
-	return fmt.Sprintf("Error no entry")
-}
-
-func (g GetMapNextIDEPERMError) Error() string {
-	return fmt.Sprintf("Error permission denied")
-}
-func (g GetMapNextIDEINVALError) Error() string {
-	return fmt.Sprintf("Error invalid value")
-}
-
 // CreateMap creates a new BPF map with the given parameters.
 func CreateMap(mapType MapType, mapName string, keySize, valueSize, maxEntries int, opts *BPFMapCreateOpts) (*BPFMapLow, error) {
 	mapNameC := C.CString(mapName)
@@ -125,24 +102,14 @@ func GetMapByID(id uint32) (*BPFMapLow, error) {
 
 // GetMapNextID retrieves the next available map ID after the given startID.
 // It returns the next map ID and an error if one occurs during the operation.
-func GetMapNextID(id uint32) (uint32, error) {
-	startID := C.uint(id)
-	retC := C.bpf_map_get_next_id(startID, &startID)
+func GetMapNextID(startId uint32) (uint32, error) {
+	startIDC := C.uint(startId)
+	retC := C.bpf_map_get_next_id(startIDC, &startIDC)
 	if retC == 0 {
-		return uint32(startID), nil
+		return uint32(startIDC), nil
 	}
 
-	errno := syscall.Errno(-retC)
-	switch errno {
-	case syscall.ENOENT:
-		return uint32(startID), GetMapNextIDENOENTError{}
-	case syscall.EINVAL:
-		return uint32(startID), GetMapNextIDEINVALError{}
-	case syscall.EPERM:
-		return uint32(startID), GetMapNextIDEPERMError{}
-	default:
-		return uint32(startID), fmt.Errorf("failed to get next map id: %w", errno)
-	}
+	return uint32(startIDC), fmt.Errorf("failed to get next map id: %w", syscall.Errno(-retC))
 }
 
 // GetMapsIDsByName searches for maps with a specified name and collects their IDs.
@@ -179,7 +146,7 @@ func GetMapsIDsByName(name string, startId uint32) ([]uint32, error) {
 	for {
 		startId, err = GetMapNextID(startId)
 		if err != nil {
-			if errors.Is(err, GetMapNextIDENOENTError{}) {
+			if errors.Is(err, syscall.ENOENT) {
 				return bpfMapsIds, nil
 			}
 
