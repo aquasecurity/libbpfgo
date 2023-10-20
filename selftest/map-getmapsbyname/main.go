@@ -30,12 +30,14 @@ func main() {
 
 	bpfModule.BPFLoadObject()
 
-	notFoundMapsIDs, err := bpf.GetMapsIDsByName(BPFMapNameToNotFind, 0)
+	startId := uint32(0)
+	notFoundMapsIDs, err := bpf.GetMapsIDsByName(BPFMapNameToNotFind, &startId)
 	if len(notFoundMapsIDs) != 0 {
 		log.Fatalf("the %s map should not be found, but it was found with ids: %v", BPFMapNameToNotFind, notFoundMapsIDs)
 	}
 
-	bpfHashMapsIDs, err := bpf.GetMapsIDsByName(BPFHashMapNameToFind, 0)
+	startId = 0
+	bpfHashMapsIDs, err := bpf.GetMapsIDsByName(BPFHashMapNameToFind, &startId)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -43,7 +45,8 @@ func main() {
 		log.Fatalf("the %s map should be found", BPFHashMapNameToFind)
 	}
 
-	mapsIDs, err := bpf.GetMapsIDsByName(BPFMapNameToFind, 0)
+	startId = 0
+	mapsIDs, err := bpf.GetMapsIDsByName(BPFMapNameToFind, &startId)
 	if err != nil {
 		log.Fatal(err)
 	}

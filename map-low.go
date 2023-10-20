@@ -137,14 +137,14 @@ func GetMapNextID(startId uint32) (uint32, error) {
 //	        // Update 'startId' to the last processed map ID to continue the search.
 //	    }
 //	}
-func GetMapsIDsByName(name string, startId uint32) ([]uint32, error) {
+func GetMapsIDsByName(name string, startId *uint32) ([]uint32, error) {
 	var (
 		bpfMapsIds []uint32
 		err        error
 	)
 
 	for {
-		startId, err = GetMapNextID(startId)
+		*startId, err = GetMapNextID(*startId)
 		if err != nil {
 			if errors.Is(err, syscall.ENOENT) {
 				return bpfMapsIds, nil
@@ -153,7 +153,7 @@ func GetMapsIDsByName(name string, startId uint32) ([]uint32, error) {
 			return bpfMapsIds, err
 		}
 
-		bpfMapLow, err := GetMapByID(startId)
+		bpfMapLow, err := GetMapByID(*startId)
 		if err != nil {
 			return bpfMapsIds, err
 		}
