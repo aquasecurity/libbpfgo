@@ -221,3 +221,81 @@ func TestParseMmapFlags(t *testing.T) {
 		})
 	}
 }
+
+func TestParseGupFlags(t *testing.T) {
+	testCases := []struct {
+		name          string
+		parseValue    uint64
+		expectedSting string
+	}{
+		{
+			name:          "Single value",
+			parseValue:    FOLL_PIN.Value(),
+			expectedSting: "FOLL_PIN",
+		},
+		{
+			name:          "Multiple values",
+			parseValue:    FOLL_NOWAIT.Value() | FOLL_ANON.Value() | FOLL_PIN.Value(),
+			expectedSting: "FOLL_NOWAIT|FOLL_ANON|FOLL_PIN",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			flags := ParseGUPFlags(testCase.parseValue)
+			assert.Equal(t, testCase.expectedSting, flags.String())
+		})
+	}
+}
+
+func TestParseLegacyGupFlags(t *testing.T) {
+	testCases := []struct {
+		name          string
+		parseValue    uint64
+		expectedSting string
+	}{
+		{
+			name:          "Single value",
+			parseValue:    LEGACY_FOLL_PIN.Value(),
+			expectedSting: "FOLL_PIN",
+		},
+		{
+			name:          "Multiple values",
+			parseValue:    LEGACY_FOLL_TOUCH.Value() | LEGACY_FOLL_MIGRATION.Value() | LEGACY_FOLL_PIN.Value(),
+			expectedSting: "FOLL_TOUCH|FOLL_MIGRATION|FOLL_PIN",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			flags := ParseLegacyGUPFlags(testCase.parseValue)
+			assert.Equal(t, testCase.expectedSting, flags.String())
+		})
+	}
+}
+
+func TestParseVmFlags(t *testing.T) {
+	testCases := []struct {
+		name          string
+		parseValue    uint64
+		expectedSting string
+	}{
+		{
+			name:          "Single value",
+			parseValue:    VM_IO.Value(),
+			expectedSting: "VM_IO",
+		},
+		{
+			name:          "Multiple values",
+			parseValue:    VM_MAYSHARE.Value() | VM_SEQ_READ.Value() | VM_PAT.Value(),
+			expectedSting: "VM_MAYSHARE|VM_SEQ_READ|VM_PAT",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			flags := ParseVmFlags(testCase.parseValue)
+			assert.Equal(t, testCase.expectedSting, flags.String())
+		})
+	}
+}

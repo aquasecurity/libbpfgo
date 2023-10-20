@@ -2969,3 +2969,317 @@ func ParseIoUringRequestFlags(rawValue uint64) IoUringRequestFlag {
 
 	return IoUringRequestFlag{stringValue: strings.Join(f, "|"), rawValue: uint32(rawValue)}
 }
+
+// =====================================================
+
+// GUPFlag represents GUP (Get User Pages) flags since version 6.3
+type GUPFlag struct {
+	rawValue    uint32
+	stringValue string
+}
+
+const GupFlagShiftMax = 21
+
+// revive:disable
+
+// These values are copied from include/linux/mm_types.h and include/lunux/internal.h
+var (
+	FOLL_WRITE            = GUPFlag{rawValue: 1 << 0, stringValue: "FOLL_WRITE"}
+	FOLL_GET              = GUPFlag{rawValue: 1 << 1, stringValue: "FOLL_GET"}
+	FOLL_DUMP             = GUPFlag{rawValue: 1 << 2, stringValue: "FOLL_DUMP"}
+	FOLL_FORCE            = GUPFlag{rawValue: 1 << 3, stringValue: "FOLL_FORCE"}
+	FOLL_NOWAIT           = GUPFlag{rawValue: 1 << 4, stringValue: "FOLL_NOWAIT"}
+	FOLL_NOFAULT          = GUPFlag{rawValue: 1 << 5, stringValue: "FOLL_NOFAULT"}
+	FOLL_HWPOISON         = GUPFlag{rawValue: 1 << 6, stringValue: "FOLL_HWPOISON"}
+	FOLL_ANON             = GUPFlag{rawValue: 1 << 7, stringValue: "FOLL_ANON"}
+	FOLL_LONGTERM         = GUPFlag{rawValue: 1 << 8, stringValue: "FOLL_LONGTERM"}
+	FOLL_SPLIT_PMD        = GUPFlag{rawValue: 1 << 9, stringValue: "FOLL_SPLIT_PMD"}
+	FOLL_PCI_P2PDMA       = GUPFlag{rawValue: 1 << 10, stringValue: "FOLL_PCI_P2PDMA"}
+	FOLL_INTERRUPTIBLE    = GUPFlag{rawValue: 1 << 11, stringValue: "FOLL_INTERRUPTIBLE"}
+	FOLL_HONOR_NUMA_FAULT = GUPFlag{rawValue: 1 << 12, stringValue: "FOLL_HONOR_NUMA_FAULT"}
+	FOLL_TOUCH            = GUPFlag{rawValue: 1 << 16, stringValue: "FOLL_TOUCH"}
+	FOLL_TRIED            = GUPFlag{rawValue: 1 << 17, stringValue: "FOLL_TRIED"}
+	FOLL_REMOTE           = GUPFlag{rawValue: 1 << 18, stringValue: "FOLL_REMOTE"}
+	FOLL_PIN              = GUPFlag{rawValue: 1 << 19, stringValue: "FOLL_PIN"}
+	FOLL_FAST_ONLY        = GUPFlag{rawValue: 1 << 20, stringValue: "FOLL_FAST_ONLY"}
+	FOLL_UNLOCKABLE       = GUPFlag{rawValue: 1 << 21, stringValue: "FOLL_UNLOCKABLE"}
+)
+
+// revive:enable
+
+var GUPFlagMap = map[uint64]GUPFlag{
+	FOLL_WRITE.Value():            FOLL_WRITE,
+	FOLL_GET.Value():              FOLL_GET,
+	FOLL_DUMP.Value():             FOLL_DUMP,
+	FOLL_FORCE.Value():            FOLL_FORCE,
+	FOLL_NOWAIT.Value():           FOLL_NOWAIT,
+	FOLL_NOFAULT.Value():          FOLL_NOFAULT,
+	FOLL_HWPOISON.Value():         FOLL_HWPOISON,
+	FOLL_ANON.Value():             FOLL_ANON,
+	FOLL_LONGTERM.Value():         FOLL_LONGTERM,
+	FOLL_SPLIT_PMD.Value():        FOLL_SPLIT_PMD,
+	FOLL_PCI_P2PDMA.Value():       FOLL_PCI_P2PDMA,
+	FOLL_INTERRUPTIBLE.Value():    FOLL_INTERRUPTIBLE,
+	FOLL_HONOR_NUMA_FAULT.Value(): FOLL_HONOR_NUMA_FAULT,
+	FOLL_TOUCH.Value():            FOLL_TOUCH,
+	FOLL_TRIED.Value():            FOLL_TRIED,
+	FOLL_REMOTE.Value():           FOLL_REMOTE,
+	FOLL_PIN.Value():              FOLL_PIN,
+	FOLL_FAST_ONLY.Value():        FOLL_FAST_ONLY,
+	FOLL_UNLOCKABLE.Value():       FOLL_UNLOCKABLE,
+}
+
+func (gupf GUPFlag) Value() uint64 {
+	return uint64(gupf.rawValue)
+}
+
+func (gupf GUPFlag) String() string {
+	return gupf.stringValue
+}
+
+// ParseGUPFlags parses the flags bitmask of gup (get user pages) operation for kernels since
+// version 6.3
+func ParseGUPFlags(rawValue uint64) GUPFlag {
+	var f []string
+	for i := 0; i <= GupFlagShiftMax; i++ {
+		var flagMask uint64 = 1 << i
+
+		if (rawValue & flagMask) != 0 {
+			flag, ok := GUPFlagMap[flagMask]
+			if ok {
+				f = append(f, flag.String())
+			} else {
+				f = append(
+					f,
+					fmt.Sprintf(
+						"UNKNOWN_FLAG_0X%s",
+						strings.ToUpper(strconv.FormatUint(flagMask, 16)),
+					),
+				)
+			}
+		}
+	}
+
+	return GUPFlag{stringValue: strings.Join(f, "|"), rawValue: uint32(rawValue)}
+}
+
+// =====================================================
+
+// LegacyGUPFlag represents GUP (Get User Pages) flags up to version 6.3
+type LegacyGUPFlag struct {
+	rawValue    uint32
+	stringValue string
+}
+
+const LegacyGupFlagShiftMax = 22
+
+// revive:disable
+
+// These values are copied from include/linux/mm.h
+var (
+	LEGACY_FOLL_WRITE     = LegacyGUPFlag{rawValue: 1 << 0, stringValue: "FOLL_WRITE"}
+	LEGACY_FOLL_TOUCH     = LegacyGUPFlag{rawValue: 1 << 1, stringValue: "FOLL_TOUCH"}
+	LEGACY_FOLL_GET       = LegacyGUPFlag{rawValue: 1 << 2, stringValue: "FOLL_GET"}
+	LEGACY_FOLL_DUMP      = LegacyGUPFlag{rawValue: 1 << 3, stringValue: "FOLL_DUMP"}
+	LEGACY_FOLL_FORCE     = LegacyGUPFlag{rawValue: 1 << 4, stringValue: "FOLL_FORCE"}
+	LEGACY_FOLL_NOWAIT    = LegacyGUPFlag{rawValue: 1 << 5, stringValue: "FOLL_NOWAIT"}
+	LEGACY_FOLL_POPULATE  = LegacyGUPFlag{rawValue: 1 << 6, stringValue: "FOLL_POPULATE"}
+	LEGACY_FOLL_SPLIT     = LegacyGUPFlag{rawValue: 1 << 7, stringValue: "FOLL_SPLIT"}
+	LEGACY_FOLL_HWPOISON  = LegacyGUPFlag{rawValue: 1 << 8, stringValue: "FOLL_HWPOISON"}
+	LEGACY_FOLL_NUMA      = LegacyGUPFlag{rawValue: 1 << 9, stringValue: "FOLL_NUMA"}
+	LEGACY_FOLL_MIGRATION = LegacyGUPFlag{rawValue: 1 << 10, stringValue: "FOLL_MIGRATION"}
+	LEGACY_FOLL_TRIED     = LegacyGUPFlag{rawValue: 1 << 11, stringValue: "FOLL_TRIED"}
+	LEGACY_FOLL_MLOCK     = LegacyGUPFlag{rawValue: 1 << 12, stringValue: "FOLL_MLOCK"}
+	LEGACY_FOLL_REMOTE    = LegacyGUPFlag{rawValue: 1 << 16, stringValue: "FOLL_REMOTE"}
+	LEGACY_FOLL_COW       = LegacyGUPFlag{rawValue: 1 << 17, stringValue: "FOLL_COW"}
+	LEGACY_FOLL_ANON      = LegacyGUPFlag{rawValue: 1 << 18, stringValue: "FOLL_ANON"}
+	LEGACY_FOLL_LONGTERM  = LegacyGUPFlag{rawValue: 1 << 19, stringValue: "FOLL_LONGTERM"}
+	LEGACY_FOLL_SPLIT_PMD = LegacyGUPFlag{rawValue: 1 << 20, stringValue: "FOLL_SPLIT_PMD"}
+	LEGACY_FOLL_PIN       = LegacyGUPFlag{rawValue: 1 << 21, stringValue: "FOLL_PIN"}
+	LEGACY_FOLL_FAST_ONLY = LegacyGUPFlag{rawValue: 1 << 22, stringValue: "FOLL_FAST_ONLY"}
+)
+
+// revive:enable
+
+var LegacyGUPFlagMap = map[uint64]LegacyGUPFlag{
+	LEGACY_FOLL_WRITE.Value():     LEGACY_FOLL_WRITE,
+	LEGACY_FOLL_TOUCH.Value():     LEGACY_FOLL_TOUCH,
+	LEGACY_FOLL_GET.Value():       LEGACY_FOLL_GET,
+	LEGACY_FOLL_DUMP.Value():      LEGACY_FOLL_DUMP,
+	LEGACY_FOLL_FORCE.Value():     LEGACY_FOLL_FORCE,
+	LEGACY_FOLL_NOWAIT.Value():    LEGACY_FOLL_NOWAIT,
+	LEGACY_FOLL_POPULATE.Value():  LEGACY_FOLL_POPULATE,
+	LEGACY_FOLL_SPLIT.Value():     LEGACY_FOLL_SPLIT,
+	LEGACY_FOLL_HWPOISON.Value():  LEGACY_FOLL_HWPOISON,
+	LEGACY_FOLL_NUMA.Value():      LEGACY_FOLL_NUMA,
+	LEGACY_FOLL_MIGRATION.Value(): LEGACY_FOLL_MIGRATION,
+	LEGACY_FOLL_TRIED.Value():     LEGACY_FOLL_TRIED,
+	LEGACY_FOLL_MLOCK.Value():     LEGACY_FOLL_MLOCK,
+	LEGACY_FOLL_REMOTE.Value():    LEGACY_FOLL_REMOTE,
+	LEGACY_FOLL_COW.Value():       LEGACY_FOLL_COW,
+	LEGACY_FOLL_ANON.Value():      LEGACY_FOLL_ANON,
+	LEGACY_FOLL_LONGTERM.Value():  LEGACY_FOLL_LONGTERM,
+	LEGACY_FOLL_SPLIT_PMD.Value(): LEGACY_FOLL_SPLIT_PMD,
+	LEGACY_FOLL_PIN.Value():       LEGACY_FOLL_PIN,
+	LEGACY_FOLL_FAST_ONLY.Value(): LEGACY_FOLL_FAST_ONLY,
+}
+
+func (lgupf LegacyGUPFlag) Value() uint64 {
+	return uint64(lgupf.rawValue)
+}
+
+func (lgupf LegacyGUPFlag) String() string {
+	return lgupf.stringValue
+}
+
+// ParseLegacyGUPFlags parses the flags bitmask of gup (get user pages) operation for kernels up to
+// version 6.3
+func ParseLegacyGUPFlags(rawValue uint64) LegacyGUPFlag {
+	var f []string
+	for i := 0; i <= LegacyGupFlagShiftMax; i++ {
+		var flagMask uint64 = 1 << i
+
+		if (rawValue & flagMask) != 0 {
+			flag, ok := LegacyGUPFlagMap[flagMask]
+			if ok {
+				f = append(f, flag.String())
+			} else {
+				f = append(
+					f,
+					fmt.Sprintf(
+						"UNKNOWN_FLAG_0X%s",
+						strings.ToUpper(strconv.FormatUint(flagMask, 16)),
+					),
+				)
+			}
+		}
+	}
+
+	return LegacyGUPFlag{stringValue: strings.Join(f, "|"), rawValue: uint32(rawValue)}
+}
+
+// =====================================================
+
+// VmFlag represents the flags in the `vm_area_struct` in x86 64bit architecture
+type VmFlag struct {
+	rawValue    uint64
+	stringValue string
+}
+
+const VmFlagShiftMax = 37
+
+// revive:disable
+
+// These values are copied from include/linux/mm.h
+var (
+	VM_READ         = VmFlag{rawValue: 1 << 0, stringValue: "VM_READ"}
+	VM_WRITE        = VmFlag{rawValue: 1 << 1, stringValue: "VM_WRITE"}
+	VM_EXEC         = VmFlag{rawValue: 1 << 2, stringValue: "VM_EXEC"}
+	VM_SHARED       = VmFlag{rawValue: 1 << 3, stringValue: "VM_SHARED"}
+	VM_MAYREAD      = VmFlag{rawValue: 1 << 4, stringValue: "VM_MAYREAD"}
+	VM_MAYWRITE     = VmFlag{rawValue: 1 << 5, stringValue: "VM_MAYWRITE"}
+	VM_MAYEXEC      = VmFlag{rawValue: 1 << 6, stringValue: "VM_MAYEXEC"}
+	VM_MAYSHARE     = VmFlag{rawValue: 1 << 7, stringValue: "VM_MAYSHARE"}
+	VM_GROWSDOWN    = VmFlag{rawValue: 1 << 8, stringValue: "VM_GROWSDOWN"}
+	VM_UFFD_MISSING = VmFlag{rawValue: 1 << 9, stringValue: "VM_UFFD_MISSING"}
+	VM_PFNMAP       = VmFlag{rawValue: 1 << 10, stringValue: "VM_PFNMAP"}
+	VM_UFFD_WP      = VmFlag{rawValue: 1 << 12, stringValue: "VM_UFFD_WP"}
+	VM_LOCKED       = VmFlag{rawValue: 1 << 13, stringValue: "VM_LOCKED"}
+	VM_IO           = VmFlag{rawValue: 1 << 14, stringValue: "VM_IO"}
+	VM_SEQ_READ     = VmFlag{rawValue: 1 << 15, stringValue: "VM_SEQ_READ"}
+	VM_RAND_READ    = VmFlag{rawValue: 1 << 16, stringValue: "VM_RAND_READ"}
+	VM_DONTCOPY     = VmFlag{rawValue: 1 << 17, stringValue: "VM_DONTCOPY"}
+	VM_DONTEXPAND   = VmFlag{rawValue: 1 << 18, stringValue: "VM_DONTEXPAND"}
+	VM_LOCKONFAULT  = VmFlag{rawValue: 1 << 19, stringValue: "VM_LOCKONFAULT"}
+	VM_ACCOUNT      = VmFlag{rawValue: 1 << 20, stringValue: "VM_ACCOUNT"}
+	VM_NORESERVE    = VmFlag{rawValue: 1 << 21, stringValue: "VM_NORESERVE"}
+	VM_HUGETLB      = VmFlag{rawValue: 1 << 22, stringValue: "VM_HUGETLB"}
+	VM_SYNC         = VmFlag{rawValue: 1 << 23, stringValue: "VM_SYNC"}
+	VM_PAT          = VmFlag{rawValue: 1 << 24, stringValue: "VM_PAT"}
+	VM_WIPEONFORK   = VmFlag{rawValue: 1 << 25, stringValue: "VM_WIPEONFORK"}
+	VM_DONTDUMP     = VmFlag{rawValue: 1 << 26, stringValue: "VM_DONTDUMP"}
+	VM_SOFTDIRTY    = VmFlag{rawValue: 1 << 27, stringValue: "VM_SOFTDIRTY"}
+	VM_MIXEDMAP     = VmFlag{rawValue: 1 << 28, stringValue: "VM_MIXEDMAP"}
+	VM_HUGEPAGE     = VmFlag{rawValue: 1 << 29, stringValue: "VM_HUGEPAGE"}
+	VM_NOHUGEPAGE   = VmFlag{rawValue: 1 << 30, stringValue: "VM_NOHUGEPAGE"}
+	VM_MERGEABLE    = VmFlag{rawValue: 1 << 31, stringValue: "VM_MERGEABLE"}
+	VM_PKEY_BIT0    = VmFlag{rawValue: 1 << 32, stringValue: "VM_PKEY_BIT0"}
+	VM_PKEY_BIT1    = VmFlag{rawValue: 1 << 33, stringValue: "VM_PKEY_BIT1"}
+	VM_PKEY_BIT3    = VmFlag{rawValue: 1 << 34, stringValue: "VM_PKEY_BIT3"}
+	VM_PKEY_BIT4    = VmFlag{rawValue: 1 << 35, stringValue: "VM_PKEY_BIT4"}
+	VM_UFFD_MINOR   = VmFlag{rawValue: 1 << 37, stringValue: "VM_UFFD_MINOR"}
+)
+
+// revive:enable
+
+var VmFlagMap = map[uint64]VmFlag{
+	VM_READ.Value():         VM_READ,
+	VM_WRITE.Value():        VM_WRITE,
+	VM_EXEC.Value():         VM_EXEC,
+	VM_SHARED.Value():       VM_SHARED,
+	VM_MAYREAD.Value():      VM_MAYREAD,
+	VM_MAYWRITE.Value():     VM_MAYWRITE,
+	VM_MAYEXEC.Value():      VM_MAYEXEC,
+	VM_MAYSHARE.Value():     VM_MAYSHARE,
+	VM_GROWSDOWN.Value():    VM_GROWSDOWN,
+	VM_UFFD_MISSING.Value(): VM_UFFD_MISSING,
+	VM_PFNMAP.Value():       VM_PFNMAP,
+	VM_UFFD_WP.Value():      VM_UFFD_WP,
+	VM_LOCKED.Value():       VM_LOCKED,
+	VM_IO.Value():           VM_IO,
+	VM_SEQ_READ.Value():     VM_SEQ_READ,
+	VM_RAND_READ.Value():    VM_RAND_READ,
+	VM_DONTCOPY.Value():     VM_DONTCOPY,
+	VM_DONTEXPAND.Value():   VM_DONTEXPAND,
+	VM_LOCKONFAULT.Value():  VM_LOCKONFAULT,
+	VM_ACCOUNT.Value():      VM_ACCOUNT,
+	VM_NORESERVE.Value():    VM_NORESERVE,
+	VM_HUGETLB.Value():      VM_HUGETLB,
+	VM_SYNC.Value():         VM_SYNC,
+	VM_PAT.Value():          VM_PAT,
+	VM_WIPEONFORK.Value():   VM_WIPEONFORK,
+	VM_DONTDUMP.Value():     VM_DONTDUMP,
+	VM_SOFTDIRTY.Value():    VM_SOFTDIRTY,
+	VM_MIXEDMAP.Value():     VM_MIXEDMAP,
+	VM_HUGEPAGE.Value():     VM_HUGEPAGE,
+	VM_NOHUGEPAGE.Value():   VM_NOHUGEPAGE,
+	VM_MERGEABLE.Value():    VM_MERGEABLE,
+	VM_PKEY_BIT0.Value():    VM_PKEY_BIT0,
+	VM_PKEY_BIT1.Value():    VM_PKEY_BIT1,
+	VM_PKEY_BIT3.Value():    VM_PKEY_BIT3,
+	VM_PKEY_BIT4.Value():    VM_PKEY_BIT4,
+	VM_UFFD_MINOR.Value():   VM_UFFD_MINOR,
+}
+
+func (vmf VmFlag) Value() uint64 {
+	return vmf.rawValue
+}
+
+func (vmf VmFlag) String() string {
+	return vmf.stringValue
+}
+
+// ParseVmFlags parses the flags of vm_area_struct for x86 64bit architecture
+func ParseVmFlags(rawValue uint64) VmFlag {
+	var f []string
+	for i := 0; i <= VmFlagShiftMax; i++ {
+		var flagMask uint64 = 1 << i
+
+		if (rawValue & flagMask) != 0 {
+			flag, ok := VmFlagMap[flagMask]
+			if ok {
+				f = append(f, flag.String())
+			} else {
+				f = append(
+					f,
+					fmt.Sprintf(
+						"UNKNOWN_FLAG_0X%s",
+						strings.ToUpper(strconv.FormatUint(flagMask, 16)),
+					),
+				)
+			}
+		}
+	}
+
+	return VmFlag{stringValue: strings.Join(f, "|"), rawValue: rawValue}
+}
