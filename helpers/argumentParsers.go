@@ -6,6 +6,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	"golang.org/x/sys/unix"
 )
@@ -3254,6 +3255,67 @@ func ParseLegacyGUPFlags(rawValue uint64) LegacyGUPFlag {
 	}
 
 	return LegacyGUPFlag{stringValue: strings.Join(f, "|"), rawValue: uint32(rawValue)}
+}
+
+var currentOSGUPFlagsParse uint32
+var skipDetermineGUPFlagsFunc uint32
+
+const gupFlagsChangeVersion = "6.3.0"
+
+// ParseGUPFlagsCurrentOS parse the GUP flags received according to current machine OS version.
+// It uses optimizations to perform better than ParseGUPFlagsForOS
+func ParseGUPFlagsCurrentOS(rawValue uint64) (SystemFunctionArgument, error) {
+	const (
+		newVersionsParsing = iota
+		legacyParsing
+	)
+	if atomic.LoadUint32(&skipDetermineGUPFlagsFunc) == 0 {
+		osInfo, err := GetOSInfo()
+		if err != nil {
+			return nil, fmt.Errorf("error getting current OS info - %s", err)
+		}
+		compare, err := osInfo.CompareOSBaseKernelRelease(gupFlagsChangeVersion)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"error comparing OS versions to determine how to parse GUP flags - %s",
+				err,
+			)
+		}
+		if compare == KernelVersionOlder {
+			atomic.StoreUint32(&currentOSGUPFlagsParse, legacyParsing)
+		} else {
+			atomic.StoreUint32(&currentOSGUPFlagsParse, newVersionsParsing)
+		}
+		// Avoid doing this check in the future
+		atomic.StoreUint32(&skipDetermineGUPFlagsFunc, 1)
+	}
+
+	// Don't really need to use atomics here, as the value is only used here
+	// and is set in an atomic way
+	switch currentOSGUPFlagsParse {
+	case legacyParsing:
+		return ParseLegacyGUPFlags(rawValue), nil
+	case newVersionsParsing:
+		return ParseGUPFlags(rawValue), nil
+	default:
+		return nil, fmt.Errorf("no parsing function for GUP flags was found to this OD version")
+	}
+}
+
+// ParseGUPFlagsForOS parse the GUP flags received according to given OS version.
+func ParseGUPFlagsForOS(osInfo *OSInfo, rawValue uint64) (SystemFunctionArgument, error) {
+	compare, err := osInfo.CompareOSBaseKernelRelease(gupFlagsChangeVersion)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"error comparing OS versions to determine how to parse GUP flags - %s",
+			err,
+		)
+	}
+
+	if compare == KernelVersionOlder {
+		return ParseLegacyGUPFlags(rawValue), nil
+	}
+	return ParseGUPFlags(rawValue), nil
 }
 
 // =====================================================
