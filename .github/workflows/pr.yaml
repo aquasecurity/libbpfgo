@@ -31,7 +31,7 @@ jobs:
       #   shell: bash
       - name: Install revive
         run: |
-          go install github.com/mgechev/revive@latest
+          go install github.com/mgechev/revive@e33fb87
           sudo cp $HOME/go/bin/revive /usr/bin/
         shell: bash
       # - name: Install goimports-reviser
