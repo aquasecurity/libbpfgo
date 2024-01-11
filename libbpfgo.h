@@ -71,6 +71,12 @@ void cgo_bpf_tc_opts_free(struct bpf_tc_opts *opts);
 struct bpf_tc_hook *cgo_bpf_tc_hook_new();
 void cgo_bpf_tc_hook_free(struct bpf_tc_hook *hook);
 
+struct bpf_kprobe_opts *cgo_bpf_kprobe_opts_new(__u64 bpf_cookie,
+                                                size_t offset,
+                                                bool retprobe,
+                                                int attach_mode);
+void cgo_bpf_kprobe_opts_free(struct bpf_kprobe_opts *opts);
+
 //
 // struct getters
 //
