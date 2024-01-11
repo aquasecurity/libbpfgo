@@ -300,6 +300,30 @@ void cgo_bpf_tc_hook_free(struct bpf_tc_hook *hook)
     free(hook);
 }
 
+struct bpf_kprobe_opts *cgo_bpf_kprobe_opts_new(__u64 bpf_cookie,
+                                                size_t offset,
+                                                bool retprobe,
+                                                int attach_mode)
+{
+    struct bpf_kprobe_opts *opts;
+    opts = calloc(1, sizeof(*opts));
+    if (!opts)
+        return NULL;
+
+    opts->sz = sizeof(*opts);
+    opts->bpf_cookie = bpf_cookie;
+    opts->offset = offset;
+    opts->retprobe = retprobe;
+    opts->attach_mode = attach_mode;
+
+    return opts;
+}
+
+void cgo_bpf_kprobe_opts_free(struct bpf_kprobe_opts *opts)
+{
+    free(opts);
+}
+
 //
 // struct getters
 //
