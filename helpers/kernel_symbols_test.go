@@ -1,70 +1,45 @@
 package helpers
 
 import (
-	"math/rand"
+	"reflect"
 	"testing"
-	"time"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-// run tests as such
-// alias mysudo='sudo -E env "PATH=$PATH"'
-// cd helpers
-// mysudo go test
-func TestKernelSymbols(t *testing.T) {
-	const (
-		owner  = "system"
-		symbol = "do_sys_openat2"
-	)
-	syms, err := NewKernelSymbolsMap()
-	require.NoError(t, err)
-	lSyms, err := NewLazyKernelSymbolsMap()
-	require.NoError(t, err)
-	res, err1 := syms.GetSymbolByName(owner, symbol)
-	res2, err2 := lSyms.GetSymbolByName(owner, symbol)
-	require.NoError(t, err1)
-	require.NoError(t, err2)
-	assert.Equal(t, res, res2)
-	addr := res.Address
-	res, err1 = syms.GetSymbolByAddr(addr)
-	res2, err2 = lSyms.GetSymbolByAddr(addr)
-	require.NoError(t, err1)
-	require.NoError(t, err2)
-	assert.Equal(t, res, res2)
-}
+// TestParseLine tests the parseLine function.
+func TestParseLine(t *testing.T) {
+	testCases := []struct {
+		line     []string
+		expected *KernelSymbol
+	}{
+		{[]string{"00000000", "t", "my_symbol", "[my_owner]"}, &KernelSymbol{Name: "my_symbol", Type: "t", Address: 0, Owner: "my_owner"}},
+		// Add more test cases as needed.
+	}
 
-// run benchmarks as such
-// alias mysudo='sudo -E env "PATH=$PATH"'
-// cd helpers
-// mysudo go test -bench=.
-
-const (
-	max   = 812435456
-	start = 0xffffffff90000000
-	end   = 0xffffffffc06cc738
-)
-
-func BenchmarkLazySymByAddr(b *testing.B) {
-	rand.Seed(time.Now().UnixNano())
-	seed := uint64(rand.Intn(max))
-	addr := seed + uint64(start)
-	syms, err := NewLazyKernelSymbolsMap()
-	require.NoError(b, err)
-	for i := 0; i < b.N; i++ {
-		syms.GetSymbolByAddr(addr)
+	for _, tc := range testCases {
+		result := parseLine(tc.line)
+		if !reflect.DeepEqual(result, tc.expected) {
+			t.Errorf("parseLine(%v) = %v; want %v", tc.line, result, tc.expected)
+		}
 	}
 }
 
-func BenchmarkLazySymByAddrNotBinary(b *testing.B) {
-	rand.Seed(time.Now().UnixNano())
-	seed := uint64(rand.Intn(max))
-	addr := seed + uint64(start)
-	syms, err := NewLazyKernelSymbolsMap()
-	lSyms := syms.(*lazyKernelSymbols)
-	require.NoError(b, err)
-	for i := 0; i < b.N; i++ {
-		lSyms.getSymbolByAddrNotBinary(addr)
+func TestRefresh(t *testing.T) {
+	kst, err := NewKernelSymbolTable()
+	if err != nil {
+		t.Fatalf("NewKernelSymbolTable() failed: %v", err)
+	}
+
+	// Test well-known symbols like _stext and _etext.
+	symbolsToTest := []string{"_stext", "_etext"}
+
+	for _, symbol := range symbolsToTest {
+		if syms, err := kst.GetSymbolByName(symbol); err != nil || len(syms) == 0 {
+			t.Errorf("Expected to find symbol %s, but it was not found", symbol)
+		}
+	}
+
+	// Text the text swegment contains function.
+	if _, err := kst.TextSegmentContains(0); err != nil {
+		t.Errorf("TextSegmentContains failed: %v", err)
 	}
 }

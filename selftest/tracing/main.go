@@ -29,20 +29,20 @@ func main() {
 		os.Exit(-1)
 	}
 
-	m, err := helpers.NewKernelSymbolsMap()
+	m, err := helpers.NewKernelSymbolTable()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
 	}
 
 	funcName := fmt.Sprintf("__%s_sys_mmap", ksymArch())
-	sym, err := m.GetSymbolByName("system", funcName)
+	sym, err := m.GetSymbolByName(funcName)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
 	}
 
-	if sym.Address == 0 || sym.Name == "" {
+	if sym[0].Address == 0 || sym[0].Name == "" {
 		fmt.Fprintln(os.Stderr, "could not find symbol to attach to")
 		os.Exit(-1)
 	}
