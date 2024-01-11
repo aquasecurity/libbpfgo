@@ -42,7 +42,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	if sym[0].Address == 0 || sym[0].Name == "" {
+	if sym[0].Address == 0 && sym[0].Name == "" {
 		fmt.Fprintln(os.Stderr, "could not find symbol to attach to")
 		os.Exit(-1)
 	}
