@@ -40,6 +40,15 @@ func main() {
 		os.Exit(-1)
 	}
 
+	// Test auto attach
+	autoAttachOrig := prog.Autoattach()
+	prog.SetAutoattach(!autoAttachOrig)
+	if prog.Autoattach() == autoAttachOrig {
+		fmt.Fprintln(os.Stderr, "set auto attach failed")
+		os.Exit(-1)
+	}
+	prog.SetAutoattach(autoAttachOrig)
+
 	err = bpfModule.BPFLoadObject()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

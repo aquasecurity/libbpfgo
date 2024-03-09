@@ -111,6 +111,14 @@ func (p *BPFProg) SetAutoload(autoload bool) error {
 	return nil
 }
 
+func (p *BPFProg) SetAutoattach(autoload bool) {
+	C.bpf_program__set_autoattach(p.prog, C.bool(autoload))
+}
+
+func (p *BPFProg) Autoattach() bool {
+	return bool(C.bpf_program__autoattach(p.prog))
+}
+
 // AttachGeneric is used to attach the BPF program using autodetection
 // for the attach target. You can specify the destination in BPF code
 // via the SEC() such as `SEC("fentry/some_kernel_func")`
