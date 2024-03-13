@@ -299,3 +299,63 @@ func TestParseVmFlags(t *testing.T) {
 		})
 	}
 }
+
+func TestParseFsNotifyMask(t *testing.T) {
+	testCases := []struct {
+		name          string
+		parseValue    uint64
+		expectedSting string
+	}{
+		{
+			name:          "Single value",
+			parseValue:    FS_CREATE.Value(),
+			expectedSting: "FS_CREATE",
+		},
+		{
+			name:          "Multiple values",
+			parseValue:    FS_OPEN_PERM.Value() | FS_ACCESS_PERM.Value() | FS_OPEN_EXEC_PERM.Value(),
+			expectedSting: "FS_OPEN_PERM|FS_ACCESS_PERM|FS_OPEN_EXEC_PERM",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			flags := ParseFsNotifyMask(testCase.parseValue)
+			assert.Equal(t, testCase.expectedSting, flags.String())
+		})
+	}
+}
+
+func TestParseFsNotifyObjType(t *testing.T) {
+	testCases := []struct {
+		name          string
+		parseValue    uint64
+		expectedSting string
+		expectedError bool
+	}{
+		{
+			name:          "Type vfsmount",
+			parseValue:    FSNOTIFY_OBJ_TYPE_VFSMOUNT.Value(),
+			expectedSting: "FSNOTIFY_OBJ_TYPE_VFSMOUNT",
+			expectedError: false,
+		},
+		{
+			name:          "Non existing type",
+			parseValue:    10000000,
+			expectedSting: "",
+			expectedError: true,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			opt, err := ParseFsNotifyObjType(testCase.parseValue)
+			if testCase.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, testCase.expectedSting, opt.String())
+		})
+	}
+}

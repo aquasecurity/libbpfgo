@@ -3443,3 +3443,147 @@ func ParseVmFlags(rawValue uint64) VmFlag {
 
 	return VmFlag{stringValue: strings.Join(f, "|"), rawValue: rawValue}
 }
+
+// =====================================================
+
+// FsNotifyMask represents the event mask used by the dnotify, inotify and fanotify APIs
+type FsNotifyMask struct {
+	rawValue    uint64
+	stringValue string
+}
+
+const FsNotifyMaskShiftMax = 30
+
+// revive:disable
+
+// These values are copied from include/linux/fsnotify_backend.h
+var (
+	FS_ACCESS         = FsNotifyMask{rawValue: 0x00000001, stringValue: "FS_ACCESS"}
+	FS_MODIFY         = FsNotifyMask{rawValue: 0x00000002, stringValue: "FS_MODIFY"}
+	FS_ATTRIB         = FsNotifyMask{rawValue: 0x00000004, stringValue: "FS_ATTRIB"}
+	FS_CLOSE_WRITE    = FsNotifyMask{rawValue: 0x00000008, stringValue: "FS_CLOSE_WRITE"}
+	FS_CLOSE_NOWRITE  = FsNotifyMask{rawValue: 0x00000010, stringValue: "FS_CLOSE_NOWRITE"}
+	FS_OPEN           = FsNotifyMask{rawValue: 0x00000020, stringValue: "FS_CLOSE_OPEN"}
+	FS_MOVED_FROM     = FsNotifyMask{rawValue: 0x00000040, stringValue: "FS_MOVED_FROM"}
+	FS_MOVED_TO       = FsNotifyMask{rawValue: 0x00000080, stringValue: "FS_MOVED_TO"}
+	FS_CREATE         = FsNotifyMask{rawValue: 0x00000100, stringValue: "FS_CREATE"}
+	FS_DELETE         = FsNotifyMask{rawValue: 0x00000200, stringValue: "FS_DELETE"}
+	FS_DELETE_SELF    = FsNotifyMask{rawValue: 0x00000400, stringValue: "FS_DELETE_SELF"}
+	FS_MOVE_SELF      = FsNotifyMask{rawValue: 0x00000800, stringValue: "FS_MOVE_SELF"}
+	FS_OPEN_EXEC      = FsNotifyMask{rawValue: 0x00001000, stringValue: "FS_OPEN_EXEC"}
+	FS_UNMOUNT        = FsNotifyMask{rawValue: 0x00002000, stringValue: "FS_UNMOUNT"}
+	FS_Q_OVERFLOW     = FsNotifyMask{rawValue: 0x00004000, stringValue: "FS_Q_OVERFLOW"}
+	FS_ERROR          = FsNotifyMask{rawValue: 0x00008000, stringValue: "FS_ERROR"}
+	FS_OPEN_PERM      = FsNotifyMask{rawValue: 0x00010000, stringValue: "FS_OPEN_PERM"}
+	FS_ACCESS_PERM    = FsNotifyMask{rawValue: 0x00020000, stringValue: "FS_ACCESS_PERM"}
+	FS_OPEN_EXEC_PERM = FsNotifyMask{rawValue: 0x00040000, stringValue: "FS_OPEN_EXEC_PERM"}
+	FS_EVENT_ON_CHILD = FsNotifyMask{rawValue: 0x08000000, stringValue: "FS_EVENT_ON_CHILD"}
+	FS_RENAME         = FsNotifyMask{rawValue: 0x10000000, stringValue: "FS_RENAME"}
+	FS_DN_MULTISHOT   = FsNotifyMask{rawValue: 0x20000000, stringValue: "FS_DN_MULTISHOT"}
+	FS_ISDIR          = FsNotifyMask{rawValue: 0x40000000, stringValue: "FS_ISDIR"}
+)
+
+// revive:enable
+
+var FsNotifyMaskMap = map[uint64]FsNotifyMask{
+	FS_ACCESS.Value():         FS_ACCESS,
+	FS_MODIFY.Value():         FS_MODIFY,
+	FS_ATTRIB.Value():         FS_ATTRIB,
+	FS_CLOSE_WRITE.Value():    FS_CLOSE_WRITE,
+	FS_CLOSE_NOWRITE.Value():  FS_CLOSE_NOWRITE,
+	FS_OPEN.Value():           FS_OPEN,
+	FS_MOVED_FROM.Value():     FS_MOVED_FROM,
+	FS_MOVED_TO.Value():       FS_MOVED_TO,
+	FS_CREATE.Value():         FS_CREATE,
+	FS_DELETE.Value():         FS_DELETE,
+	FS_DELETE_SELF.Value():    FS_DELETE_SELF,
+	FS_MOVE_SELF.Value():      FS_MOVE_SELF,
+	FS_OPEN_EXEC.Value():      FS_OPEN_EXEC,
+	FS_UNMOUNT.Value():        FS_UNMOUNT,
+	FS_Q_OVERFLOW.Value():     FS_Q_OVERFLOW,
+	FS_ERROR.Value():          FS_ERROR,
+	FS_OPEN_PERM.Value():      FS_OPEN_PERM,
+	FS_ACCESS_PERM.Value():    FS_ACCESS_PERM,
+	FS_OPEN_EXEC_PERM.Value(): FS_OPEN_EXEC_PERM,
+	FS_EVENT_ON_CHILD.Value(): FS_EVENT_ON_CHILD,
+	FS_RENAME.Value():         FS_RENAME,
+	FS_DN_MULTISHOT.Value():   FS_DN_MULTISHOT,
+	FS_ISDIR.Value():          FS_ISDIR,
+}
+
+func (mask FsNotifyMask) Value() uint64 {
+	return mask.rawValue
+}
+
+func (mask FsNotifyMask) String() string {
+	return mask.stringValue
+}
+
+// ParseFsNotifyMask parses the event mask used by the dnotify, inotify and fanotify APIs
+func ParseFsNotifyMask(rawValue uint64) FsNotifyMask {
+	var f []string
+	for i := 0; i <= FsNotifyMaskShiftMax; i++ {
+		var mask uint64 = 1 << i
+
+		if (rawValue & mask) != 0 {
+			flag, ok := FsNotifyMaskMap[mask]
+			if ok {
+				f = append(f, flag.String())
+			} else {
+				f = append(
+					f,
+					fmt.Sprintf(
+						"UNKNOWN_FLAG_0X%s",
+						strings.ToUpper(strconv.FormatUint(mask, 16)),
+					),
+				)
+			}
+		}
+	}
+
+	return FsNotifyMask{stringValue: strings.Join(f, "|"), rawValue: rawValue}
+}
+
+// =====================================================
+
+// FsNotifyObjType represents the type of filesystem object being watched
+type FsNotifyObjType struct {
+	rawValue    uint32
+	stringValue string
+}
+
+// revive:disable
+
+// These values are copied from include/linux/fsnotify_backend.h
+var (
+	FSNOTIFY_OBJ_TYPE_INODE    = FsNotifyObjType{rawValue: 0, stringValue: "FSNOTIFY_OBJ_TYPE_INODE"}
+	FSNOTIFY_OBJ_TYPE_VFSMOUNT = FsNotifyObjType{rawValue: 1, stringValue: "FSNOTIFY_OBJ_TYPE_VFSMOUNT"}
+	FSNOTIFY_OBJ_TYPE_SB       = FsNotifyObjType{rawValue: 2, stringValue: "FSNOTIFY_OBJ_TYPE_SB"}
+	FSNOTIFY_OBJ_TYPE_DETACHED = FsNotifyObjType{rawValue: 3, stringValue: "FSNOTIFY_OBJ_TYPE_DETACHED"}
+)
+
+// revive:enable
+
+var fsNotifyObjTypeMap = map[uint64]FsNotifyObjType{
+	FSNOTIFY_OBJ_TYPE_INODE.Value():    FSNOTIFY_OBJ_TYPE_INODE,
+	FSNOTIFY_OBJ_TYPE_VFSMOUNT.Value(): FSNOTIFY_OBJ_TYPE_VFSMOUNT,
+	FSNOTIFY_OBJ_TYPE_SB.Value():       FSNOTIFY_OBJ_TYPE_SB,
+	FSNOTIFY_OBJ_TYPE_DETACHED.Value(): FSNOTIFY_OBJ_TYPE_DETACHED,
+}
+
+func (objType FsNotifyObjType) Value() uint64 {
+	return uint64(objType.rawValue)
+}
+
+func (objType FsNotifyObjType) String() string {
+	return objType.stringValue
+}
+
+// ParseFsNotifyObjType parses the filesystem object type of an fsnotify watch
+func ParseFsNotifyObjType(rawValue uint64) (FsNotifyObjType, error) {
+	v, ok := fsNotifyObjTypeMap[rawValue]
+	if !ok {
+		return FsNotifyObjType{}, fmt.Errorf("not a valid argument: %d", rawValue)
+	}
+	return v, nil
+}
