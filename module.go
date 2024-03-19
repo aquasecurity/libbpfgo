@@ -391,3 +391,65 @@ func (m *Module) Iterator() *BPFObjectIterator {
 		prevMap:  nil,
 	}
 }
+
+func (m *Module) linkExist(prog *BPFProg) bool {
+	for _, link := range m.links {
+		if link.prog.Name() == prog.Name() {
+			return true
+		}
+	}
+
+	return false
+}
+
+// AttachPrograms attach all loaded and no attached progs once like bpf_object__attach_skeleton
+func (m *Module) AttachPrograms() error {
+	iters := m.Iterator()
+	for {
+		prog := iters.NextProgram()
+		if prog == nil {
+			break
+		}
+
+		if !prog.Autoload() || !prog.Autoattach() {
+			continue
+		}
+		// if link already exist (is attached), skip it
+		if m.linkExist(prog) {
+			continue
+		}
+
+		link, err := prog.AttachGeneric()
+		if err != nil {
+			return err
+		}
+
+		m.links = append(m.links, link)
+	}
+
+	return nil
+}
+
+// DetachPrograms detach all attached progs once like bpf_object__detach_skeleton
+func (m *Module) DetachPrograms() error {
+	errInfo := make(map[string]error)
+
+	for _, link := range m.links {
+		err := link.Destroy()
+		if err != nil {
+			errInfo[link.prog.Name()] = err
+		}
+	}
+	m.links = nil
+
+	if len(errInfo) > 0 {
+		var str string
+		for name, err := range errInfo {
+			str += fmt.Sprintf(" [prog:%s,err:%s]", name, err)
+		}
+
+		return fmt.Errorf("link destroy failed:%s", str)
+	}
+
+	return nil
+}
