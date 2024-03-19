@@ -111,6 +111,10 @@ func (p *BPFProg) SetAutoload(autoload bool) error {
 	return nil
 }
 
+func (p *BPFProg) Autoload() bool {
+	return bool(C.bpf_program__autoload(p.prog))
+}
+
 func (p *BPFProg) SetAutoattach(autoload bool) {
 	C.bpf_program__set_autoattach(p.prog, C.bool(autoload))
 }
