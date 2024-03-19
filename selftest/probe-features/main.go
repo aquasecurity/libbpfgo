@@ -44,6 +44,15 @@ func main() {
 		}
 	}
 
+	// Test auto load result
+	autoLoadOrig := kprobeProg.Autoload()
+	kprobeProg.SetAutoload((!autoLoadOrig))
+	if kprobeProg.Autoload() == autoLoadOrig {
+		fmt.Println(os.Stderr, "auto load result wrong")
+		os.Exit(-1)
+	}
+	kprobeProg.SetAutoload((autoLoadOrig))
+
 	err = bpfModule.BPFLoadObject()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
