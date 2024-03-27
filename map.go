@@ -405,9 +405,9 @@ func (m *BPFMap) GetValueFlags(key unsafe.Pointer, flags MapFlag) ([]byte, error
 	return value, nil
 }
 
-// TODO: implement `bpf_map__lookup_and_delete_elem` wrapper
-// func (m *BPFMap) GetValueAndDeleteKey(key unsafe.Pointer) ([]byte, error) {
-// }
+func (m *BPFMap) GetValueAndDeleteKey(key unsafe.Pointer) ([]byte, error) {
+	return m.bpfMapLow.GetValueAndDeleteKey(key)
+}
 
 // Deprecated: use BPFMap.GetValue() or BPFMap.GetValueFlags() instead, since
 // they already calculate the value size for per-cpu maps.
@@ -480,9 +480,9 @@ func (m *BPFMap) DeleteKey(key unsafe.Pointer) error {
 	return nil
 }
 
-// TODO: implement `bpf_map__get_next_key` wrapper
-// func (m *BPFMap) GetNextKey(key unsafe.Pointer) (unsafe.Pointer, error) {
-// }
+func (m *BPFMap) GetNextKey(key unsafe.Pointer) (unsafe.Pointer, error) {
+	return m.bpfMapLow.GetNextKey(key)
+}
 
 //
 // BPFMap Batch Operations (low-level API)

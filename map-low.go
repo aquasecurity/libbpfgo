@@ -279,9 +279,17 @@ func (m *BPFMapLow) GetValueFlags(key unsafe.Pointer, flags MapFlag) ([]byte, er
 	return value, nil
 }
 
-// TODO: implement `bpf_map__lookup_and_delete_elem`
-// func (m *BPFMapLow) GetValueAndDeleteKey(key unsafe.Pointer) ([]byte, error) {
-// }
+// GetValueAndDeleteKey gets the value with the given key and delete the key from the map.
+// It returns the value and delete the given key.
+func (m *BPFMapLow) GetValueAndDeleteKey(key unsafe.Pointer) ([]byte, error) {
+	value := make([]byte, m.ValueSize())
+	valuePtr := unsafe.Pointer(&(value[0]))
+	retC := C.bpf_map_lookup_and_delete_elem(C.int(m.FileDescriptor()), key, valuePtr)
+	if retC < 0 {
+		return nil, fmt.Errorf("failed to lookup and delete value %v in map %s: %w", key, m.Name(), syscall.Errno(-retC))
+	}
+	return value, nil
+}
 
 func (m *BPFMapLow) Update(key, value unsafe.Pointer) error {
 	return m.UpdateValueFlags(key, value, MapFlagUpdateAny)
@@ -310,9 +318,18 @@ func (m *BPFMapLow) DeleteKey(key unsafe.Pointer) error {
 	return nil
 }
 
-// TODO: implement `bpf_map__get_next_key`
-// func (m *BPFMapLow) GetNextKey(key unsafe.Pointer) (unsafe.Pointer, error) {
-// }
+// GetNextKey gets the next key with the given key from the map.
+// It returns the next key.
+func (m *BPFMapLow) GetNextKey(key unsafe.Pointer) (unsafe.Pointer, error) {
+	next := make([]byte, m.KeySize())
+	nextPtr := unsafe.Pointer(&next[0])
+
+	retC := C.bpf_map_get_next_key(C.int(m.FileDescriptor()), key, nextPtr)
+	if retC < 0 {
+		return nil, fmt.Errorf("failed to get next key in map %s: %w", m.Name(), syscall.Errno(-retC))
+	}
+	return nextPtr, nil
+}
 
 //
 // BPFMapLow Batch Operations
