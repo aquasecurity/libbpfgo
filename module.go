@@ -40,7 +40,7 @@ type NewModuleArgs struct {
 	BPFObjPath      string
 	BPFObjBuff      []byte
 	SkipMemlockBump bool
-	KernelLogLevel  uint32
+	KernelLogLevel  C.uint
 }
 
 func NewModuleFromFile(bpfObjPath string) (*Module, error) {
