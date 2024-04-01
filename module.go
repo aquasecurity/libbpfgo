@@ -40,6 +40,7 @@ type NewModuleArgs struct {
 	BPFObjPath      string
 	BPFObjBuff      []byte
 	SkipMemlockBump bool
+	KernelLogLevel  uint32
 }
 
 func NewModuleFromFile(bpfObjPath string) (*Module, error) {
@@ -138,6 +139,7 @@ func NewModuleFromBufferArgs(args NewModuleArgs) (*Module, error) {
 	if optsC == nil {
 		return nil, fmt.Errorf("failed to create bpf_object_open_opts: %w", errno)
 	}
+	optsC.kernel_log_level = args.KernelLogLevel
 	defer C.cgo_bpf_object_open_opts_free(optsC)
 
 	objC, errno := C.bpf_object__open_mem(bpfBuffC, bpfBuffSizeC, optsC)
