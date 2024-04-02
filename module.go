@@ -40,6 +40,7 @@ type NewModuleArgs struct {
 	BPFObjPath      string
 	BPFObjBuff      []byte
 	SkipMemlockBump bool
+	KernelLogLevel  uint32
 }
 
 func NewModuleFromFile(bpfObjPath string) (*Module, error) {
@@ -77,7 +78,9 @@ func NewModuleFromFileArgs(args NewModuleArgs) (*Module, error) {
 		defer C.free(unsafe.Pointer(kconfigPathC))
 	}
 
-	optsC, errno := C.cgo_bpf_object_open_opts_new(btfFilePathC, kconfigPathC, nil)
+	kernelLogLevelC := C.uint(args.KernelLogLevel)
+
+	optsC, errno := C.cgo_bpf_object_open_opts_new(btfFilePathC, kconfigPathC, nil, kernelLogLevelC)
 	if optsC == nil {
 		return nil, fmt.Errorf("failed to create bpf_object_open_opts: %w", errno)
 	}
@@ -129,12 +132,13 @@ func NewModuleFromBufferArgs(args NewModuleArgs) (*Module, error) {
 	bpfBuffC := unsafe.Pointer(C.CBytes(args.BPFObjBuff))
 	defer C.free(bpfBuffC)
 	bpfBuffSizeC := C.size_t(len(args.BPFObjBuff))
+	kernelLogLevelC := C.uint(args.KernelLogLevel)
 
 	if len(args.KConfigFilePath) <= 2 {
 		kConfigPathC = nil
 	}
 
-	optsC, errno := C.cgo_bpf_object_open_opts_new(btfFilePathC, kConfigPathC, bpfObjNameC)
+	optsC, errno := C.cgo_bpf_object_open_opts_new(btfFilePathC, kConfigPathC, bpfObjNameC, kernelLogLevelC)
 	if optsC == nil {
 		return nil, fmt.Errorf("failed to create bpf_object_open_opts: %w", errno)
 	}

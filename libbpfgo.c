@@ -167,7 +167,8 @@ void cgo_bpf_iter_attach_opts_free(struct bpf_iter_attach_opts *opts)
 
 struct bpf_object_open_opts *cgo_bpf_object_open_opts_new(const char *btf_file_path,
                                                           const char *kconfig_path,
-                                                          const char *bpf_obj_name)
+                                                          const char *bpf_obj_name,
+                                                          __u32 kernel_log_level)
 {
     struct bpf_object_open_opts *opts;
     opts = calloc(1, sizeof(*opts));
@@ -178,6 +179,7 @@ struct bpf_object_open_opts *cgo_bpf_object_open_opts_new(const char *btf_file_p
     opts->btf_custom_path = btf_file_path;
     opts->kconfig = kconfig_path;
     opts->object_name = bpf_obj_name;
+    opts->kernel_log_level = kernel_log_level;
 
     return opts;
 }
