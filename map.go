@@ -405,9 +405,53 @@ func (m *BPFMap) GetValueFlags(key unsafe.Pointer, flags MapFlag) ([]byte, error
 	return value, nil
 }
 
-// TODO: implement `bpf_map__lookup_and_delete_elem` wrapper
-// func (m *BPFMap) GetValueAndDeleteKey(key unsafe.Pointer) ([]byte, error) {
-// }
+// LookupAndDeleteElem stores the value associated with a given key into the
+// provided unsafe.Pointer and deletes the key from the BPFMap.
+func (m *BPFMap) LookupAndDeleteElem(
+	key unsafe.Pointer,
+	value unsafe.Pointer,
+	valueSize uint64,
+	flags MapFlag,
+) error {
+	retC := C.bpf_map__lookup_and_delete_elem(
+		m.bpfMap,
+		key,
+		C.ulong(m.KeySize()),
+		value,
+		C.ulong(valueSize),
+		C.ulonglong(flags),
+	)
+	if retC < 0 {
+		return fmt.Errorf("failed to lookup and delete value %v in map %s: %w", key, m.Name(), syscall.Errno(-retC))
+	}
+
+	return nil
+}
+
+// GetValueAndDeleteKey retrieves the value associated with a given key
+// and delete the key in the BPFMap.
+// It returns the value as a slice of bytes.
+func (m *BPFMap) GetValueAndDeleteKey(key unsafe.Pointer) ([]byte, error) {
+	return m.GetValueAndDeleteKeyFlags(key, MapFlagUpdateAny)
+}
+
+// GetValueAndDeleteKeyFlags retrieves the value associated with a given key
+// and delete the key in the BPFMap, with the specified flags.
+// It returns the value as a slice of bytes.
+func (m *BPFMap) GetValueAndDeleteKeyFlags(key unsafe.Pointer, flags MapFlag) ([]byte, error) {
+	valueSize, err := calcMapValueSize(m.ValueSize(), m.Type())
+	if err != nil {
+		return nil, fmt.Errorf("map %s %w", m.Name(), err)
+	}
+
+	value := make([]byte, valueSize)
+	err = m.LookupAndDeleteElem(key, unsafe.Pointer(&value[0]), uint64(valueSize), flags)
+	if err != nil {
+		return nil, err
+	}
+
+	return value, nil
+}
 
 // Deprecated: use BPFMap.GetValue() or BPFMap.GetValueFlags() instead, since
 // they already calculate the value size for per-cpu maps.
@@ -480,9 +524,20 @@ func (m *BPFMap) DeleteKey(key unsafe.Pointer) error {
 	return nil
 }
 
-// TODO: implement `bpf_map__get_next_key` wrapper
-// func (m *BPFMap) GetNextKey(key unsafe.Pointer) (unsafe.Pointer, error) {
-// }
+// GetNextKey allows to iterate BPF map keys by fetching next key that follows current key.
+func (m *BPFMap) GetNextKey(key unsafe.Pointer, nextKey unsafe.Pointer) error {
+	retC := C.bpf_map__get_next_key(
+		m.bpfMap,
+		key,
+		nextKey,
+		C.ulong(m.KeySize()),
+	)
+	if retC < 0 {
+		return fmt.Errorf("failed to get next key %d in map %s: %w", key, m.Name(), syscall.Errno(-retC))
+	}
+
+	return nil
+}
 
 //
 // BPFMap Batch Operations (low-level API)
