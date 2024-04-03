@@ -279,9 +279,76 @@ func (m *BPFMapLow) GetValueFlags(key unsafe.Pointer, flags MapFlag) ([]byte, er
 	return value, nil
 }
 
-// TODO: implement `bpf_map__lookup_and_delete_elem`
-// func (m *BPFMapLow) GetValueAndDeleteKey(key unsafe.Pointer) ([]byte, error) {
-// }
+func (m *BPFMapLow) LookupAndDeleteElem(
+	key unsafe.Pointer,
+	value unsafe.Pointer,
+) error {
+	retC := C.bpf_map_lookup_and_delete_elem(
+		C.int(m.FileDescriptor()),
+		key,
+		value,
+	)
+	if retC < 0 {
+		return fmt.Errorf("failed to lookup and delete value %v in map %s: %w", key, m.Name(), syscall.Errno(-retC))
+	}
+
+	return nil
+}
+
+func (m *BPFMapLow) LookupAndDeleteElemFlags(
+	key unsafe.Pointer,
+	value unsafe.Pointer,
+	flags MapFlag,
+) error {
+	retC := C.bpf_map_lookup_and_delete_elem_flags(
+		C.int(m.FileDescriptor()),
+		key,
+		value,
+		C.ulonglong(flags),
+	)
+	if retC < 0 {
+		return fmt.Errorf("failed to lookup and delete value %v in map %s: %w", key, m.Name(), syscall.Errno(-retC))
+	}
+
+	return nil
+}
+
+func (m *BPFMapLow) GetValueAndDeleteKey(key unsafe.Pointer) ([]byte, error) {
+	valueSize, err := calcMapValueSize(m.ValueSize(), m.Type())
+	if err != nil {
+		return nil, fmt.Errorf("map %s %w", m.Name(), err)
+	}
+
+	value := make([]byte, valueSize)
+	err = m.LookupAndDeleteElem(
+		key,
+		unsafe.Pointer(&value[0]),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return value, nil
+}
+
+func (m *BPFMapLow) GetValueAndDeleteKeyFlags(key unsafe.Pointer, flags MapFlag) ([]byte, error) {
+	valueSize, err := calcMapValueSize(m.ValueSize(), m.Type())
+	if err != nil {
+		return nil, fmt.Errorf("map %s %w", m.Name(), err)
+	}
+
+	value := make([]byte, valueSize)
+	err = m.LookupAndDeleteElemFlags(
+		key,
+		unsafe.Pointer(&value[0]),
+		flags,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return value, nil
+}
 
 func (m *BPFMapLow) Update(key, value unsafe.Pointer) error {
 	return m.UpdateValueFlags(key, value, MapFlagUpdateAny)
@@ -310,9 +377,18 @@ func (m *BPFMapLow) DeleteKey(key unsafe.Pointer) error {
 	return nil
 }
 
-// TODO: implement `bpf_map__get_next_key`
-// func (m *BPFMapLow) GetNextKey(key unsafe.Pointer) (unsafe.Pointer, error) {
-// }
+func (m *BPFMapLow) GetNextKey(key unsafe.Pointer, nextKey unsafe.Pointer) error {
+	retC := C.bpf_map_get_next_key(
+		C.int(m.FileDescriptor()),
+		key,
+		nextKey,
+	)
+	if retC < 0 {
+		return fmt.Errorf("failed to get next key in map %s: %w", m.Name(), syscall.Errno(-retC))
+	}
+
+	return nil
+}
 
 //
 // BPFMapLow Batch Operations
