@@ -405,9 +405,35 @@ func (m *BPFMap) GetValueFlags(key unsafe.Pointer, flags MapFlag) ([]byte, error
 	return value, nil
 }
 
-// TODO: implement `bpf_map__lookup_and_delete_elem` wrapper
-// func (m *BPFMap) GetValueAndDeleteKey(key unsafe.Pointer) ([]byte, error) {
-// }
+// GetValueAndDeleteKey retrieves the value associated with a given key
+// and delete the key in the BPFMap.
+func (m *BPFMap) GetValueAndDeleteKey(key unsafe.Pointer) ([]byte, error) {
+	return m.GetValueAndDeleteKeyFlags(key, MapFlagUpdateAny)
+}
+
+// GetValueAndDeleteKeyFlags retrieves the value associated with a given key
+// and delete the key in the BPFMap, with the specified flags.
+func (m *BPFMap) GetValueAndDeleteKeyFlags(key unsafe.Pointer, flags MapFlag) ([]byte, error) {
+	valueSize, err := calcMapValueSize(m.ValueSize(), m.Type())
+	if err != nil {
+		return nil, fmt.Errorf("map %s %w", m.Name(), err)
+	}
+
+	value := make([]byte, valueSize)
+	retC := C.bpf_map__lookup_and_delete_elem(
+		m.bpfMap,
+		key,
+		C.ulong(m.KeySize()),
+		unsafe.Pointer(&value[0]),
+		C.ulong(valueSize),
+		C.ulonglong(flags),
+	)
+	if retC < 0 {
+		return nil, fmt.Errorf("failed to lookup and delete value %v in map %s: %w", key, m.Name(), syscall.Errno(-retC))
+	}
+
+	return value, nil
+}
 
 // Deprecated: use BPFMap.GetValue() or BPFMap.GetValueFlags() instead, since
 // they already calculate the value size for per-cpu maps.
@@ -480,9 +506,22 @@ func (m *BPFMap) DeleteKey(key unsafe.Pointer) error {
 	return nil
 }
 
-// TODO: implement `bpf_map__get_next_key` wrapper
-// func (m *BPFMap) GetNextKey(key unsafe.Pointer) (unsafe.Pointer, error) {
-// }
+// GetNextKey retrieves the next key in the BPFMap after the given key.
+func (m *BPFMap) GetNextKey(key unsafe.Pointer) (unsafe.Pointer, error) {
+	next := make([]byte, m.KeySize())
+	nextPtr := unsafe.Pointer(&next[0])
+	retC := C.bpf_map__get_next_key(
+		m.bpfMap,
+		key,
+		nextPtr,
+		C.ulong(m.KeySize()),
+	)
+	if retC < 0 {
+		return nil, fmt.Errorf("failed to get next key %d in map %s: %w", key, m.Name(), syscall.Errno(-retC))
+	}
+
+	return nextPtr, nil
+}
 
 //
 // BPFMap Batch Operations (low-level API)

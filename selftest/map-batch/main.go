@@ -247,6 +247,76 @@ func main() {
 	if count != uint32(fewer) {
 		log.Fatalf("testerMap.DeleteKeyBatch failed: count=%d", count)
 	}
+
+	// map contains only 1 key-value pair.
+
+	// Re-add deleted entries.
+	_, err = testerMap.UpdateBatch(
+		unsafe.Pointer(&keys[0]),
+		unsafe.Pointer(&values[0]),
+		uint32(len(keys)),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//
+	// GetNextKey
+	//
+
+	// Populate the map again.
+	_, err = testerMap.UpdateBatch(
+		unsafe.Pointer(&keys[0]),
+		unsafe.Pointer(&values[0]),
+		uint32(len(keys)),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Test GetNextKey.
+	keyPtr := unsafe.Pointer(nil)
+	keyCnt := 0
+	for {
+		nextKey, err := testerMap.GetNextKey(keyPtr)
+		keyPtr = nextKey
+		if nextKey != nil {
+			keyCnt++
+			continue
+		}
+
+		if !errors.Is(err, syscall.ENOENT) {
+			log.Fatalf("testerMap.GetNextKey failed: err=%v", err)
+		}
+
+		break
+	}
+	if keyCnt != len(keys) {
+		log.Fatalf("testerMap.GetNextKey failed: count=%d", keyCnt)
+	}
+
+	//
+	// GetValueAndDeleteKey
+	//
+
+	// Test GetValueAndDeleteKey.
+	for i, key := range keys {
+		val, err := testerMap.GetValueAndDeleteKey(unsafe.Pointer(&key))
+		if err != nil {
+			log.Fatalf("testerMap.GetValueAndDelete failed: err=%v", err)
+		}
+
+		if endian().Uint32(val) != values[i] {
+			log.Fatalf("testerMpa.GetValueAndDetele failed: val=%d", endian().Uint32(val))
+		}
+	}
+
+	// Check if all keys are deleted.
+	keyPtr = unsafe.Pointer(nil)
+	_, err = testerMap.GetNextKey(keyPtr)
+	if !errors.Is(err, syscall.ENOENT) {
+		log.Fatalf("testerMap.GetValueAndDeleteKey failed: err=%v", err)
+	}
 }
 
 func endian() binary.ByteOrder {
