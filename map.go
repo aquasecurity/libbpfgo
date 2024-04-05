@@ -215,7 +215,7 @@ func (m *BPFMap) MapExtra() uint64 {
 // }
 
 func (m *BPFMap) InitialValue() ([]byte, error) {
-	valueSize, err := calcMapValueSize(m.ValueSize(), m.Type())
+	valueSize, err := CalcMapValueSize(m.ValueSize(), m.Type())
 	if err != nil {
 		return nil, fmt.Errorf("map %s %w", m.Name(), err)
 	}
@@ -227,7 +227,7 @@ func (m *BPFMap) InitialValue() ([]byte, error) {
 }
 
 func (m *BPFMap) SetInitialValue(value unsafe.Pointer) error {
-	valueSize, err := calcMapValueSize(m.ValueSize(), m.Type())
+	valueSize, err := CalcMapValueSize(m.ValueSize(), m.Type())
 	if err != nil {
 		return fmt.Errorf("map %s %w", m.Name(), err)
 	}
@@ -384,7 +384,7 @@ func (m *BPFMap) GetValue(key unsafe.Pointer) ([]byte, error) {
 }
 
 func (m *BPFMap) GetValueFlags(key unsafe.Pointer, flags MapFlag) ([]byte, error) {
-	valueSize, err := calcMapValueSize(m.ValueSize(), m.Type())
+	valueSize, err := CalcMapValueSize(m.ValueSize(), m.Type())
 	if err != nil {
 		return nil, fmt.Errorf("map %s %w", m.Name(), err)
 	}
@@ -439,7 +439,7 @@ func (m *BPFMap) GetValueAndDeleteKey(key unsafe.Pointer) ([]byte, error) {
 // and delete the key in the BPFMap, with the specified flags.
 // It returns the value as a slice of bytes.
 func (m *BPFMap) GetValueAndDeleteKeyFlags(key unsafe.Pointer, flags MapFlag) ([]byte, error) {
-	valueSize, err := calcMapValueSize(m.ValueSize(), m.Type())
+	valueSize, err := CalcMapValueSize(m.ValueSize(), m.Type())
 	if err != nil {
 		return nil, fmt.Errorf("map %s %w", m.Name(), err)
 	}
@@ -486,7 +486,7 @@ func (m *BPFMap) Update(key, value unsafe.Pointer) error {
 }
 
 func (m *BPFMap) UpdateValueFlags(key, value unsafe.Pointer, flags MapFlag) error {
-	valueSize, err := calcMapValueSize(m.ValueSize(), m.Type())
+	valueSize, err := CalcMapValueSize(m.ValueSize(), m.Type())
 	if err != nil {
 		return fmt.Errorf("map %s %w", m.Name(), err)
 	}

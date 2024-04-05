@@ -260,7 +260,7 @@ func (m *BPFMapLow) GetValue(key unsafe.Pointer) ([]byte, error) {
 }
 
 func (m *BPFMapLow) GetValueFlags(key unsafe.Pointer, flags MapFlag) ([]byte, error) {
-	valueSize, err := calcMapValueSize(m.ValueSize(), m.Type())
+	valueSize, err := CalcMapValueSize(m.ValueSize(), m.Type())
 	if err != nil {
 		return nil, fmt.Errorf("map %s %w", m.Name(), err)
 	}
@@ -314,7 +314,7 @@ func (m *BPFMapLow) LookupAndDeleteElemFlags(
 }
 
 func (m *BPFMapLow) GetValueAndDeleteKey(key unsafe.Pointer) ([]byte, error) {
-	valueSize, err := calcMapValueSize(m.ValueSize(), m.Type())
+	valueSize, err := CalcMapValueSize(m.ValueSize(), m.Type())
 	if err != nil {
 		return nil, fmt.Errorf("map %s %w", m.Name(), err)
 	}
@@ -332,7 +332,7 @@ func (m *BPFMapLow) GetValueAndDeleteKey(key unsafe.Pointer) ([]byte, error) {
 }
 
 func (m *BPFMapLow) GetValueAndDeleteKeyFlags(key unsafe.Pointer, flags MapFlag) ([]byte, error) {
-	valueSize, err := calcMapValueSize(m.ValueSize(), m.Type())
+	valueSize, err := CalcMapValueSize(m.ValueSize(), m.Type())
 	if err != nil {
 		return nil, fmt.Errorf("map %s %w", m.Name(), err)
 	}
@@ -397,7 +397,7 @@ func (m *BPFMapLow) GetNextKey(key unsafe.Pointer, nextKey unsafe.Pointer) error
 // GetValueBatch gets the values with the given keys from the map.
 // It returns the values and the number of read elements.
 func (m *BPFMapLow) GetValueBatch(keys, startKey, nextKey unsafe.Pointer, count uint32) ([][]byte, uint32, error) {
-	valueSize, err := calcMapValueSize(m.ValueSize(), m.Type())
+	valueSize, err := CalcMapValueSize(m.ValueSize(), m.Type())
 	if err != nil {
 		return nil, 0, fmt.Errorf("map %s %w", m.Name(), err)
 	}
@@ -444,7 +444,7 @@ func (m *BPFMapLow) GetValueBatch(keys, startKey, nextKey unsafe.Pointer, count 
 // deletes them.
 // It returns the values and the number of deleted elements.
 func (m *BPFMapLow) GetValueAndDeleteBatch(keys, startKey, nextKey unsafe.Pointer, count uint32) ([][]byte, uint32, error) {
-	valueSize, err := calcMapValueSize(m.ValueSize(), m.Type())
+	valueSize, err := CalcMapValueSize(m.ValueSize(), m.Type())
 	if err != nil {
 		return nil, 0, fmt.Errorf("map %s %w", m.Name(), err)
 	}
