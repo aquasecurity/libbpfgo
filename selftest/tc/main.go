@@ -56,11 +56,37 @@ func main() {
 
 	var tcOpts bpf.TcOpts
 	tcOpts.ProgFd = int(tcProg.GetFd())
+	tcOpts.Handle = 1
+	tcOpts.Priority = 1
 	err = hook.Attach(&tcOpts)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
 	}
+
+	// test for query
+	tcOpts.ProgFd = 0
+	tcOpts.ProgId = 0
+	err = hook.Query(&tcOpts)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(-1)
+	}
+	if tcOpts.Handle != 1 {
+		fmt.Fprintln(os.Stderr, "query info error, handle:%d", tcOpts.Handle)
+		os.Exit(-1)
+	}
+
+	// test for detach
+	defer func() {
+		tcOpts.ProgFd = 0
+		tcOpts.ProgId = 0
+		err = hook.Detach(&tcOpts)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(-1)
+		}
+	}()
 
 	eventsChannel := make(chan []byte)
 	rb, err := bpfModule.InitRingBuf("events", eventsChannel)
