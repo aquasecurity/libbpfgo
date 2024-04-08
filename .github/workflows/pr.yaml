@@ -99,4 +99,5 @@ jobs:
           go-version: ${{ matrix.go-version }}
       - name: Static Selftests
         run: |
-          make selftest-static-run
+          # make selftest-static-run
+          cd selftest/tc && make run

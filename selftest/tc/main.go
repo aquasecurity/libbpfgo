@@ -61,6 +61,12 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
 	}
+	defer func() {
+		if err := hook.Detach(&tcOpts); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(-1)
+		}
+	}()
 
 	eventsChannel := make(chan []byte)
 	rb, err := bpfModule.InitRingBuf("events", eventsChannel)
