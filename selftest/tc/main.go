@@ -54,7 +54,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	var tcOpts bpf.TcOpts
+	var tcOpts bpf.TcOpts // https://elixir.bootlin.com/linux/v6.8.4/source/tools/testing/selftests/bpf/prog_tests/tc_bpf.c#L26
 	tcOpts.ProgFd = int(tcProg.GetFd())
 	tcOpts.Handle = 1
 	tcOpts.Priority = 1
