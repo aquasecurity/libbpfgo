@@ -59,6 +59,20 @@ struct ring_buffer *cgo_init_ring_buf(int map_fd, uintptr_t ctx)
     return rb;
 }
 
+int cgo_add_ring_buf(struct ring_buffer *rb, int map_fd, uintptr_t ctx)
+{
+    int ret = ring_buffer__add(rb, map_fd, ringbufferCallback, (void *) ctx);
+    if (ret != 0) {
+        int saved_errno = errno;
+        fprintf(stderr, "Failed to add ring buffer: %s\n", strerror(errno));
+        errno = saved_errno;
+
+        return ret;
+    }
+
+    return ret;
+}
+
 struct perf_buffer *cgo_init_perf_buf(int map_fd, int page_cnt, uintptr_t ctx)
 {
     struct perf_buffer_opts pb_opts = {};
