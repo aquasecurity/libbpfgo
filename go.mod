@@ -1,6 +1,8 @@
 module github.com/aquasecurity/libbpfgo
 
-go 1.21
+go 1.22.0
+
+toolchain go1.22.3
 
 require github.com/stretchr/testify v1.9.0
 
