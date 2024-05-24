@@ -87,13 +87,11 @@ struct bpf_raw_tracepoint_args {
     __u64 args[0];
 };
 
-enum
-{
+enum {
     BPF_F_CURRENT_CPU = 4294967295,
 };
 
-enum bpf_map_type
-{
+enum bpf_map_type {
     BPF_MAP_TYPE_UNSPEC = 0,
     BPF_MAP_TYPE_HASH = 1,
     BPF_MAP_TYPE_ARRAY = 2,
@@ -182,8 +180,7 @@ struct sock_common {
 
 #define ETH_P_IP 0x0800
 
-enum xdp_action
-{
+enum xdp_action {
     XDP_ABORTED = 0,
     XDP_DROP = 1,
     XDP_PASS = 2,
@@ -202,8 +199,7 @@ enum xdp_action
 //       or, at least, should be, immutable among different kernel versions.
 //
 
-enum
-{
+enum {
     TCP_ESTABLISHED = 1,
     TCP_SYN_SENT = 2,
     TCP_SYN_RECV = 3,
@@ -219,8 +215,7 @@ enum
     TCP_MAX_STATES = 13,
 };
 
-enum sock_type
-{
+enum sock_type {
     SOCK_STREAM = 1,
     SOCK_DGRAM = 2,
     SOCK_RAW = 3,
@@ -230,8 +225,7 @@ enum sock_type
     SOCK_PACKET = 10,
 };
 
-enum
-{
+enum {
     IPPROTO_IP = 0,
     IPPROTO_ICMP = 1,
     IPPROTO_IGMP = 2,
@@ -262,8 +256,7 @@ enum
     IPPROTO_MAX = 263,
 };
 
-enum
-{
+enum {
     TCPF_ESTABLISHED = 2,
     TCPF_SYN_SENT = 4,
     TCPF_FIN_WAIT1 = 16,
@@ -316,8 +309,7 @@ struct __sk_buff {
     __u32 gso_size;
 };
 
-enum bpf_hdr_start_off
-{
+enum bpf_hdr_start_off {
     BPF_HDR_START_MAC = 0,
     BPF_HDR_START_NET = 1,
 };
