@@ -4,12 +4,12 @@ description: |
 inputs:
   go-version:
     description: go version
-    default: "1.22.3"
+    default: "1.21"
 runs:
   using: composite
   steps:
     - name: Setup Go
-      uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
+      uses: actions/setup-go@v5
       with:
         go-version: "${{ inputs.go-version }}"
     - name: Install Compilers & Formatters
@@ -18,11 +18,12 @@ runs:
         sudo apt-get install --yes bsdutils
         sudo apt-get install --yes build-essential
         sudo apt-get install --yes pkgconf
-        sudo apt-get install --yes llvm-14 clang-14 clang-format-14
+        sudo apt-get install --yes llvm-12 clang-12
+        sudo apt-get install --yes clang-format-12
         sudo apt-get install --yes zlib1g-dev libelf-dev
-        for tool in "clang" "clang-format" "llc" "llvm-strip"
+        for tool in "clang" "llc" "llvm-strip" "clang-format"
         do
           sudo rm -f /usr/bin/$tool
-          sudo ln -s /usr/bin/$tool-14 /usr/bin/$tool
+          sudo ln -s /usr/bin/$tool-12 /usr/bin/$tool
         done
       shell: bash

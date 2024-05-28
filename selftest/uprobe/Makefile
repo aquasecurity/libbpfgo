@@ -8,23 +8,18 @@ LIBBPF_OBJ = $(abspath $(OUTPUT)/libbpf.a)
 CC = gcc
 CLANG = clang
 GO = go
-PKGCONFIG = pkg-config
 
 ARCH := $(shell uname -m | sed 's/x86_64/amd64/g; s/aarch64/arm64/g')
-
-# libbpf
-
-LIBBPF_OBJDIR = $(abspath ./$(OUTPUT)/libbpf)
 
 CFLAGS = -g -O2 -Wall -fpie
 LDFLAGS =
 
 CGO_CFLAGS_STATIC = "-I$(abspath $(OUTPUT)) -I$(abspath ../common)"
-CGO_LDFLAGS_STATIC = "$(shell PKG_CONFIG_PATH=$(LIBBPF_OBJDIR) $(PKGCONFIG) --static --libs libbpf)"
+CGO_LDFLAGS_STATIC = "-lelf -lz $(LIBBPF_OBJ)"
 CGO_EXTLDFLAGS_STATIC = '-w -extldflags "-static"'
 
 CGO_CFLAGS_DYN = "-I. -I/usr/include/"
-CGO_LDFLAGS_DYN = "$(shell $(PKGCONFIG) --shared --libs libbpf)"
+CGO_LDFLAGS_DYN = "-lelf -lz -lbpf"
 
 TEST = main
 
