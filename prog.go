@@ -308,6 +308,44 @@ func (p *BPFProg) AttachXDP(deviceName string) (*BPFLink, error) {
 	return bpfLink, nil
 }
 
+func (p *BPFProg) AttachXDPLegacy(deviceName string, flag XDPFlags) error {
+	optsC, errno := C.cgo_bpf_xdp_attach_opts_new(C.uint32_t(0))
+	if optsC == nil {
+		return fmt.Errorf("failed to create xdp attach opts:%w", errno)
+	}
+	defer C.cgo_bpf_xdp_attach_opts_free(optsC)
+	iface, err := net.InterfaceByName(deviceName)
+	if err != nil {
+		return fmt.Errorf("failed to find device by name %s: %w", deviceName, err)
+	}
+	var retC C.int
+	retC, errno = C.bpf_xdp_attach(C.int(iface.Index), C.int(p.FileDescriptor()), C.uint32_t(flag), optsC)
+	if retC < 0 {
+		return fmt.Errorf("failed to attach xdp: %w", errno)
+	}
+
+	return nil
+}
+
+func (p *BPFProg) DetachXDPLegacy(deviceName string, flag XDPFlags) error {
+	optsC, errno := C.cgo_bpf_xdp_attach_opts_new(C.uint32_t(p.FileDescriptor()))
+	if optsC == nil {
+		return fmt.Errorf("failed to create xdp attach opts:%w", errno)
+	}
+	defer C.cgo_bpf_xdp_attach_opts_free(optsC)
+	iface, err := net.InterfaceByName(deviceName)
+	if err != nil {
+		return fmt.Errorf("failed to find device by name %s: %w", deviceName, err)
+	}
+	var retC C.int
+	retC, errno = C.bpf_xdp_detach(C.int(iface.Index), C.uint32_t(flag), optsC)
+	if retC < 0 {
+		return fmt.Errorf("failed to detach xdp: %w", errno)
+	}
+
+	return nil
+}
+
 func (p *BPFProg) AttachTracepoint(category, name string) (*BPFLink, error) {
 	tpCategoryC := C.CString(category)
 	defer C.free(unsafe.Pointer(tpCategoryC))

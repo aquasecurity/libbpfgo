@@ -35,6 +35,17 @@ func main() {
 		os.Exit(-1)
 	}
 
+	err = xdpProg.AttachXDPLegacy(deviceName, bpf.XDPFlagsReplace)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(-1)
+	}
+	err = xdpProg.DetachXDPLegacy(deviceName, bpf.XDPFlagsReplace)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(-1)
+	}
+
 	_, err = xdpProg.AttachXDP(deviceName)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
