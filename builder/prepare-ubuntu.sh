@@ -8,8 +8,18 @@
 # variables
 
 [ -z "${GO_VERSION}" ] && GO_VERSION="1.21"
-[ -z "${CLANG_VERSION}" ] && CLANG_VERSION="12"
-[ -z "${ARCH}" ] && ARCH="amd64"
+[ -z "${CLANG_VERSION}" ] && CLANG_VERSION="14"
+[ -z "${ARCH}" ] && ARCH=$(uname -m)
+
+ARCH=$(sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/' <<< "${ARCH}")
+
+case "${ARCH}" in
+    amd64|arm64)
+        ;;
+    *)
+        die "unsupported architecture ${ARCH}"
+        ;;
+esac
 
 
 # functions
@@ -59,7 +69,7 @@ setup_go() {
 setup_clang() {
     info "Setting Clang ${CLANG_VERSION} as default"
 
-    local tools="clang llc llvm-strip clang-format"
+    local tools="clang clang-format llc llvm-strip"
     for tool in ${tools}
     do
         sudo -E update-alternatives --install "/usr/bin/${tool}" "${tool}" "/usr/bin/${tool}-${CLANG_VERSION}" 100
