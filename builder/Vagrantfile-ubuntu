@@ -17,9 +17,9 @@ VM_SOURCE = "/vagrant"
 Vagrant.configure("2") do |config|
   case ARCH
   when "amd64"
-    config.vm.box = "bento/ubuntu-24.04"
+    config.vm.box = "ubuntu/jammy64"
   when "arm64"
-    config.vm.box = "bento/ubuntu-24.04"
+    config.vm.box = "bento/ubuntu-22.04-arm64"
   end
 
   case HOSTOS
