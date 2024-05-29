@@ -119,14 +119,21 @@ func NewModuleFromBufferArgs(args NewModuleArgs) (*Module, error) {
 		return nil, err
 	}
 
-	if args.BTFObjPath == "" {
-		args.BTFObjPath = "/sys/kernel/btf/vmlinux"
+	var btfFilePathC *C.char
+	var kConfigPathC *C.char
+
+	// instruct libbpf to use user provided kernel BTF file
+	if args.BTFObjPath != "" {
+		btfFilePathC = C.CString(args.BTFObjPath)
+		defer C.free(unsafe.Pointer(btfFilePathC))
 	}
 
-	btfFilePathC := C.CString(args.BTFObjPath)
-	defer C.free(unsafe.Pointer(btfFilePathC))
-	kConfigPathC := C.CString(args.KConfigFilePath)
-	defer C.free(unsafe.Pointer(kConfigPathC))
+	// instruct libbpf to use user provided KConfigFile
+	if args.KConfigFilePath != "" {
+		kConfigPathC = C.CString(args.KConfigFilePath)
+		defer C.free(unsafe.Pointer(kConfigPathC))
+	}
+
 	bpfObjNameC := C.CString(args.BPFObjName)
 	defer C.free(unsafe.Pointer(bpfObjNameC))
 	bpfBuffC := unsafe.Pointer(C.CBytes(args.BPFObjBuff))
