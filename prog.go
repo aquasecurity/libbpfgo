@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 	"unsafe"
 )
 
@@ -626,6 +627,163 @@ func (p *BPFProg) DetachGenericFD(targetFd int, attachType BPFAttachType) error 
 	if retC < 0 {
 		return fmt.Errorf("failed to detach: %w", syscall.Errno(-retC))
 	}
+
+	return nil
+}
+
+//
+// BPF_PROG_TEST_RUN
+//
+
+type RunFlag uint32
+
+const (
+	RunFlagRunOnCPU      RunFlag = C.BPF_F_TEST_RUN_ON_CPU
+	RunFlagXDPLiveFrames RunFlag = C.BPF_F_TEST_XDP_LIVE_FRAMES
+)
+
+// RunOpts mirrors the C structure bpf_test_run_opts.
+type RunOpts struct {
+	DataIn      []byte
+	DataOut     []byte
+	DataSizeIn  uint32
+	DataSizeOut uint32
+	CtxIn       []byte
+	CtxOut      []byte
+	CtxSizeIn   uint32
+	CtxSizeOut  uint32
+	RetVal      uint32
+	Repeat      int
+	Duration    time.Duration
+	Flags       RunFlag
+	CPU         uint32
+	BatchSize   uint32
+}
+
+func runOptsToC(runOpts *RunOpts) (*C.struct_bpf_test_run_opts, error) {
+	if runOpts == nil {
+		return nil, nil
+	}
+
+	var (
+		dataIn      unsafe.Pointer
+		dataSizeIn  C.uint
+		dataOut     unsafe.Pointer
+		dataSizeOut C.uint
+		ctxIn       unsafe.Pointer
+		ctxSizeIn   C.uint
+		ctxOut      unsafe.Pointer
+		ctxSizeOut  C.uint
+	)
+
+	if runOpts.DataIn != nil {
+		dataIn = unsafe.Pointer(&runOpts.DataIn[0])
+		dataSizeIn = C.uint(runOpts.DataSizeIn)
+	}
+	if runOpts.DataOut != nil {
+		dataOut = unsafe.Pointer(&runOpts.DataOut[0])
+		dataSizeOut = C.uint(runOpts.DataSizeOut)
+	}
+	if runOpts.CtxIn != nil {
+		ctxIn = unsafe.Pointer(&runOpts.CtxIn[0])
+		ctxSizeIn = C.uint(runOpts.CtxSizeIn)
+	}
+	if runOpts.CtxOut != nil {
+		ctxOut = unsafe.Pointer(&runOpts.CtxOut[0])
+		ctxSizeOut = C.uint(runOpts.CtxSizeOut)
+	}
+	optsC, errno := C.cgo_bpf_test_run_opts_new(
+		dataIn,
+		dataOut,
+		dataSizeIn,
+		dataSizeOut,
+		ctxIn,
+		ctxOut,
+		ctxSizeIn,
+		ctxSizeOut,
+		C.int(runOpts.Repeat),
+		C.uint(runOpts.Flags),
+		C.uint(runOpts.CPU),
+		C.uint(runOpts.BatchSize),
+	)
+	if optsC == nil {
+		return nil, fmt.Errorf("failed to create bpf_test_run_opts: %w", errno)
+	}
+
+	return optsC, nil
+}
+
+func runOptsFromC(runOpts *RunOpts, optsC *C.struct_bpf_test_run_opts) {
+	if optsC == nil {
+		return
+	}
+
+	if optsC.data_in != nil {
+		runOpts.DataIn = C.GoBytes(optsC.data_in, C.int(optsC.data_size_in))
+	}
+	if optsC.data_out != nil {
+		runOpts.DataOut = C.GoBytes(optsC.data_out, C.int(optsC.data_size_out))
+	}
+	if optsC.ctx_in != nil {
+		runOpts.CtxIn = C.GoBytes(optsC.ctx_in, C.int(optsC.ctx_size_in))
+	}
+	if optsC.ctx_out != nil {
+		runOpts.CtxOut = C.GoBytes(optsC.ctx_out, C.int(optsC.ctx_size_out))
+	}
+
+	runOpts.RetVal = uint32(optsC.retval)
+	runOpts.Repeat = int(optsC.repeat)
+	runOpts.Duration = time.Duration(optsC.duration) * time.Nanosecond
+	runOpts.Flags = RunFlag(optsC.flags)
+	runOpts.CPU = uint32(optsC.cpu)
+	runOpts.BatchSize = uint32(optsC.batch_size)
+}
+
+// Run executes the eBPF program without attaching it to actual hooks, filling
+// the results in the provided RunOpts.
+// Reference:
+//   - https://docs.kernel.org/bpf/bpf_prog_run.html
+//   - https://docs.kernel.org/userspace-api/ebpf/syscall.html
+//
+// Example Usage:
+//
+//	/*
+//	SEC("tc")
+//	int test(struct __sk_buff *skb)
+//	{
+//	    return foo() ? 1 : 0;
+//	}
+//	*/
+//
+//	func TestFunc(t *testing.T) {
+//	    ...
+//	    prog, _ := module.GetProgram("test")
+//	    opts := RunOpts{
+//	        DataIn: make([]byte, 0, 14),
+//	        DataSizeIn: 14,
+//	        DataOut: make([]byte, 0, 14),
+//	        DataSizeOut: 14,
+//	        Repeat: 1,
+//	    }
+//	    prog.Run(&opts)
+//	    if opts.RetVal != 1 {
+//	        t.Errorf("result = %d; want 1", opts.RetVal)
+//	    }
+//	}
+func (p *BPFProg) Run(opts *RunOpts) error {
+	optsC, err := runOptsToC(opts)
+	if err != nil {
+		return err
+	}
+	defer C.cgo_bpf_test_run_opts_free(optsC)
+
+	retC := C.bpf_prog_test_run_opts(C.int(p.FileDescriptor()), optsC)
+	if retC < 0 {
+		return fmt.Errorf("failed to run program: %w", syscall.Errno(-retC))
+	}
+
+	// update runOpts with the values from the kernel and libbpf
+	runOptsFromC(opts, optsC)
 
 	return nil
 }
