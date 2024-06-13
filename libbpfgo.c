@@ -536,3 +536,21 @@ __u32 cgo_bpf_tc_opts_priority(struct bpf_tc_opts *opts)
 
     return opts->priority;
 }
+
+struct bpf_xdp_attach_opts *cgo_bpf_xdp_attach_opts_new(__u32 fd)
+{
+    struct bpf_xdp_attach_opts *opts;
+    opts = calloc(1, sizeof(*opts));
+
+    if (!opts)
+        return NULL;
+    opts->sz = sizeof(*opts);
+    opts->old_prog_fd = fd;
+
+    return opts;
+}
+
+void cgo_bpf_xdp_attach_opts_free(struct bpf_xdp_attach_opts *opts)
+{
+    free(opts);
+}

@@ -16,7 +16,8 @@
 
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
-#include <linux/bpf.h> // uapi
+#include <linux/bpf.h>     // uapi
+#include <linux/if_link.h> // uapi
 
 void cgo_libbpf_set_print_fn();
 
@@ -121,5 +122,10 @@ __u32 cgo_bpf_tc_opts_flags(struct bpf_tc_opts *opts);
 __u32 cgo_bpf_tc_opts_prog_id(struct bpf_tc_opts *opts);
 __u32 cgo_bpf_tc_opts_handle(struct bpf_tc_opts *opts);
 __u32 cgo_bpf_tc_opts_priority(struct bpf_tc_opts *opts);
+
+// bpf_xdp_attach_opts
+
+struct bpf_xdp_attach_opts *cgo_bpf_xdp_attach_opts_new(__u32 fd);
+void cgo_bpf_xdp_attach_opts_free(struct bpf_xdp_attach_opts *opts);
 
 #endif
