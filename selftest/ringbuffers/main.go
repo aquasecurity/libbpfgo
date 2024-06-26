@@ -15,7 +15,7 @@ import (
 )
 
 func resizeMap(module *bpf.Module, name string, size uint32) error {
-	m, err := module.GetMap("events")
+	m, err := module.GetMap(name)
 	if err != nil {
 		return err
 	}
@@ -39,7 +39,7 @@ func main() {
 	}
 	defer bpfModule.Close()
 
-	if err = resizeMap(bpfModule, "events", 8192); err != nil {
+	if err = resizeMap(bpfModule, "events1", 8192); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
 	}
@@ -58,32 +58,52 @@ func main() {
 		os.Exit(-1)
 	}
 
-	eventsChannel := make(chan []byte)
-	rb, err := bpfModule.InitRingBuf("events", eventsChannel)
+	eventsChannel1 := make(chan []byte)
+	rb, err := bpfModule.InitRingBuf("events1", eventsChannel1)
 	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(-1)
+	}
+
+	eventsChannel2 := make(chan []byte)
+	ret, err := bpfModule.AddRingBuf(rb, "events2", eventsChannel2)
+	if !ret {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
 	}
 
 	rb.Poll(300)
 
-	numberOfEventsReceived := 0
+	numberOfEvent1Received := 0
+	numberOfEvent2Received := 0
 	go func() {
 		for {
 			syscall.Mmap(999, 999, 999, 1, 1)
 			time.Sleep(time.Second / 2)
 		}
 	}()
+
 recvLoop:
 	for {
-		b := <-eventsChannel
-		if binary.LittleEndian.Uint32(b) != 2021 {
-			fmt.Fprintf(os.Stderr, "invalid data retrieved\n")
-			os.Exit(-1)
-		}
-		numberOfEventsReceived++
-		if numberOfEventsReceived > 5 {
-			break recvLoop
+		select {
+		case b := <-eventsChannel1:
+			if binary.LittleEndian.Uint32(b) != 2021 {
+				fmt.Fprintf(os.Stderr, "invalid data retrieved\n")
+				os.Exit(-1)
+			}
+			numberOfEvent1Received++
+			if numberOfEvent1Received > 5 && numberOfEvent2Received > 5 {
+				break recvLoop
+			}
+		case b := <-eventsChannel2:
+			if binary.LittleEndian.Uint32(b) != 2024 {
+				fmt.Fprintf(os.Stderr, "invalid data retrieved\n")
+				os.Exit(-1)
+			}
+			numberOfEvent2Received++
+			if numberOfEvent1Received > 5 && numberOfEvent2Received > 5 {
+				break recvLoop
+			}
 		}
 	}
 
