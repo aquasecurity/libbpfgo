@@ -24,6 +24,7 @@ ARCH ?= $(shell uname -m | sed 's/x86_64/amd64/g; s/aarch64/arm64/g')
 # libbpf
 
 LIBBPF_SRC = $(abspath ./libbpf/src)
+LIBBPF_INCLUDE_UAPI = $(abspath ./libbpf/include/uapi)
 LIBBPF_OBJ = $(abspath ./$(OUTPUT)/libbpf.a)
 LIBBPF_OBJDIR = $(abspath ./$(OUTPUT)/libbpf)
 LIBBPF_DESTDIR = $(abspath ./$(OUTPUT))
@@ -33,7 +34,7 @@ LDFLAGS =
 
 # golang
 
-CGO_CFLAGS_STATIC = "-I$(abspath $(OUTPUT))"
+CGO_CFLAGS_STATIC = "-I$(abspath $(OUTPUT)) -I$(LIBBPF_INCLUDE_UAPI)"
 CGO_LDFLAGS_STATIC = "$(shell PKG_CONFIG_PATH=$(LIBBPF_OBJDIR) $(PKGCONFIG) --static --libs libbpf)"
 CGO_EXTLDFLAGS_STATIC = '-w -extldflags "-static"'
 
