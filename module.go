@@ -202,6 +202,7 @@ func (m *Module) BPFLoadObject() error {
 	}
 	m.loaded = true
 	m.elf.Close()
+	m.elf = nil
 
 	return nil
 }
