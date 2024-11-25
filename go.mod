@@ -3,7 +3,7 @@ module github.com/aquasecurity/libbpfgo
 go 1.21
 
 require (
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	kernel.org/pub/linux/libs/security/libcap/cap v1.2.72
 )
 
