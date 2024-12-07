@@ -155,14 +155,20 @@ func (p *BPFProg) SetAttachTarget(attachProgFD int, attachFuncName string) error
 	return nil
 }
 
-// TODO: fix API to return error
-func (p *BPFProg) SetProgramType(progType BPFProgType) {
-	C.bpf_program__set_type(p.prog, C.enum_bpf_prog_type(int(progType)))
+func (p *BPFProg) SetProgramType(progType BPFProgType) error {
+	retC := C.bpf_program__set_type(p.prog, C.enum_bpf_prog_type(int(progType)))
+	if retC < 0 {
+		return fmt.Errorf("failed to set prog_type %s for program %s", progType.String(), p.Name())
+	}
+	return nil
 }
 
-// TODO: fix API to return error
-func (p *BPFProg) SetAttachType(attachType BPFAttachType) {
-	C.bpf_program__set_expected_attach_type(p.prog, C.enum_bpf_attach_type(int(attachType)))
+func (p *BPFProg) SetAttachType(attachType BPFAttachType) error {
+	retC := C.bpf_program__set_expected_attach_type(p.prog, C.enum_bpf_attach_type(int(attachType)))
+	if retC < 0 {
+		return fmt.Errorf("failed to set attach_type %s for program %s", attachType.String(), p.Name())
+	}
+	return nil
 }
 
 // getCgroupDirFD returns a file descriptor for a given cgroup2 directory path
