@@ -155,13 +155,13 @@ func (p *BPFProg) SetAttachTarget(attachProgFD int, attachFuncName string) error
 	return nil
 }
 
-// Deprecated: use BPFProg.SetExpectedProgramType() instead.
+// Deprecated: use BPFProg.SetType() instead.
 func (p *BPFProg) SetProgramType(progType BPFProgType) {
-	C.bpf_program__set_type(p.prog, C.enum_bpf_prog_type(C.int(progType)))
+	_ = p.SetType(progType)
 }
 
-func (p *BPFProg) SetExpectedProgramType(progType BPFProgType) error {
-	retC := C.bpf_program__set_type(p.prog, C.enum_bpf_prog_type(C.int(progType)))
+func (p *BPFProg) SetType(progType BPFProgType) error {
+	retC := C.bpf_program__set_type(p.prog, C.enum_bpf_prog_type(progType))
 	if retC < 0 {
 		return fmt.Errorf("failed to set prog_type %s for program %s: %w", progType.String(), p.Name(), syscall.Errno(-retC))
 	}
@@ -171,11 +171,11 @@ func (p *BPFProg) SetExpectedProgramType(progType BPFProgType) error {
 
 // Deprecated: use BPFProg.SetExpectedAttachType() instead.
 func (p *BPFProg) SetAttachType(attachType BPFAttachType) {
-	C.bpf_program__set_expected_attach_type(p.prog, C.enum_bpf_attach_type(C.int(attachType)))
+	_ = p.SetExpectedAttachType(attachType)
 }
 
 func (p *BPFProg) SetExpectedAttachType(attachType BPFAttachType) error {
-	retC := C.bpf_program__set_expected_attach_type(p.prog, C.enum_bpf_attach_type(C.int(attachType)))
+	retC := C.bpf_program__set_expected_attach_type(p.prog, C.enum_bpf_attach_type(attachType))
 	if retC < 0 {
 		return fmt.Errorf("failed to set attach_type %s for program %s: %w", attachType.String(), p.Name(), syscall.Errno(-retC))
 	}

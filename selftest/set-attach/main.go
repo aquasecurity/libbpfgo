@@ -30,8 +30,16 @@ func main() {
 
 	// eBPF program type should only be set if it differs from the desired one
 	// commit d6e6286a12e7 ("libbpf: disassociate section handler on explicit bpf_program__set_type() call")
-	// prog.SetProgramType(bpf.BPFProgTypeTracing)
-	prog.SetAttachType(bpf.BPFAttachTypeTraceFentry)
+	// err = prog.SetType(bpf.BPFProgTypeTracing)
+	// if err != nil {
+	//	 fmt.Fprintln(os.Stderr, err)
+	//	 os.Exit(-1)
+	// }
+	err = prog.SetExpectedAttachType(bpf.BPFAttachTypeTraceFentry)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(-1)
+	}
 
 	funcName := fmt.Sprintf("__%s_sys_mmap", ksymArch())
 	err = prog.SetAttachTarget(0, funcName)
