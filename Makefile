@@ -6,7 +6,6 @@ BASEDIR = $(abspath ./)
 
 OUTPUT = ./output
 SELFTEST = ./selftest
-HELPERS = ./helpers
 
 CLANG := clang
 CC := $(CLANG)
@@ -161,25 +160,6 @@ selftest-dynamic-run:
 
 selftest-clean:
 	$(call FOREACH, clean)
-
-# helpers test
-
-.PHONY: helpers-test-run
-.PHONY: helpers-test-static-run
-.PHONY: helpers-test-dynamic-run
-
-helpers-test-run: helpers-test-static-run
-
-helpers-test-static-run: libbpfgo-static
-	cd $(HELPERS) && \
-		CC=$(CLANG) \
-		CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
-		CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
-		sudo -E env PATH=$(PATH) $(GO) test -v ./...
-
-helpers-test-dynamic-run: libbpfgo-dynamic
-	cd $(HELPERS) && \
-		sudo $(GO) test -v ./...
 
 # vagrant
 

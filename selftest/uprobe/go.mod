@@ -2,10 +2,9 @@ module github.com/aquasecurity/libbpfgo/selftest/uprobe
 
 go 1.21
 
-require (
-	github.com/aquasecurity/libbpfgo v0.0.0
-	github.com/aquasecurity/libbpfgo/selftest/common v0.0.0-00010101000000-000000000000
-)
+require github.com/aquasecurity/libbpfgo v0.7.0-libbpf-1.4.0.20240729111821-61d531acf4ca
+
+require github.com/aquasecurity/libbpfgo/selftest/common v0.0.0-00010101000000-000000000000
 
 replace github.com/aquasecurity/libbpfgo => ../../
 
