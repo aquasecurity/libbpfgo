@@ -4,15 +4,7 @@ updates:
     directory: "/"
     schedule:
       interval: daily
-  # - package-ecosystem: "github-actions"
-  #   directory: "/helpers"
-  #   schedule:
-  #     interval: daily
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
       interval: daily
-  # - package-ecosystem: "gomod"
-  #   directory: "/helpers"
-  #   schedule:
-  #     interval: daily

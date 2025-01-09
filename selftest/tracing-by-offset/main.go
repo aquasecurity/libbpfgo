@@ -3,28 +3,27 @@ package main
 import "C"
 
 import (
+	"fmt"
+	"log"
+	"syscall"
 	"time"
 
-	"fmt"
-	"syscall"
-
 	bpf "github.com/aquasecurity/libbpfgo"
-	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 func main() {
 	funcName := fmt.Sprintf("__%s_sys_mmap", common.KSymArch())
 
-	kst, err := helpers.NewKernelSymbolTable()
+	funcAddr, err := common.KernelSymbolToAddr(funcName, true)
 	if err != nil {
 		common.Error(err)
+	}
+	if funcAddr == 0 {
+		common.Error(fmt.Errorf("symbol %s found but has address 0", funcName))
 	}
 
-	funcSymbol, err := kst.GetSymbolByName(funcName)
-	if err != nil {
-		common.Error(err)
-	}
+	log.Printf("Found symbol %s at address 0x%x", funcName, funcAddr)
 
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
@@ -38,7 +37,7 @@ func main() {
 		common.Error(err)
 	}
 
-	_, err = prog.AttachKprobeOffset(funcSymbol[0].Address)
+	_, err = prog.AttachKprobeOffset(funcAddr)
 	if err != nil {
 		common.Error(err)
 	}

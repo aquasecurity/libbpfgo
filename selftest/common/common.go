@@ -1,6 +1,7 @@
 package common
 
 import (
+	"bufio"
 	"debug/elf"
 	"encoding/binary"
 	"errors"
@@ -9,6 +10,8 @@ import (
 	"os"
 	"regexp"
 	"runtime"
+	"strconv"
+	"strings"
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
@@ -125,6 +128,56 @@ func SymbolToOffset(path, symbol string) (uint64, error) {
 	}
 
 	return 0, fmt.Errorf("symbol %s not found in %s", symbol, path)
+}
+
+// KernelSymbolToAddr attempts to resolve a kernel symbol name to its address
+// by reading /proc/kallsyms. This is useful for attaching to kernel functions by offset.
+// If functionsOnly is true, only symbols of type 'T' or 't' (text/function symbols) are considered.
+func KernelSymbolToAddr(symbolName string, functionsOnly bool) (uint64, error) {
+	file, err := os.Open("/proc/kallsyms")
+	if err != nil {
+		return 0, fmt.Errorf("failed to open /proc/kallsyms: %w", err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		fields := strings.Fields(line)
+		if len(fields) < 3 {
+			continue
+		}
+
+		addr, err := strconv.ParseUint(fields[0], 16, 64)
+		if err != nil {
+			continue
+		}
+
+		symbolType := fields[1]
+		name := fields[2]
+
+		// if functionsOnly, only consider text/function symbols
+		if functionsOnly {
+			// 'T' = global text symbol, 't' = local text symbol
+			if symbolType != "T" && symbolType != "t" {
+				continue
+			}
+		}
+
+		if name == symbolName {
+			return addr, nil
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return 0, fmt.Errorf("error reading /proc/kallsyms: %w", err)
+	}
+
+	symbolTypeMsg := ""
+	if functionsOnly {
+		symbolTypeMsg = " (function)"
+	}
+	return 0, fmt.Errorf("kernel symbol%s %s not found in /proc/kallsyms", symbolTypeMsg, symbolName)
 }
 
 // Ordered constraint for comparable types

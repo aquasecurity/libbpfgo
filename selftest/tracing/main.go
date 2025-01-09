@@ -5,13 +5,13 @@ import "C"
 import (
 	"encoding/binary"
 	"errors"
+	"log"
 	"syscall"
 	"time"
 
 	"fmt"
 
 	bpf "github.com/aquasecurity/libbpfgo"
-	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
@@ -27,20 +27,16 @@ func main() {
 		common.Error(err)
 	}
 
-	m, err := helpers.NewKernelSymbolTable()
-	if err != nil {
-		common.Error(err)
-	}
-
 	funcName := fmt.Sprintf("__%s_sys_mmap", common.KSymArch())
-	sym, err := m.GetSymbolByName(funcName)
+	funcAddr, err := common.KernelSymbolToAddr(funcName, true)
 	if err != nil {
 		common.Error(err)
 	}
-
-	if sym[0].Address == 0 && sym[0].Name == "" {
-		common.Error(errors.New("could not find symbol to attach to"))
+	if funcAddr == 0 {
+		common.Error(fmt.Errorf("symbol %s found but has address 0", funcName))
 	}
+
+	log.Printf("Found symbol %s at address 0x%x", funcName, funcAddr)
 
 	prog, err := bpfModule.GetProgram("mmap_fentry")
 	if err != nil {
