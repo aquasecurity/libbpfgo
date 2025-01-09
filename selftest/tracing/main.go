@@ -11,8 +11,8 @@ import (
 	"fmt"
 
 	bpf "github.com/aquasecurity/libbpfgo"
-	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/libbpfgo/selftest/common"
+	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
 func main() {
@@ -27,7 +27,7 @@ func main() {
 		common.Error(err)
 	}
 
-	m, err := helpers.NewKernelSymbolTable()
+	m, err := environment.NewKernelSymbolTable(true, true)
 	if err != nil {
 		common.Error(err)
 	}
@@ -50,7 +50,7 @@ func main() {
 	if err != nil {
 		common.Error(err)
 	}
-	if link.GetFd() == 0 {
+	if link.FileDescriptor() == 0 {
 		common.Error(errors.New("failed to attach program"))
 	}
 

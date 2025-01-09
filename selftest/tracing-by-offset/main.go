@@ -9,14 +9,14 @@ import (
 	"syscall"
 
 	bpf "github.com/aquasecurity/libbpfgo"
-	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/libbpfgo/selftest/common"
+	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
 func main() {
 	funcName := fmt.Sprintf("__%s_sys_mmap", common.KSymArch())
 
-	kst, err := helpers.NewKernelSymbolTable()
+	kst, err := environment.NewKernelSymbolTable(true, true)
 	if err != nil {
 		common.Error(err)
 	}

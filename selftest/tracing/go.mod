@@ -1,17 +1,22 @@
 module github.com/aquasecurity/libbpfgo/selftest/tracing
 
-go 1.21
+go 1.24
+
+toolchain go1.24.2
 
 require (
 	github.com/aquasecurity/libbpfgo v0.0.0
-	github.com/aquasecurity/libbpfgo/helpers v0.4.5
 	github.com/aquasecurity/libbpfgo/selftest/common v0.0.0-00010101000000-000000000000
+	github.com/aquasecurity/tracee v0.23.1-0.20250812173613-0a9ab353c692
 )
 
-require golang.org/x/sys v0.25.0 // indirect
+require (
+	go.uber.org/multierr v1.11.0 // indirect
+	go.uber.org/zap v1.27.0 // indirect
+	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+)
 
 replace github.com/aquasecurity/libbpfgo => ../../
-
-replace github.com/aquasecurity/libbpfgo/helpers => ../../helpers
 
 replace github.com/aquasecurity/libbpfgo/selftest/common => ../../selftest/common
