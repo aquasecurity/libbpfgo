@@ -5,6 +5,8 @@ updates:
     schedule:
       interval: daily
   - package-ecosystem: "gomod"
-    directory: "/"
+    directories:
+      - "/"
+      - "/selftest/**/*"
     schedule:
       interval: daily
