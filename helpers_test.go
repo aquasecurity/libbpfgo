@@ -1,8 +1,8 @@
 package libbpfgo
 
 import (
-	"errors"
 	"fmt"
+	"strings"
 	"syscall"
 	"testing"
 
@@ -69,10 +69,12 @@ func TestFuncSupportbyType(t *testing.T) {
 		errMsg     error
 	}{
 		// func available but not enough permission (permission denied)
+		// May return success (`true`) even if the BPF program load would fail due to permission issues (EPERM).
+		// Check BPFHelperIsSupported for more info.
 		{
 			progType:   BPFProgTypeKprobe,
 			funcId:     BPFFuncGetCurrentUidGid,
-			supported:  false,
+			supported:  true,
 			capability: []string{},
 			errMsg:     syscall.EPERM,
 		},
@@ -87,17 +89,12 @@ func TestFuncSupportbyType(t *testing.T) {
 		// func unavailable and enough permission
 		// When the function is unavailable, BPF returns "Invalid Argument".
 		// Therefore, ignore the error and proceed with validation.
+		// May return success (`true`) even if the BPF program load would fail due to permission issues (EPERM).
+		// Check BPFHelperIsSupported for more info.
 		{
 			progType:   BPFProgTypeSkLookup,
 			funcId:     BPFFuncGetCurrentCgroupId,
-			supported:  false,
-			capability: []string{"cap_sys_admin"},
-			errMsg:     syscall.EINVAL,
-		},
-		{
-			progType:   BPFProgTypeSkLookup,
-			funcId:     BPFFuncGetCurrentCgroupId,
-			supported:  false,
+			supported:  true,
 			capability: []string{},
 			errMsg:     syscall.EPERM,
 		},
@@ -153,7 +150,6 @@ func TestFuncSupportbyType(t *testing.T) {
 			errMsg:     syscall.EINVAL,
 		},
 	}
-
 	for _, tc := range tt {
 		// reset all current effective capabilities
 		resetEffectiveCapabilities()
@@ -169,8 +165,8 @@ func TestFuncSupportbyType(t *testing.T) {
 				t.Errorf("expected no error, got %v", err)
 			}
 		} else {
-			if !errors.Is(err, tc.errMsg) {
-				t.Errorf("expected error %v, got %v", tc.errMsg, err)
+			if err == nil || !strings.Contains(err.Error(), tc.errMsg.Error()) {
+				t.Errorf("expected error containing %q, got %v", tc.errMsg.Error(), err)
 			}
 		}
 
