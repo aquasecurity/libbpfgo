@@ -809,6 +809,7 @@ const (
 	BPFAttachTypeSKReusePortSelectorMigrate BPFAttachType = C.BPF_SK_REUSEPORT_SELECT_OR_MIGRATE
 	BPFAttachTypePerfEvent                  BPFAttachType = C.BPF_PERF_EVENT
 	BPFAttachTypeTraceKprobeMulti           BPFAttachType = C.BPF_TRACE_KPROBE_MULTI
+	BPFAttachTypeStructOps                  BPFAttachType = C.BPF_STRUCT_OPS
 )
 
 var bpfAttachTypeToString = map[BPFAttachType]string{
@@ -855,6 +856,7 @@ var bpfAttachTypeToString = map[BPFAttachType]string{
 	BPFAttachTypeSKReusePortSelectorMigrate: "BPF_SK_REUSEPORT_SELECT_OR_MIGRATE",
 	BPFAttachTypePerfEvent:                  "BPF_PERF_EVENT",
 	BPFAttachTypeTraceKprobeMulti:           "BPF_TRACE_KPROBE_MULTI",
+	BPFAttachTypeStructOps:                  "BPF_STRUCT_OPS",
 }
 
 func (t BPFAttachType) String() string {
