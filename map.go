@@ -80,7 +80,7 @@ func (m *BPFMap) AttachStructOps() error {
 	}
 	linkC, errno := C.bpf_map__attach_struct_ops(m.bpfMap)
 	if linkC == nil {
-		return fmt.Errorf("Map attach failed: %w", &errno)
+		return fmt.Errorf("Map attach failed: %v", &errno)
 	}
 	return nil
 }
