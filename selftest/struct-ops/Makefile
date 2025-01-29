@@ -24,7 +24,7 @@ CGO_LDFLAGS_STATIC = "$(shell PKG_CONFIG_PATH=$(LIBBPF_OBJDIR) $(PKGCONFIG) --st
 CGO_EXTLDFLAGS_STATIC = '-w -extldflags "-static"'
 SCX_FLAGS=-O2 -g -Wall -fpie -mcpu=v3 -mlittle-endian \
 -I ../../libbpf/src/usr/include -I ../../libbpf/include/uapi \
--I dep/include -I dep/include/arch/x86 -I dep/include/bpf-compat -I dep/include/lib
+-I /lib/modules/6.12.6/build/tools/sched_ext/include/scx -I /lib/modules/6.12.6/build/tools/sched_ext/include/bpf-compat 
 
 CGO_CFLAGS_DYN = "-I. -I/usr/include/"
 CGO_LDFLAGS_DYN = "$(shell $(PKGCONFIG) --shared --libs libbpf)"
