@@ -1,1 +1,1 @@
-../common/run.sh
+../common/run-6.12.sh
