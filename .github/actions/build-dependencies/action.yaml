@@ -20,6 +20,7 @@ runs:
         sudo apt-get install --yes pkgconf
         sudo apt-get install --yes llvm-14 clang-14 clang-format-14
         sudo apt-get install --yes libelf-dev libzstd-dev zlib1g-dev
+        sudo apt-get install --yes virtme-ng
         for tool in "clang" "clang-format" "llc" "llvm-strip"
         do
           sudo rm -f /usr/bin/$tool
