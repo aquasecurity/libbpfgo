@@ -12,7 +12,7 @@ import (
 	"fmt"
 
 	bpf "github.com/aquasecurity/libbpfgo"
-	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
 func main() {
@@ -29,7 +29,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	m, err := helpers.NewKernelSymbolTable()
+	m, err := environment.NewKernelSymbolTable()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
