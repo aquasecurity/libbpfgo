@@ -7,7 +7,6 @@ package libbpfgo
 import "C"
 
 import (
-	"errors"
 	"fmt"
 	"syscall"
 	"unsafe"
@@ -74,15 +73,17 @@ func (m *BPFMap) ReuseFD(fd int) error {
 	return nil
 }
 
-func (m *BPFMap) AttachStructOps() error {
-	if m.Type().String() != MapTypeStructOps.String() {
-		return errors.New("Map type should be BPF_MAP_TYPE_STRUCT_OPS")
-	}
+func (m *BPFMap) AttachStructOps() (*BPFLink, error) {
 	linkC, errno := C.bpf_map__attach_struct_ops(m.bpfMap)
 	if linkC == nil {
-		return fmt.Errorf("Map attach failed: %v", &errno)
+		return nil, fmt.Errorf("failed to attach struct_ops: %w", errno)
 	}
-	return nil
+	return &BPFLink{
+		link:      linkC,
+		m:         m,
+		linkType:  StructOps,
+		eventName: fmt.Sprintf("structOps-%s", m.Name()),
+	}, nil
 }
 
 func (m *BPFMap) Name() string {

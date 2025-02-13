@@ -43,6 +43,8 @@ func main() {
 
 	m := bpfModule
 
+	var afterFunc func()
+
 	iters := m.Iterator()
 	for {
 		m := iters.NextMap()
@@ -50,9 +52,16 @@ func main() {
 			break
 		}
 		if m.Type().String() == "BPF_MAP_TYPE_STRUCT_OPS" {
-			if err := m.AttachStructOps(); err != nil {
+			if link, err := m.AttachStructOps(); err != nil {
 				log.Printf("error: %v", err)
 				os.Exit(-1)
+			} else {
+				afterFunc = func() {
+					if err := link.Destroy(); err != nil {
+						log.Printf("error: %v", err)
+						os.Exit(-1)
+					}
+				}
 			}
 		}
 	}
@@ -82,6 +91,7 @@ func main() {
 		time.Sleep(3 * time.Second)
 		cancel()
 		wg.Wait()
+		afterFunc()
 		log.Println("scheduler exit")
 		os.Exit(0)
 	}
@@ -91,9 +101,8 @@ func getStat(m *bpf.BPFMap) []uint64 {
 	cpuNum, err := bpf.NumPossibleCPUs()
 	if err != nil {
 		log.Fatal(err)
-		os.Exit(-1)
 	}
-	var cnts [][]uint64 = make([][]uint64, 2)
+	cnts := make([][]uint64, 2)
 	cnts[0] = make([]uint64, cpuNum)
 	cnts[1] = make([]uint64, cpuNum)
 	stats := []uint64{0, 0}
@@ -101,7 +110,6 @@ func getStat(m *bpf.BPFMap) []uint64 {
 		v, err := m.GetValue(unsafe.Pointer(&i))
 		if err != nil {
 			log.Fatal(err)
-			os.Exit(-1)
 		}
 		for cpu := 0; cpu < cpuNum; cpu++ {
 			n := v[cpu*8 : cpu*8+8]
