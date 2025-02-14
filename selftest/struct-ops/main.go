@@ -52,49 +52,50 @@ func main() {
 			break
 		}
 		if m.Type().String() == "BPF_MAP_TYPE_STRUCT_OPS" {
-			if link, err := m.AttachStructOps(); err != nil {
+			var link *bpf.BPFLink
+			if link, err = m.AttachStructOps(); err != nil {
 				log.Printf("error: %v", err)
 				os.Exit(-1)
-			} else {
-				afterFunc = func() {
-					if err := link.Destroy(); err != nil {
-						log.Printf("error: %v", err)
-						os.Exit(-1)
-					}
+			}
+			afterFunc = func() {
+				if err := link.Destroy(); err != nil {
+					log.Printf("error: %v", err)
+					os.Exit(-1)
 				}
 			}
+
 		}
 	}
 
-	if statsMap, err := bpfModule.GetMap("stats"); err != nil {
+	var statsMap *bpf.BPFMap
+	if statsMap, err = bpfModule.GetMap("stats"); err != nil {
 		log.Printf("error: %v", err)
 		os.Exit(-1)
-	} else {
-		var wg sync.WaitGroup
-		ctx, cancel := context.WithCancel(context.Background())
-		signalChan := make(chan os.Signal, 1)
-		signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
-		wg.Add(1)
-		go func(ctx context.Context) {
-			for true {
-				select {
-				case <-ctx.Done():
-					wg.Done()
-					return
-				default:
-					res := getStat(statsMap)
-					log.Printf("local: %d, global: %d", res[0], res[1])
-				}
-				time.Sleep(1 * time.Second)
-			}
-		}(ctx)
-		time.Sleep(3 * time.Second)
-		cancel()
-		wg.Wait()
-		afterFunc()
-		log.Println("scheduler exit")
-		os.Exit(0)
 	}
+	var wg sync.WaitGroup
+	ctx, cancel := context.WithCancel(context.Background())
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+	wg.Add(1)
+	go func(ctx context.Context) {
+		for true {
+			select {
+			case <-ctx.Done():
+				wg.Done()
+				return
+			default:
+				res := getStat(statsMap)
+				log.Printf("local: %d, global: %d", res[0], res[1])
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}(ctx)
+	time.Sleep(3 * time.Second)
+	cancel()
+	wg.Wait()
+	afterFunc()
+	log.Println("scheduler exit")
+	os.Exit(0)
 }
 
 func getStat(m *bpf.BPFMap) []uint64 {
