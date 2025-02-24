@@ -577,6 +577,7 @@ struct task_struct {
     pid_t tgid;
     struct task_struct *parent;
     struct sched_ext_entity scx;
+    short unsigned int migration_disabled;
     char comm[16];
 };
 

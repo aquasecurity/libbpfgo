@@ -22,9 +22,6 @@ LDFLAGS =
 CGO_CFLAGS_STATIC = "-I$(abspath $(OUTPUT)) -I$(abspath ../common)"
 CGO_LDFLAGS_STATIC = "$(shell PKG_CONFIG_PATH=$(LIBBPF_OBJDIR) $(PKGCONFIG) --static --libs libbpf)"
 CGO_EXTLDFLAGS_STATIC = '-w -extldflags "-static"'
-SCX_FLAGS=-mcpu=v3 -mlittle-endian \
--I ../../libbpf/src/usr/include -I ../../libbpf/include/uapi \
--I /lib/modules/$(shell uname -r)/build/tools/sched_ext/include/scx -I /lib/modules/$(shell uname -r)/build/tools/sched_ext/include/bpf-compat
 
 CGO_CFLAGS_DYN = "-I. -I/usr/include/"
 CGO_LDFLAGS_DYN = "$(shell $(PKGCONFIG) --shared --libs libbpf)"
@@ -55,7 +52,7 @@ outputdir:
 ## test bpf dependency
 
 $(MAIN).bpf.o: $(MAIN).bpf.c
-	$(CLANG) $(CFLAGS) -target bpf -D__TARGET_ARCH_$(ARCH) $(SCX_FLAGS) -I$(OUTPUT) -I$(abspath ../common) -c $< -o $@
+	$(CLANG) $(CFLAGS) -target bpf -D__TARGET_ARCH_$(ARCH) -I$(OUTPUT) -I$(abspath ../common) -c $< -o $@
 
 ## test
 
