@@ -21,6 +21,8 @@ runs:
         sudo apt-get install --yes llvm-14 clang-14 clang-format-14
         sudo apt-get install --yes libelf-dev libzstd-dev zlib1g-dev
         sudo apt-get install --yes virtme-ng
+        sudo apt-get install --yes gcc-multilib
+        sudo apt-get install --yes systemtap-sdt-dev
         for tool in "clang" "clang-format" "llc" "llvm-strip"
         do
           sudo rm -f /usr/bin/$tool
