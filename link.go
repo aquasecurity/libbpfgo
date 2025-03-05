@@ -34,6 +34,7 @@ const (
 	Netns
 	Iter
 	StructOps
+	USDT
 )
 
 //
