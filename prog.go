@@ -687,6 +687,44 @@ func (p *BPFProg) DetachGenericFD(targetFd int, attachType BPFAttachType) error 
 	return nil
 }
 
+// AttachUSDT attaches the BPFProgram to the USDT static marker in the library or binary at 'path'
+// which can be relative or absolute. A pid can be provided to attach to, or -1 can be specified
+// to attach to all processes
+func (p *BPFProg) AttachUSDT(pid int, path string, provider string, name string) (*BPFLink, error) {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+
+	pathC := C.CString(absPath)
+	defer C.free(unsafe.Pointer(pathC))
+	providerC := C.CString(provider)
+	defer C.free(unsafe.Pointer(providerC))
+	nameC := C.CString(name)
+	defer C.free(unsafe.Pointer(nameC))
+
+	linkC, errno := C.bpf_program__attach_usdt(
+		p.prog,
+		C.int(pid),
+		pathC,
+		providerC,
+		nameC,
+		nil,
+	)
+	if linkC == nil {
+		return nil, fmt.Errorf("failed to attach USDT probe to marker %s:%s in program %s with pid %d: %w ", provider, name, path, pid, errno)
+	}
+
+	bpfLink := &BPFLink{
+		link:      linkC,
+		prog:      p,
+		linkType:  USDT,
+		eventName: fmt.Sprintf("%s:%d:%s:%s", path, pid, provider, name),
+	}
+
+	return bpfLink, nil
+}
+
 //
 // BPF_PROG_TEST_RUN
 //

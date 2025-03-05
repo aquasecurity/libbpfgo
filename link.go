@@ -33,6 +33,7 @@ const (
 	CgroupLegacy
 	Netns
 	Iter
+	USDT
 )
 
 //
