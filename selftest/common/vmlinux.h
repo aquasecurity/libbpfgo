@@ -4,6 +4,11 @@
 ; // don't remove: clangd parsing bug https://github.com/clangd/clangd/issues/1167
 #pragma clang attribute push(__attribute__((preserve_access_index)), apply_to = record)
 
+enum {
+    false = 0,
+    true = 1,
+};
+
 typedef signed char __s8;
 typedef __s8 s8;
 typedef s8 int8_t;
@@ -141,10 +146,450 @@ struct bpf_iter__task {
 
 struct seq_file;
 
+struct rb_node {
+    long unsigned int __rb_parent_color;
+    struct rb_node *rb_right;
+    struct rb_node *rb_left;
+};
+
+struct bpf_iter_scx_dsq {
+    u64 __opaque[6];
+};
+
+struct bpf_rb_root {
+    __u64 __opaque[2];
+};
+
+struct bpf_list_head {
+    __u64 __opaque[2];
+};
+
+struct bpf_list_node {
+    __u64 __opaque[3];
+};
+
+struct list_head {
+    struct list_head *next;
+    struct list_head *prev;
+};
+
+struct scx_dsq_list_node {
+    struct list_head node;
+    u32 flags;
+    u32 priv;
+};
+
+struct scx_dispatch_q;
+
+struct bpf_iter_scx_dsq_kern {
+    struct scx_dsq_list_node cursor;
+    struct scx_dispatch_q *dsq;
+    u64 slice;
+    u64 vtime;
+};
+
+typedef struct {
+    s64 counter;
+} atomic64_t;
+
+typedef atomic64_t atomic_long_t;
+
+typedef struct {
+    int counter;
+} atomic_t;
+
+enum scx_consts {
+    SCX_DSP_DFL_MAX_BATCH = 32,
+    SCX_DSP_MAX_LOOPS = 32,
+    SCX_WATCHDOG_MAX_TIMEOUT = 7500,
+    SCX_EXIT_BT_LEN = 64,
+    SCX_EXIT_MSG_LEN = 1024,
+    SCX_EXIT_DUMP_DFL_LEN = 32768,
+    SCX_CPUPERF_ONE = 1024,
+    SCX_OPS_TASK_ITER_BATCH = 32,
+};
+
+enum scx_cpu_preempt_reason {
+    SCX_CPU_PREEMPT_RT = 0,
+    SCX_CPU_PREEMPT_DL = 1,
+    SCX_CPU_PREEMPT_STOP = 2,
+    SCX_CPU_PREEMPT_UNKNOWN = 3,
+};
+
+enum scx_deq_flags {
+    SCX_DEQ_SLEEP = 1ULL,
+    SCX_DEQ_CORE_SCHED_EXEC = 4294967296ULL,
+};
+
+enum scx_dsq_id_flags {
+    SCX_DSQ_FLAG_BUILTIN = 9223372036854775808ULL,
+    SCX_DSQ_FLAG_LOCAL_ON = 4611686018427387904ULL,
+    SCX_DSQ_INVALID = 9223372036854775808ULL,
+    SCX_DSQ_GLOBAL = 9223372036854775809ULL,
+    SCX_DSQ_LOCAL = 9223372036854775810ULL,
+    SCX_DSQ_LOCAL_ON = 13835058055282163712ULL,
+    SCX_DSQ_LOCAL_CPU_MASK = 4294967295ULL,
+};
+
+enum scx_dsq_iter_flags {
+    SCX_DSQ_ITER_REV = 65536,
+    __SCX_DSQ_ITER_HAS_SLICE = 1073741824,
+    __SCX_DSQ_ITER_HAS_VTIME = 2147483648,
+    __SCX_DSQ_ITER_USER_FLAGS = 65536,
+    __SCX_DSQ_ITER_ALL_FLAGS = 3221291008,
+};
+
+enum scx_dsq_lnode_flags {
+    SCX_DSQ_LNODE_ITER_CURSOR = 1,
+    __SCX_DSQ_LNODE_PRIV_SHIFT = 16,
+};
+
+enum scx_enq_flags {
+    SCX_ENQ_WAKEUP = 1ULL,
+    SCX_ENQ_HEAD = 16ULL,
+    SCX_ENQ_CPU_SELECTED = 1024ULL,
+    SCX_ENQ_PREEMPT = 4294967296ULL,
+    SCX_ENQ_REENQ = 1099511627776ULL,
+    SCX_ENQ_LAST = 2199023255552ULL,
+    __SCX_ENQ_INTERNAL_MASK = 18374686479671623680ULL,
+    SCX_ENQ_CLEAR_OPSS = 72057594037927936ULL,
+    SCX_ENQ_DSQ_PRIQ = 144115188075855872ULL,
+};
+
+enum scx_ent_dsq_flags {
+    SCX_TASK_DSQ_ON_PRIQ = 1,
+};
+
+enum scx_ent_flags {
+    SCX_TASK_QUEUED = 1,
+    SCX_TASK_RESET_RUNNABLE_AT = 4,
+    SCX_TASK_DEQD_FOR_SLEEP = 8,
+    SCX_TASK_STATE_SHIFT = 8,
+    SCX_TASK_STATE_BITS = 2,
+    SCX_TASK_STATE_MASK = 768,
+    SCX_TASK_CURSOR = -2147483648,
+};
+
+enum scx_exit_code {
+    SCX_ECODE_RSN_HOTPLUG = 4294967296ULL,
+    SCX_ECODE_ACT_RESTART = 281474976710656ULL,
+};
+
+enum scx_exit_kind {
+    SCX_EXIT_NONE = 0,
+    SCX_EXIT_DONE = 1,
+    SCX_EXIT_UNREG = 64,
+    SCX_EXIT_UNREG_BPF = 65,
+    SCX_EXIT_UNREG_KERN = 66,
+    SCX_EXIT_SYSRQ = 67,
+    SCX_EXIT_ERROR = 1024,
+    SCX_EXIT_ERROR_BPF = 1025,
+    SCX_EXIT_ERROR_STALL = 1026,
+};
+
+enum scx_kf_mask {
+    SCX_KF_UNLOCKED = 0,
+    SCX_KF_CPU_RELEASE = 1,
+    SCX_KF_DISPATCH = 2,
+    SCX_KF_ENQUEUE = 4,
+    SCX_KF_SELECT_CPU = 8,
+    SCX_KF_REST = 16,
+    __SCX_KF_RQ_LOCKED = 31,
+    __SCX_KF_TERMINAL = 28,
+};
+
+enum scx_kick_flags {
+    SCX_KICK_IDLE = 1,
+    SCX_KICK_PREEMPT = 2,
+    SCX_KICK_WAIT = 4,
+};
+
+enum scx_opi {
+    SCX_OPI_BEGIN = 0,
+    SCX_OPI_NORMAL_BEGIN = 0,
+    SCX_OPI_NORMAL_END = 29,
+    SCX_OPI_CPU_HOTPLUG_BEGIN = 29,
+    SCX_OPI_CPU_HOTPLUG_END = 31,
+    SCX_OPI_END = 31,
+};
+
+enum scx_ops_enable_state {
+    SCX_OPS_ENABLING = 0,
+    SCX_OPS_ENABLED = 1,
+    SCX_OPS_DISABLING = 2,
+    SCX_OPS_DISABLED = 3,
+};
+
+enum scx_ops_flags {
+    SCX_OPS_KEEP_BUILTIN_IDLE = 1,
+    SCX_OPS_ENQ_LAST = 2,
+    SCX_OPS_ENQ_EXITING = 4,
+    SCX_OPS_SWITCH_PARTIAL = 8,
+    SCX_OPS_HAS_CGROUP_WEIGHT = 65536,
+    SCX_OPS_ALL_FLAGS = 65551,
+};
+
+enum scx_ops_state {
+    SCX_OPSS_NONE = 0,
+    SCX_OPSS_QUEUEING = 1,
+    SCX_OPSS_QUEUED = 2,
+    SCX_OPSS_DISPATCHING = 3,
+    SCX_OPSS_QSEQ_SHIFT = 2,
+};
+
+enum scx_pick_idle_cpu_flags {
+    SCX_PICK_IDLE_CORE = 1,
+};
+
+enum scx_public_consts {
+    SCX_OPS_NAME_LEN = 128ULL,
+    SCX_SLICE_DFL = 20000000ULL,
+    SCX_SLICE_INF = 18446744073709551615ULL,
+};
+
+enum scx_rq_flags {
+    SCX_RQ_ONLINE = 1,
+    SCX_RQ_CAN_STOP_TICK = 2,
+    SCX_RQ_BAL_PENDING = 4,
+    SCX_RQ_BAL_KEEP = 8,
+    SCX_RQ_BYPASSING = 16,
+    SCX_RQ_IN_WAKEUP = 65536,
+    SCX_RQ_IN_BALANCE = 131072,
+};
+
+enum scx_task_state {
+    SCX_TASK_NONE = 0,
+    SCX_TASK_INIT = 1,
+    SCX_TASK_READY = 2,
+    SCX_TASK_ENABLED = 3,
+    SCX_TASK_NR_STATES = 4,
+};
+
+enum scx_tg_flags {
+    SCX_TG_ONLINE = 1,
+    SCX_TG_INITED = 2,
+};
+
+enum scx_wake_flags {
+    SCX_WAKE_FORK = 4,
+    SCX_WAKE_TTWU = 8,
+    SCX_WAKE_SYNC = 16,
+};
+
+struct sched_ext_entity {
+    struct scx_dispatch_q *dsq;
+    struct scx_dsq_list_node dsq_list;
+    struct rb_node dsq_priq;
+    u32 dsq_seq;
+    u32 dsq_flags;
+    u32 flags;
+    u32 weight;
+    s32 sticky_cpu;
+    s32 holding_cpu;
+    u32 kf_mask;
+    struct task_struct *kf_tasks[2];
+    atomic_long_t ops_state;
+    struct list_head runnable_node;
+    long unsigned int runnable_at;
+    u64 core_sched_at;
+    u64 ddsp_dsq_id;
+    u64 ddsp_enq_flags;
+    u64 slice;
+    u64 dsq_vtime;
+    bool disallow;
+    struct cgroup *cgrp_moving_from;
+    struct list_head tasks_node;
+};
+
+struct scx_cpu_acquire_args;
+
+struct scx_cpu_release_args;
+
+struct scx_init_task_args;
+
+struct scx_exit_task_args;
+
+struct scx_dump_ctx;
+
+struct scx_cgroup_init_args;
+
+struct scx_exit_info;
+
+struct scx_bstr_buf {
+    u64 data[12];
+    char line[1024];
+};
+
+struct scx_cgroup_init_args {
+    u32 weight;
+};
+
+struct scx_cpu_acquire_args {
+};
+
+struct scx_cpu_release_args {
+    enum scx_cpu_preempt_reason reason;
+    struct task_struct *task;
+};
+
+struct scx_dsp_buf_ent {
+    struct task_struct *task;
+    long unsigned int qseq;
+    u64 dsq_id;
+    u64 enq_flags;
+};
+
+struct scx_dsp_ctx {
+    struct rq *rq;
+    u32 cursor;
+    u32 nr_tasks;
+    struct scx_dsp_buf_ent buf[0];
+};
+
+struct scx_dump_ctx {
+    enum scx_exit_kind kind;
+    s64 exit_code;
+    const char *reason;
+    u64 at_ns;
+    u64 at_jiffies;
+};
+
+struct scx_dump_data {
+    s32 cpu;
+    bool first;
+    s32 cursor;
+    struct seq_buf *s;
+    const char *prefix;
+    struct scx_bstr_buf buf;
+};
+
+struct scx_exit_info {
+    enum scx_exit_kind kind;
+    s64 exit_code;
+    const char *reason;
+    long unsigned int *bt;
+    u32 bt_len;
+    char *msg;
+    char *dump;
+};
+
+struct scx_exit_task_args {
+    bool cancelled;
+};
+
+struct scx_init_task_args {
+    bool fork;
+    struct cgroup *cgroup;
+};
+
+struct pin_cookie {
+};
+
+struct rq_flags {
+    long unsigned int flags;
+    struct pin_cookie cookie;
+    unsigned int clock_update_flags;
+};
+
+struct scx_task_iter {
+    struct sched_ext_entity cursor;
+    struct task_struct *locked;
+    struct rq *rq;
+    struct rq_flags rf;
+    u32 cnt;
+};
+
+struct cpumask {
+    long unsigned int bits[128];
+};
+
+typedef struct cpumask cpumask_t;
+
+struct bpf_iter_bits {
+    __u64 __opaque[2];
+};
+
+struct sched_ext_ops {
+    s32 (*select_cpu)(struct task_struct *, s32, u64);
+    void (*enqueue)(struct task_struct *, u64);
+    void (*dequeue)(struct task_struct *, u64);
+    void (*dispatch)(s32, struct task_struct *);
+    void (*tick)(struct task_struct *);
+    void (*runnable)(struct task_struct *, u64);
+    void (*running)(struct task_struct *);
+    void (*stopping)(struct task_struct *, bool);
+    void (*quiescent)(struct task_struct *, u64);
+    bool (*yield)(struct task_struct *, struct task_struct *);
+    bool (*core_sched_before)(struct task_struct *, struct task_struct *);
+    void (*set_weight)(struct task_struct *, u32);
+    void (*set_cpumask)(struct task_struct *, const struct cpumask *);
+    void (*update_idle)(s32, bool);
+    void (*cpu_acquire)(s32, struct scx_cpu_acquire_args *);
+    void (*cpu_release)(s32, struct scx_cpu_release_args *);
+    s32 (*init_task)(struct task_struct *, struct scx_init_task_args *);
+    void (*exit_task)(struct task_struct *, struct scx_exit_task_args *);
+    void (*enable)(struct task_struct *);
+    void (*disable)(struct task_struct *);
+    void (*dump)(struct scx_dump_ctx *);
+    void (*dump_cpu)(struct scx_dump_ctx *, s32, bool);
+    void (*dump_task)(struct scx_dump_ctx *, struct task_struct *);
+    s32 (*cgroup_init)(struct cgroup *, struct scx_cgroup_init_args *);
+    void (*cgroup_exit)(struct cgroup *);
+    s32 (*cgroup_prep_move)(struct task_struct *, struct cgroup *, struct cgroup *);
+    void (*cgroup_move)(struct task_struct *, struct cgroup *, struct cgroup *);
+    void (*cgroup_cancel_move)(struct task_struct *, struct cgroup *, struct cgroup *);
+    void (*cgroup_set_weight)(struct cgroup *, u32);
+    void (*cpu_online)(s32);
+    void (*cpu_offline)(s32);
+    s32 (*init)(void);
+    void (*exit)(struct scx_exit_info *);
+    u32 dispatch_max_batch;
+    u64 flags;
+    u32 timeout_ms;
+    u32 exit_dump_len;
+    u64 hotplug_seq;
+    char name[128];
+};
+
+enum bpf_struct_ops_state {
+    BPF_STRUCT_OPS_STATE_INIT = 0,
+    BPF_STRUCT_OPS_STATE_INUSE = 1,
+    BPF_STRUCT_OPS_STATE_TOBEFREE = 2,
+    BPF_STRUCT_OPS_STATE_READY = 3,
+};
+
+struct refcount_struct {
+    atomic_t refs;
+};
+
+typedef struct refcount_struct refcount_t;
+
+struct bpf_struct_ops_common_value {
+    refcount_t refcnt;
+    enum bpf_struct_ops_state state;
+};
+
+struct bpf_struct_ops_sched_ext_ops {
+    struct bpf_struct_ops_common_value common;
+    long : 64;
+    long : 64;
+    long : 64;
+    long : 64;
+    long : 64;
+    long : 64;
+    long : 64;
+    struct sched_ext_ops data;
+    long : 64;
+    long : 64;
+    long : 64;
+};
+
 struct task_struct {
     pid_t pid;
     pid_t tgid;
     struct task_struct *parent;
+    struct sched_ext_entity scx;
+    short unsigned int migration_disabled;
     char comm[16];
 };
 
