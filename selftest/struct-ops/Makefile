@@ -24,7 +24,7 @@ CGO_LDFLAGS_STATIC = "$(shell PKG_CONFIG_PATH=$(LIBBPF_OBJDIR) $(PKGCONFIG) --st
 CGO_EXTLDFLAGS_STATIC = '-w -extldflags "-static"'
 SCX_FLAGS=-mcpu=v3 -mlittle-endian \
 -I ../../libbpf/src/usr/include -I ../../libbpf/include/uapi \
--I scx/scheds/include/scx -I scx/scheds/include/bpf-compat
+-I ../common/scx/scheds/include/scx -I ../common/scx/scheds/include/bpf-compat
 
 CGO_CFLAGS_DYN = "-I. -I/usr/include/"
 CGO_LDFLAGS_DYN = "$(shell $(PKGCONFIG) --shared --libs libbpf)"
@@ -55,8 +55,8 @@ outputdir:
 ## test bpf dependency
 
 $(MAIN).bpf.o: $(MAIN).bpf.c
-	@if [ ! -d "scx" ]; then \
-		git clone -b v1.0.9 https://github.com/sched-ext/scx.git; \
+	@if [ ! -d "../common/scx" ]; then \
+		git clone -b v1.0.9 https://github.com/sched-ext/scx.git ../common/scx; \
 	else \
 		echo "scx directory already exists, skipping clone"; \
 	fi

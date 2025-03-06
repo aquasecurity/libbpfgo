@@ -156,6 +156,18 @@ struct bpf_iter_scx_dsq {
     u64 __opaque[6];
 };
 
+struct bpf_rb_root {
+    __u64 __opaque[2];
+};
+
+struct bpf_list_head {
+    __u64 __opaque[2];
+};
+
+struct bpf_list_node {
+    __u64 __opaque[3];
+};
+
 struct list_head {
     struct list_head *next;
     struct list_head *prev;
