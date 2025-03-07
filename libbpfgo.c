@@ -47,7 +47,7 @@ struct user_ring_buffer *cgo_init_user_ring_buf(int map_fd)
 {
     struct user_ring_buffer *rb = NULL;
 
-    rb = user_ring_buffer__new(map_fd,  NULL);
+    rb = user_ring_buffer__new(map_fd, NULL);
     if (!rb) {
         int saved_errno = errno;
         fprintf(stderr, "Failed to initialize user ring buffer: %s\n", strerror(errno));
