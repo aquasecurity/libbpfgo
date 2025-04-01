@@ -11,13 +11,13 @@ import (
 	"syscall"
 
 	bpf "github.com/aquasecurity/libbpfgo"
-	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/tracee/pkg/utils/environment"
 )
 
 func main() {
 	funcName := fmt.Sprintf("__%s_sys_mmap", ksymArch())
 
-	kst, err := helpers.NewKernelSymbolTable()
+	kst, err := environment.NewKernelSymbolTable()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "NewKernelSymbolTable() failed: %v", err)
 		os.Exit(-1)
