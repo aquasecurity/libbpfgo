@@ -31,6 +31,15 @@ void cgo_bpf_map__initial_value(struct bpf_map *map, void *value);
 int cgo_bpf_prog_attach_cgroup_legacy(int prog_fd, int target_fd, int type);
 int cgo_bpf_prog_detach_cgroup_legacy(int prog_fd, int target_fd, int type);
 
+struct bpf_link *cgo_bpf_program__attach_uprobe_multi(struct bpf_program *prog,
+                                                      pid_t pid,
+                                                      const char *binary_path,
+                                                      const char *func_pattern,
+                                                      const unsigned long *offsets,
+                                                      const __u64 *cookies,
+                                                      size_t count,
+                                                      bool retprobe);
+
 //
 // struct handlers
 //
