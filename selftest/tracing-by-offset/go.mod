@@ -1,14 +1,12 @@
 module github.com/aquasecurity/libbpfgo/selftest/tracing-by-offset
 
-go 1.21
+go 1.22.0
+
+toolchain go1.22.4
 
 require (
-	github.com/aquasecurity/libbpfgo v0.0.0
-	github.com/aquasecurity/libbpfgo/helpers v0.4.5
+	github.com/aquasecurity/libbpfgo v0.7.0-libbpf-1.4.0.20240729111821-61d531acf4ca
+	github.com/aquasecurity/tracee v0.22.5
 )
 
-require golang.org/x/sys v0.18.0 // indirect
-
 replace github.com/aquasecurity/libbpfgo => ../../
-
-replace github.com/aquasecurity/libbpfgo/helpers => ../../helpers
