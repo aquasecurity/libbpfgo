@@ -139,7 +139,7 @@ func NewModuleFromBufferArgs(args NewModuleArgs) (*Module, error) {
 	defer C.free(unsafe.Pointer(bpfObjNameC))
 	bpfBuffC := unsafe.Pointer(C.CBytes(args.BPFObjBuff))
 	defer C.free(bpfBuffC)
-	bpfBuffSizeC := C.size_t(len(args.BPFObjBuff))
+	bSizeC := C.size_t(len(args.BPFObjBuff))
 	kernelLogLevelC := C.uint(args.KernelLogLevel)
 
 	if len(args.KConfigFilePath) <= 2 {
@@ -152,7 +152,7 @@ func NewModuleFromBufferArgs(args NewModuleArgs) (*Module, error) {
 	}
 	defer C.cgo_bpf_object_open_opts_free(optsC)
 
-	objC, errno := C.bpf_object__open_mem(bpfBuffC, bpfBuffSizeC, optsC)
+	objC, errno := C.bpf_object__open_mem(bpfBuffC, bSizeC, optsC)
 	if objC == nil {
 		return nil, fmt.Errorf("failed to open BPF object %s: %w", args.BPFObjName, errno)
 	}

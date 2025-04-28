@@ -45,7 +45,7 @@ void cgo_libbpf_set_print_fn()
 
 struct user_ring_buffer *cgo_init_user_ring_buf(int map_fd)
 {
-    struct user_ring_buffer *rb = NULL;
+    struct user_ring_buffer *rb;
 
     rb = user_ring_buffer__new(map_fd, NULL);
     if (!rb) {
@@ -61,7 +61,7 @@ struct user_ring_buffer *cgo_init_user_ring_buf(int map_fd)
 
 struct ring_buffer *cgo_init_ring_buf(int map_fd, uintptr_t ctx)
 {
-    struct ring_buffer *rb = NULL;
+    struct ring_buffer *rb;
 
     rb = ring_buffer__new(map_fd, ringbufferCallback, (void *) ctx, NULL);
     if (!rb) {

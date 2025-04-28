@@ -6,7 +6,7 @@ package libbpfgo
 */
 import "C"
 import (
-	"log"
+	"fmt"
 	"sync"
 	"unsafe"
 )
@@ -16,36 +16,53 @@ import (
 //
 
 type UserRingBuffer struct {
-	rb     *C.struct_user_ring_buffer
-	bpfMap *BPFMap
-	closed bool
-	stop   chan struct{}
-	w      chan []byte
-	wg     sync.WaitGroup
+	rb      *C.struct_user_ring_buffer
+	bpfMap  *BPFMap
+	closed  bool
+	stop    chan struct{}
+	w       chan []byte
+	errChan chan error
+	wg      sync.WaitGroup
 }
 
 func (rb *UserRingBuffer) Start() {
 	rb.stop = make(chan struct{})
+	rb.errChan = make(chan error, 1)
 	rb.wg.Add(1)
 	go func() {
 		defer rb.wg.Done()
 		for {
 			select {
 			case b := <-rb.w:
-				bpfBuffSizeC := C.uint(C.size_t(len(b)))
-				entry := C.user_ring_buffer__reserve(rb.rb, bpfBuffSizeC)
-				if entry == nil {
-					log.Println("user_ring_buffer__reserve failed")
-					continue
+				if err := rb.submit(b); err != nil {
+					rb.errChan <- err
 				}
-				C.memcpy(entry, unsafe.Pointer(&b[0]), C.size_t(len(b)))
-
-				C.user_ring_buffer__submit(rb.rb, entry)
 			case <-rb.stop:
 				return
 			}
 		}
 	}()
+}
+
+func (rb *UserRingBuffer) Error() error {
+	select {
+	case err := <-rb.errChan:
+		return err
+	default:
+		return nil
+	}
+}
+
+func (rb *UserRingBuffer) submit(b []byte) error {
+	bSizeC := C.size_t(len(b))
+	entry, errno := C.user_ring_buffer__reserve(rb.rb, C.uint(bSizeC))
+	if entry == nil {
+		return fmt.Errorf("user_ring_buffer__reserve failed: %v", errno)
+	}
+
+	C.memcpy(entry, unsafe.Pointer(&b[0]), bSizeC)
+	C.user_ring_buffer__submit(rb.rb, entry)
+	return nil
 }
 
 func (rb *UserRingBuffer) Stop() {

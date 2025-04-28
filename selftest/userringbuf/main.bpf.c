@@ -11,7 +11,7 @@ struct dispatched_ctx {
 
 struct {
     __uint(type, BPF_MAP_TYPE_USER_RINGBUF);
-    __uint(max_entries, 4096 * sizeof(struct dispatched_ctx));
+    __uint(max_entries, 3 * sizeof(struct dispatched_ctx));
 } dispatched SEC(".maps");
 
 static long handle_dispatched_evt(struct bpf_dynptr *dynptr, void *context)
@@ -32,7 +32,7 @@ static long handle_dispatched_evt(struct bpf_dynptr *dynptr, void *context)
 SEC("syscall")
 int test_user_ring_buff(struct dispatched_ctx *input)
 {
-    int errno;
-    errno = bpf_user_ringbuf_drain(&dispatched, handle_dispatched_evt, NULL, 0);
-    return errno;
+    int retVal;
+    retVal = bpf_user_ringbuf_drain(&dispatched, handle_dispatched_evt, NULL, 0);
+    return retVal;
 }
