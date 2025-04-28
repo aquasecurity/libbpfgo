@@ -34,6 +34,14 @@ func main() {
 	}
 	urb.Start()
 
+	evtChan := make(chan []byte)
+	rb, err := bpfModule.InitRingBuf("errEvt", evtChan)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(-1)
+	}
+	rb.Poll(300)
+
 	var b bytes.Buffer // Stand-in for a network connection
 	binary.Write(&b, binary.LittleEndian, test_arg{id: 999})
 	ch <- b.Bytes()

@@ -14,6 +14,13 @@ struct {
     __uint(max_entries, 3 * sizeof(struct dispatched_ctx));
 } dispatched SEC(".maps");
 
+struct {
+    __uint(type, BPF_MAP_TYPE_RINGBUF);
+    __uint(max_entries, 256);
+} errEvt SEC(".maps");
+
+long ringbuffer_flags = 0;
+
 static long handle_dispatched_evt(struct bpf_dynptr *dynptr, void *context)
 {
     const struct dispatched_ctx *ctx;
@@ -23,6 +30,11 @@ static long handle_dispatched_evt(struct bpf_dynptr *dynptr, void *context)
         return 0;
 
     if (ctx->id != 999) {
+        u64* id = bpf_ringbuf_reserve(&errEvt, sizeof(u64), ringbuffer_flags);
+        if (!id) {
+            return 1;
+        }
+        bpf_ringbuf_submit(id, ringbuffer_flags);
         return 1;
     }
 
