@@ -21,12 +21,13 @@ import (
 //
 
 type Module struct {
-	obj      *C.struct_bpf_object
-	links    []*BPFLink
-	perfBufs []*PerfBuffer
-	ringBufs []*RingBuffer
-	elf      *elf.File
-	loaded   bool
+	obj          *C.struct_bpf_object
+	links        []*BPFLink
+	perfBufs     []*PerfBuffer
+	ringBufs     []*RingBuffer
+	userRingBufs []*UserRingBuffer
+	elf          *elf.File
+	loaded       bool
 }
 
 //
@@ -138,7 +139,7 @@ func NewModuleFromBufferArgs(args NewModuleArgs) (*Module, error) {
 	defer C.free(unsafe.Pointer(bpfObjNameC))
 	bpfBuffC := unsafe.Pointer(C.CBytes(args.BPFObjBuff))
 	defer C.free(bpfBuffC)
-	bpfBuffSizeC := C.size_t(len(args.BPFObjBuff))
+	bSizeC := C.size_t(len(args.BPFObjBuff))
 	kernelLogLevelC := C.uint(args.KernelLogLevel)
 
 	if len(args.KConfigFilePath) <= 2 {
@@ -151,7 +152,7 @@ func NewModuleFromBufferArgs(args NewModuleArgs) (*Module, error) {
 	}
 	defer C.cgo_bpf_object_open_opts_free(optsC)
 
-	objC, errno := C.bpf_object__open_mem(bpfBuffC, bpfBuffSizeC, optsC)
+	objC, errno := C.bpf_object__open_mem(bpfBuffC, bSizeC, optsC)
 	if objC == nil {
 		return nil, fmt.Errorf("failed to open BPF object %s: %w", args.BPFObjName, errno)
 	}
@@ -185,6 +186,9 @@ func (m *Module) Close() {
 		pb.Close()
 	}
 	for _, rb := range m.ringBufs {
+		rb.Close()
+	}
+	for _, rb := range m.userRingBufs {
 		rb.Close()
 	}
 	for _, link := range m.links {
@@ -325,6 +329,26 @@ func (m *Module) GetProgram(progName string) (*BPFProg, error) {
 		prog:   progC,
 		module: m,
 	}, nil
+}
+
+func (m *Module) InitUserRingBuf(mapName string, eventsChan chan []byte) (*UserRingBuffer, error) {
+	bpfMap, err := m.GetMap(mapName)
+	if err != nil {
+		return nil, err
+	}
+
+	rbC, errno := C.cgo_init_user_ring_buf(C.int(bpfMap.FileDescriptor()))
+	if rbC == nil {
+		return nil, fmt.Errorf("failed to initialize user ring buffer: %w", errno)
+	}
+
+	ringBuf := &UserRingBuffer{
+		rb:     rbC,
+		bpfMap: bpfMap,
+		w:      eventsChan,
+	}
+	m.userRingBufs = append(m.userRingBufs, ringBuf)
+	return ringBuf, nil
 }
 
 func (m *Module) InitRingBuf(mapName string, eventsChan chan []byte) (*RingBuffer, error) {
