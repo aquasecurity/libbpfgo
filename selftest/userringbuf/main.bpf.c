@@ -30,7 +30,7 @@ static long handle_dispatched_evt(struct bpf_dynptr *dynptr, void *context)
         return 0;
 
     if (ctx->id != 999) {
-        u64* id = bpf_ringbuf_reserve(&errEvt, sizeof(u64), ringbuffer_flags);
+        u64 *id = bpf_ringbuf_reserve(&errEvt, sizeof(u64), ringbuffer_flags);
         if (!id) {
             return 1;
         }
