@@ -26,7 +26,8 @@ int uprobe__test_functions(struct pt_regs *ctx)
     // Reserve space on the ringbuffer for the sample
     struct event_t *event = bpf_ringbuf_reserve(&events, sizeof(struct event_t), ringbuffer_flags);
     if (!event) {
-        bpf_printk("error submitting event to ring buffer for user function with cookie %llu\n", cookie);
+        bpf_printk("error submitting event to ring buffer for user function with cookie %llu\n",
+                   cookie);
         return 0;
     }
 
