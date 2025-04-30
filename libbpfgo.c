@@ -131,14 +131,16 @@ int cgo_bpf_prog_detach_cgroup_legacy(int prog_fd,   // eBPF program file descri
     return syscall(__NR_bpf, BPF_PROG_DETACH, &attr, sizeof(attr));
 }
 
-struct bpf_link *cgo_bpf_program__attach_uprobe_multi(struct bpf_program *prog,
-                                                      pid_t pid,
-                                                      const char *binary_path,
-                                                      const unsigned long *offsets, // bpf_uprobe_multi_opts.offsets
-                                                      const __u64 *cookies,         // bpf_uprobe_multi_opts.cookies
-                                                      size_t cnt,                   // bpf_uprobe_multi_opts.cnt
-                                                      bool retprobe                 // bpf_uprobe_multi_opts.retprobe
-) {
+struct bpf_link *cgo_bpf_program__attach_uprobe_multi(
+    struct bpf_program *prog,
+    pid_t pid,
+    const char *binary_path,
+    const unsigned long *offsets, // bpf_uprobe_multi_opts.offsets
+    const __u64 *cookies,         // bpf_uprobe_multi_opts.cookies
+    size_t cnt,                   // bpf_uprobe_multi_opts.cnt
+    bool retprobe                 // bpf_uprobe_multi_opts.retprobe
+)
+{
     struct bpf_uprobe_multi_opts opts = {};
     opts.sz = sizeof(opts);
     opts.offsets = offsets;
