@@ -51,10 +51,15 @@ func NewModuleFromFile(bpfObjPath string) (*Module, error) {
 }
 
 func NewModuleFromFileArgs(args NewModuleArgs) (*Module, error) {
+	if args.BPFObjPath == "" {
+		return &Module{}, nil
+	}
+
 	f, err := elf.Open(args.BPFObjPath)
 	if err != nil {
 		return nil, err
 	}
+
 	C.cgo_libbpf_set_print_fn()
 
 	// If skipped, we rely on libbpf to do the bumping if deemed necessary
@@ -207,6 +212,21 @@ func (m *Module) BPFLoadObject() error {
 	m.loaded = true
 	m.elf.Close()
 	m.elf = nil
+
+	return nil
+}
+
+func (m *Module) BPFLoadExistedObject(obj unsafe.Pointer) error {
+	m.obj = (*C.struct_bpf_object)(obj)
+	retC := C.bpf_object__load(m.obj)
+	if retC < 0 {
+		return fmt.Errorf("failed to load BPF object: %w", syscall.Errno(-retC))
+	}
+	m.loaded = true
+	if m.elf != nil {
+		m.elf.Close()
+		m.elf = nil
+	}
 
 	return nil
 }
