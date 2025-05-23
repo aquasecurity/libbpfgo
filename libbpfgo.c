@@ -43,9 +43,25 @@ void cgo_libbpf_set_print_fn()
     libbpf_set_print(libbpf_print_fn);
 }
 
+struct user_ring_buffer *cgo_init_user_ring_buf(int map_fd)
+{
+    struct user_ring_buffer *rb;
+
+    rb = user_ring_buffer__new(map_fd, NULL);
+    if (!rb) {
+        int saved_errno = errno;
+        fprintf(stderr, "Failed to initialize user ring buffer: %s\n", strerror(errno));
+        errno = saved_errno;
+
+        return NULL;
+    }
+
+    return rb;
+}
+
 struct ring_buffer *cgo_init_ring_buf(int map_fd, uintptr_t ctx)
 {
-    struct ring_buffer *rb = NULL;
+    struct ring_buffer *rb;
 
     rb = ring_buffer__new(map_fd, ringbufferCallback, (void *) ctx, NULL);
     if (!rb) {

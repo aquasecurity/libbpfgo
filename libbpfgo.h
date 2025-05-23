@@ -22,6 +22,7 @@
 void cgo_libbpf_set_print_fn();
 
 struct ring_buffer *cgo_init_ring_buf(int map_fd, uintptr_t ctx);
+struct user_ring_buffer *cgo_init_user_ring_buf(int map_fd);
 int cgo_add_ring_buf(struct ring_buffer *rb, int map_fd, uintptr_t ctx);
 struct perf_buffer *cgo_init_perf_buf(int map_fd, int page_cnt, uintptr_t ctx);
 
