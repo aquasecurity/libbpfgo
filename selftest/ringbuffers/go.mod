@@ -1,4 +1,4 @@
-module github.com/aquasecurity/libbpfgo/selftest/perfbuffers
+module github.com/aquasecurity/libbpfgo/selftest/ringbuffers
 
 go 1.21
 

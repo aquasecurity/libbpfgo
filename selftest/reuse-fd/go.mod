@@ -1,4 +1,4 @@
-module github.com/aquasecurity/libbpfgo/selftest/map-update
+module github.com/aquasecurity/libbpfgo/selftest/reuse-fd
 
 go 1.21
 

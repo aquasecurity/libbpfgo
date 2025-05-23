@@ -1,4 +1,4 @@
-module github.com/aquasecurity/libbpfgo/selftest/perfbuffers
+module github.com/aquasecurity/libbpfgo/selftest/set-attach
 
 go 1.21
 

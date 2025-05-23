@@ -1,4 +1,4 @@
-module github.com/aquasecurity/libbpfgo/selftest/map-update
+module github.com/aquasecurity/libbpfgo/selftest/map-autocreate
 
 go 1.21
 

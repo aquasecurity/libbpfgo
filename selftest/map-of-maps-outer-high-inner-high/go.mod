@@ -1,4 +1,4 @@
-module github.com/aquasecurity/libbpfgo/selftest/map-update
+module github.com/aquasecurity/libbpfgo/selftest/map-of-maps-outer-high-inner-high
 
 go 1.21
 

@@ -1,4 +1,4 @@
-module github.com/aquasecurity/libbpfgo/selftest/tracing
+module github.com/aquasecurity/libbpfgo/selftest/multiple-objects
 
 go 1.21
 
