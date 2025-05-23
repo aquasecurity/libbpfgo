@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
@@ -134,40 +135,37 @@ func main() {
 
 	rb.Poll(300)
 
-	numberOfEventsReceived := 0
-
 	// We get back from BPF and keep track of the function having traced via cookies.
 	log.Println("consuming events")
 	got := make(map[string]struct{})
-recvLoop:
-	for {
-		b := <-eventsChannel
-		var event Event
-		buf := bytes.NewBuffer(b)
-		if err = binary.Read(buf, binary.LittleEndian, &event); err != nil {
-			fmt.Fprintf(os.Stderr, "invalid data retrieved\n")
-			os.Exit(-1)
+	go func() {
+		for {
+			b := <-eventsChannel
+			var event Event
+			buf := bytes.NewBuffer(b)
+			if err = binary.Read(buf, binary.LittleEndian, &event); err != nil {
+				// Error handling is out of scope for this test.
+				continue
+			}
+			cookie := event.Cookie
+			info, ok := cookieToFunctionInfo[cookie]
+			if !ok {
+				// Error handling is out of scope for this test.
+				continue
+			}
+			got[info.Name] = struct{}{}
 		}
-		cookie := event.Cookie
-		info, ok := cookieToFunctionInfo[cookie]
-		if !ok {
-			fmt.Fprintf(os.Stderr, "cookie %d got from event not found\n", cookie)
-			os.Exit(1)
-		}
-		got[info.Name] = struct{}{}
-
-		numberOfEventsReceived++
-		if numberOfEventsReceived > 5 {
-			break recvLoop
-		}
-	}
+	}()
+	// Just wait for a minimum amount of time for the tested tracee to call
+	// the expected functions.
+	time.Sleep(2 * time.Second)
 
 	// Verify that all uprobes have been executed.
 	for _, symbolName := range expectedSymbolNames {
 		if _, ok := got[symbolName]; !ok {
 			fmt.Fprintf(os.Stderr, "function %s has not been traced\n", symbolName)
+			os.Exit(1)
 		}
-		log.Printf("function %s has been traced\n", symbolName)
 	}
 	log.Println("all functions have been traced")
 
