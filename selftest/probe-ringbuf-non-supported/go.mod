@@ -1,4 +1,4 @@
-module github.com/aquasecurity/libbpfgo/selftest/map-pin-info
+module github.com/aquasecurity/libbpfgo/selftest/probe-ringbuf-non-supported
 
 go 1.21
 

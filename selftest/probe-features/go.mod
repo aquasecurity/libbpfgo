@@ -1,4 +1,4 @@
-module github.com/aquasecurity/libbpfgo/selftest/map-pin-info
+module github.com/aquasecurity/libbpfgo/selftest/probe-features
 
 go 1.21
 

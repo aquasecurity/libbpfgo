@@ -1,4 +1,4 @@
-module github.com/aquasecurity/libbpfgo/selftest/testrun
+module github.com/aquasecurity/libbpfgo/selftest/prog-run
 
 go 1.21
 
