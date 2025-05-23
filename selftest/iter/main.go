@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 )
@@ -51,13 +52,15 @@ func main() {
 	thisPid := syscall.Getpid()
 	pids := make(map[int]*os.Process, 0)
 	for i := 0; i < totalExecs; i++ {
-		cmd := exec.Command("ping", "-w", "10", "0.0.0.0")
+		cmd := exec.Command("ping", "-c1", "-w1", "0.0.0.0")
 		err := cmd.Start()
 		if err != nil {
 			exitWithErr(err)
 		}
 		pids[cmd.Process.Pid] = cmd.Process
 	}
+
+	time.Sleep(5 * time.Second)
 
 	numberOfMatches := 0
 	scanner := bufio.NewScanner(reader)
