@@ -705,7 +705,7 @@ func doAttachUprobeMulti(prog *BPFProg, isUretprobe bool, pid int, path string, 
 		C.bool(isUretprobe),
 	)
 	if linkC == nil {
-		return nil, fmt.Errorf("failed to attach u(ret)probe multi to program %s:%d with pid %d: %w ", path, offsets, pid, errno)
+		return nil, fmt.Errorf("failed to attach u(ret)probe multi to program %s:%v with pid %d: %w ", path, offsets, pid, errno)
 	}
 
 	upType := Uprobe
