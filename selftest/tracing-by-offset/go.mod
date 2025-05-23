@@ -7,7 +7,7 @@ require (
 	github.com/aquasecurity/libbpfgo/helpers v0.4.5
 )
 
-require golang.org/x/sys v0.18.0 // indirect
+require golang.org/x/sys v0.25.0 // indirect
 
 replace github.com/aquasecurity/libbpfgo => ../../
 
