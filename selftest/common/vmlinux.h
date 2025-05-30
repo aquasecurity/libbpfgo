@@ -868,6 +868,29 @@ struct icmp6hdr {
 
 #if defined(__TARGET_ARCH_x86)
 
+struct fred_cs {
+    u64 cs : 16;
+    u64 sl : 2;
+    u64 wfe : 1;
+};
+
+struct fred_ss {
+    u64 ss : 16;
+    u64 sti : 1;
+    u64 swevent : 1;
+    u64 nmi : 1;
+    int : 13;
+    u64 vector : 8;
+    short : 8;
+    u64 type : 4;
+    char : 4;
+    u64 enclave : 1;
+    u64 lm : 1;
+    u64 nested : 1;
+    char : 1;
+    u64 insnlen : 4;
+};
+
 struct pt_regs {
     long unsigned int r15;
     long unsigned int r14;
@@ -886,10 +909,18 @@ struct pt_regs {
     long unsigned int di;
     long unsigned int orig_ax;
     long unsigned int ip;
-    long unsigned int cs;
+    union {
+        u16 cs;
+        u64 csx;
+        struct fred_cs fred_cs;
+    };
     long unsigned int flags;
     long unsigned int sp;
-    long unsigned int ss;
+    union {
+        u16 ss;
+        u64 ssx;
+        struct fred_ss fred_ss;
+    };
 };
 
 #elif defined(__TARGET_ARCH_arm64)
