@@ -241,3 +241,14 @@ func resizeMap(module *bpf.Module, name string, size uint32) error {
 
 	return nil
 }
+
+func min[T interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 |
+		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 |
+		~float32 | ~float64 | ~string
+}](a, b T) T {
+	if a < b {
+		return a
+	}
+	return b
+}
