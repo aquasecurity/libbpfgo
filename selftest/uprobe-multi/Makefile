@@ -7,7 +7,7 @@ LIBBPF_OBJ = $(abspath $(OUTPUT)/libbpf.a)
 
 CC = gcc
 CLANG = clang
-GO = go
+GO ?= go
 PKGCONFIG = pkg-config
 
 ARCH := $(shell uname -m | sed 's/x86_64/amd64/g; s/aarch64/arm64/g')
