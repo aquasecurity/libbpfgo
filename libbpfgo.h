@@ -6,12 +6,15 @@
 #endif
 
 #include <stdio.h>
+#include <stdatomic.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <sys/resource.h>
 #include <sys/syscall.h>
+#include <sys/eventfd.h>
+#include <sys/epoll.h>
 #include <unistd.h>
 
 #include <bpf/bpf.h>
@@ -21,10 +24,17 @@
 
 void cgo_libbpf_set_print_fn();
 
+atomic_int *cgo_setup_buffer_stop_flag();
+void cgo_destroy_buffer_stop_flag(atomic_int *stop_flag);
+void cgo_signal_buffer_stop(atomic_int *stop_flag);
+
 struct ring_buffer *cgo_init_ring_buf(int map_fd, uintptr_t ctx);
 struct user_ring_buffer *cgo_init_user_ring_buf(int map_fd);
 int cgo_add_ring_buf(struct ring_buffer *rb, int map_fd, uintptr_t ctx);
+int cgo_ring_buffer__poll(struct ring_buffer *rb, int timeout, atomic_int *stop_flag);
+
 struct perf_buffer *cgo_init_perf_buf(int map_fd, int page_cnt, uintptr_t ctx);
+int cgo_perf_buffer__poll(struct perf_buffer *pb, int timeout, atomic_int *stop_flag);
 
 void cgo_bpf_map__initial_value(struct bpf_map *map, void *value);
 

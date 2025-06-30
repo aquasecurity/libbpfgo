@@ -17,18 +17,18 @@ import (
 //
 
 type RingBuffer struct {
-	rb     *C.struct_ring_buffer
-	bpfMap *BPFMap
-	slots  []uint
-	stop   chan struct{}
-	closed bool
-	wg     sync.WaitGroup
+	rb       *C.struct_ring_buffer
+	bpfMap   *BPFMap
+	slots    []uint
+	stopped  bool
+	closed   bool
+	wg       sync.WaitGroup
+	stopFlag *C.atomic_int
 }
 
 // Poll will wait until timeout in milliseconds to gather
 // data from the ring buffer.
 func (rb *RingBuffer) Poll(timeout int) {
-	rb.stop = make(chan struct{})
 	rb.wg.Add(1)
 	go rb.poll(timeout)
 }
@@ -39,12 +39,14 @@ func (rb *RingBuffer) Start() {
 }
 
 func (rb *RingBuffer) Stop() {
-	if rb.stop == nil {
+	if rb.stopped {
 		return
 	}
 
+	rb.stopped = true
+
 	// Signal the poll goroutine to exit
-	close(rb.stop)
+	C.cgo_signal_buffer_stop(rb.stopFlag)
 
 	// The event channel should be drained here since the consumer
 	// may have stopped at this point. Failure to drain it will
@@ -69,9 +71,6 @@ func (rb *RingBuffer) Stop() {
 		eventChan := eventChannels.get(slot).(chan []byte)
 		close(eventChan)
 	}
-
-	// Reset pb.stop to allow multiple safe calls to Stop()
-	rb.stop = nil
 }
 
 func (rb *RingBuffer) Close() {
@@ -80,6 +79,7 @@ func (rb *RingBuffer) Close() {
 	}
 
 	rb.Stop()
+	C.cgo_destroy_buffer_stop_flag(rb.stopFlag)
 	C.ring_buffer__free(rb.rb)
 	for _, slot := range rb.slots {
 		eventChannels.remove(slot)
@@ -87,33 +87,32 @@ func (rb *RingBuffer) Close() {
 	rb.closed = true
 }
 
-func (rb *RingBuffer) isStopped() bool {
-	select {
-	case <-rb.stop:
-		return true
-	default:
-		return false
-	}
-}
-
 func (rb *RingBuffer) poll(timeout int) error {
 	defer rb.wg.Done()
 
+	const maxRetries = 3
+	var retries int
+
 	for {
-		retC := C.ring_buffer__poll(rb.rb, C.int(timeout))
-		if rb.isStopped() {
-			break
+		ret := C.cgo_ring_buffer__poll(rb.rb, C.int(timeout), rb.stopFlag)
+		if ret == 0 {
+			// Clean exit (e.g., from stop fd)
+			return nil
 		}
 
-		if retC < 0 {
-			errno := syscall.Errno(-retC)
-			if errno == syscall.EINTR {
-				continue
-			}
+		err := syscall.Errno(-ret)
 
-			return fmt.Errorf("error polling ring buffer: %w", errno)
+		// Retryable errors
+		if err == syscall.EINTR {
+			continue
 		}
+
+		// Optional: retry on transient libbpf errors (negative return)
+		if retries < maxRetries {
+			retries++
+			continue
+		}
+
+		return fmt.Errorf("error polling ring buffer (after %d retries): %w", retries, err)
 	}
-
-	return nil
 }
