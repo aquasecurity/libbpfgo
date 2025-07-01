@@ -89,6 +89,32 @@ int cgo_add_ring_buf(struct ring_buffer *rb, int map_fd, uintptr_t ctx)
     return ret;
 }
 
+int cgo_ring_buffer__poll(struct ring_buffer *rb, int timeout, atomic_int *stop_flag)
+{
+    while (atomic_load(stop_flag) == 0) {
+        int ret = ring_buffer__poll(rb, timeout);
+        if (ret > 0) {
+            // events were processed successfully
+            continue;
+        }
+
+        if (ret == 0) {
+            // timeout — not an error, just retry
+            continue;
+        }
+
+        int err = -ret;
+        if (err == EINTR) {
+            continue;
+        }
+        // Not a stop signal, real error
+        return -err;
+    }
+    // Reset the flag to 0 to allow the next poll to start
+    atomic_store(stop_flag, 0);
+    return 0;
+}
+
 struct perf_buffer *cgo_init_perf_buf(int map_fd, int page_cnt, uintptr_t ctx)
 {
     struct perf_buffer_opts pb_opts = {};
@@ -106,6 +132,51 @@ struct perf_buffer *cgo_init_perf_buf(int map_fd, int page_cnt, uintptr_t ctx)
     }
 
     return pb;
+}
+
+atomic_int *cgo_setup_buffer_stop_flag()
+{
+    atomic_int *f = malloc(sizeof(*f));
+    if (!f)
+        return NULL;
+    atomic_init(f, 0);
+    return f;
+}
+
+void cgo_destroy_buffer_stop_flag(atomic_int *f)
+{
+    free(f);
+}
+
+void cgo_signal_buffer_stop(atomic_int *f)
+{
+    atomic_store(f, 1);
+}
+
+int cgo_perf_buffer__poll(struct perf_buffer *pb, int timeout_ms, atomic_int *stop_flag)
+{
+    while (atomic_load(stop_flag) == 0) {
+        int ret = perf_buffer__poll(pb, timeout_ms);
+        if (ret > 0) {
+            // events were processed successfully
+            continue;
+        }
+
+        if (ret == 0) {
+            // timeout — not an error, just retry
+            continue;
+        }
+
+        int err = -ret;
+        if (err == EINTR) {
+            continue;
+        }
+        // Not a stop signal, real error
+        return -err;
+    }
+    // Reset the flag to 0 to allow the next poll to start
+    atomic_store(stop_flag, 0);
+    return 0;
 }
 
 void cgo_bpf_map__initial_value(struct bpf_map *map, void *value)

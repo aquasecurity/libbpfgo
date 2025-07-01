@@ -22,15 +22,15 @@ type PerfBuffer struct {
 	slot       uint
 	eventsChan chan []byte
 	lostChan   chan uint64
-	stop       chan struct{}
+	stopped    bool
 	closed     bool
 	wg         sync.WaitGroup
+	stopFlag   *C.atomic_int
 }
 
 // Poll will wait until timeout in milliseconds to gather
 // data from the perf buffer.
 func (pb *PerfBuffer) Poll(timeout int) {
-	pb.stop = make(chan struct{})
 	pb.wg.Add(1)
 	go pb.poll(timeout)
 }
@@ -41,12 +41,13 @@ func (pb *PerfBuffer) Start() {
 }
 
 func (pb *PerfBuffer) Stop() {
-	if pb.stop == nil {
+	if pb.stopped {
 		return
 	}
+	pb.stopped = true
 
 	// Signal the poll goroutine to exit
-	close(pb.stop)
+	C.cgo_signal_buffer_stop(pb.stopFlag)
 
 	// The event and lost channels should be drained here since the consumer
 	// may have stopped at this point. Failure to drain it will
@@ -73,9 +74,6 @@ func (pb *PerfBuffer) Stop() {
 	if pb.lostChan != nil {
 		close(pb.lostChan)
 	}
-
-	// Reset pb.stop to allow multiple safe calls to Stop()
-	pb.stop = nil
 }
 
 func (pb *PerfBuffer) Close() {
@@ -84,6 +82,7 @@ func (pb *PerfBuffer) Close() {
 	}
 
 	pb.Stop()
+	C.cgo_destroy_buffer_stop_flag(pb.stopFlag)
 	C.perf_buffer__free(pb.pb)
 	eventChannels.remove(pb.slot)
 	pb.closed = true
@@ -93,20 +92,29 @@ func (pb *PerfBuffer) Close() {
 func (pb *PerfBuffer) poll(timeout int) error {
 	defer pb.wg.Done()
 
-	for {
-		select {
-		case <-pb.stop:
-			return nil
-		default:
-			retC := C.perf_buffer__poll(pb.pb, C.int(timeout))
-			if retC < 0 {
-				errno := syscall.Errno(-retC)
-				if errno == syscall.EINTR {
-					continue
-				}
+	const maxRetries = 3
+	var retries int
 
-				return fmt.Errorf("error polling perf buffer: %w", errno)
-			}
+	for {
+		ret := C.cgo_perf_buffer__poll(pb.pb, C.int(timeout), pb.stopFlag)
+		if ret == 0 {
+			// Clean exit (e.g., from stop fd)
+			return nil
 		}
+
+		err := syscall.Errno(-ret)
+
+		// Retryable errors
+		if err == syscall.EINTR {
+			continue
+		}
+
+		// Optional: retry on transient libbpf errors (negative return)
+		if retries < maxRetries {
+			retries++
+			continue
+		}
+
+		return fmt.Errorf("error polling perf buffer (after %d retries): %w", retries, err)
 	}
 }

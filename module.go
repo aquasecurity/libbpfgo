@@ -376,10 +376,16 @@ func (m *Module) InitRingBuf(mapName string, eventsChan chan []byte) (*RingBuffe
 		return nil, fmt.Errorf("failed to initialize ring buffer: %w", errno)
 	}
 
+	stopFlag := C.cgo_setup_buffer_stop_flag()
+	if stopFlag == nil {
+		return nil, fmt.Errorf("failed to setup buffer stop flag")
+	}
+
 	ringBuf := &RingBuffer{
-		rb:     rbC,
-		bpfMap: bpfMap,
-		slots:  []uint{uint(slot)},
+		rb:       rbC,
+		bpfMap:   bpfMap,
+		slots:    []uint{uint(slot)},
+		stopFlag: stopFlag,
 	}
 	m.ringBufs = append(m.ringBufs, ringBuf)
 	return ringBuf, nil
@@ -436,8 +442,14 @@ func (m *Module) InitPerfBuf(mapName string, eventsChan chan []byte, lostChan ch
 		return nil, fmt.Errorf("failed to initialize perf buffer: %w", errno)
 	}
 
+	stopFlag := C.cgo_setup_buffer_stop_flag()
+	if stopFlag == nil {
+		return nil, fmt.Errorf("failed to setup buffer stop flag")
+	}
+
 	perfBuf.pb = pbC
 	perfBuf.slot = uint(slot)
+	perfBuf.stopFlag = stopFlag
 
 	m.perfBufs = append(m.perfBufs, perfBuf)
 	return perfBuf, nil
