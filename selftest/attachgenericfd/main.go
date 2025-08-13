@@ -4,34 +4,33 @@ import "C"
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"net"
-	"os"
 	"time"
 	"unsafe"
 
-	bpf "github.com/aquasecurity/libbpfgo"
 	"golang.org/x/sys/unix"
+
+	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
 	err = bpfModule.BPFLoadObject()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	serverFD, err := unix.Socket(unix.AF_INET, unix.SOCK_STREAM, unix.IPPROTO_IP)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer unix.Close(serverFD)
 
@@ -40,19 +39,16 @@ func main() {
 		Addr: [4]byte{127, 0, 0, 1},
 	}
 	if err := unix.Bind(serverFD, serverAddr); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	if err := unix.Listen(serverFD, 100); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	sockMapRx, err := bpfModule.GetMap("sock_map_rx")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	prog1, err := bpfModule.GetProgram("bpf_prog_parser")
@@ -60,8 +56,7 @@ func main() {
 		bpf.BPFAttachTypeSKSKBStreamParser, bpf.BPFFNone)
 	defer func() {
 		if err := prog1.DetachGenericFD(sockMapRx.FileDescriptor(), bpf.BPFAttachTypeSKSKBStreamParser); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(-1)
+			common.Error(err)
 		}
 	}()
 
@@ -70,8 +65,7 @@ func main() {
 		bpf.BPFAttachTypeSKSKBStreamVerdict, bpf.BPFFNone)
 	defer func() {
 		if err := prog2.DetachGenericFD(sockMapRx.FileDescriptor(), bpf.BPFAttachTypeSKSKBStreamVerdict); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(-1)
+			common.Error(err)
 		}
 	}()
 
@@ -80,14 +74,12 @@ func main() {
 	go func() {
 		acceptedFD, _, err := unix.Accept(serverFD)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(-1)
+			common.Error(err)
 		}
 		key := int(0)
 		val := int(acceptedFD)
 		if err = sockMapRx.UpdateValueFlags(unsafe.Pointer(&key), unsafe.Pointer(&val), bpf.MapFlagUpdateAny); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(-1)
+			common.Error(err)
 		}
 
 		mapUpdateChan <- struct{}{}
@@ -95,8 +87,7 @@ func main() {
 
 	c, err := net.Dial("tcp", "127.0.0.1:22345")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer c.Close()
 
@@ -105,24 +96,20 @@ func main() {
 	case <-mapUpdateChan:
 	// continue with write/read
 	case <-time.After(15 * time.Second): // Same of the selftest
-		fmt.Fprintln(os.Stderr, "bpf map timeout")
-		os.Exit(-1)
+		common.Error(errors.New("bpf map timeout"))
 	}
 
 	input := []byte("foobar")
 	if _, err = c.Write(input); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	output := make([]byte, 6)
 	if _, err = c.Read(output); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	if !bytes.Equal(output, input) {
-		fmt.Fprintln(os.Stderr, "data mismatch")
-		os.Exit(-1)
+		common.Error(fmt.Errorf("data mismatch: expected %q, got %q", input, output))
 	}
 }

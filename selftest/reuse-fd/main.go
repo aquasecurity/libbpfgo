@@ -5,16 +5,17 @@ import "C"
 
 import (
 	"bytes"
-	"log"
+	"fmt"
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
@@ -22,12 +23,12 @@ func main() {
 
 	testerMap, err := bpfModule.GetMap("tester")
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	testerReusedMap, err := bpfModule.GetMap("tester_reused")
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	//
@@ -39,11 +40,11 @@ func main() {
 	// different FD.
 	err = testerReusedMap.ReuseFD(testerMap.FileDescriptor())
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	valueSize := C.sizeof_struct_value
@@ -58,7 +59,7 @@ func main() {
 	value1Unsafe := unsafe.Pointer(&value1[0])
 	err = testerMap.Update(key1Unsafe, value1Unsafe) // update "tester"
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	key2 := int32(42069420)
@@ -71,7 +72,7 @@ func main() {
 	value2Unsafe := unsafe.Pointer(&value2[0])
 	err = testerReusedMap.Update(key2Unsafe, value2Unsafe) // also update "tester"
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	//
@@ -80,7 +81,7 @@ func main() {
 
 	toReuseCreated, err := bpf.CreateMap(bpf.MapTypeArray, "toreuse", 4, 4, 420, nil)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	// The current instance of "toreuse" will be closed, and toReuseCreated
@@ -88,15 +89,15 @@ func main() {
 	// different FD.
 	err = toReuseCreated.ReuseFD(testerMap.FileDescriptor())
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	val2, err := toReuseCreated.GetValue(key2Unsafe) // lookup "tester"
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	if !bytes.Equal(val2, value2) {
-		log.Fatal("wrong value")
+		common.Error(fmt.Errorf("expected value %s, got %s", value2, val2))
 	}
 }

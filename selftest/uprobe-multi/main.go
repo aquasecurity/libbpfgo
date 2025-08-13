@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"debug/elf"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"log"
@@ -13,7 +14,7 @@ import (
 	"time"
 
 	bpf "github.com/aquasecurity/libbpfgo"
-	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 type Event struct {
@@ -37,8 +38,7 @@ var (
 
 func main() {
 	if len(os.Args) < 3 {
-		fmt.Fprintln(os.Stderr, "wrong syntax")
-		os.Exit(-1)
+		common.Error(errors.New("wrong syntax"))
 	}
 
 	// Executable and expected symbols to be traced as positional arguments.
@@ -49,8 +49,7 @@ func main() {
 	// as possible.
 	symbols, err := getFunSyms(binaryPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to get function symbols: %v\n", err)
-		os.Exit(1)
+		common.Error(fmt.Errorf("failed to get function symbols: %v", err))
 	}
 
 	// Hashmap to correlate a cookie got from BPF to a function.
@@ -65,50 +64,45 @@ func main() {
 			continue
 		}
 
-		offset, err := helpers.SymbolToOffset(binaryPath, symbol.Name)
+		offset, err := common.SymbolToOffset(binaryPath, symbol.Name)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to get offset for symbol %s: %v\n", symbol.Name, err)
+			log.Printf("Skipping symbol %s: %v", symbol.Name, err)
 			continue
 		}
 		cookie := hash(symbol.Name)
 		cookies = append(cookies, cookie)
-		offsets = append(offsets, uint64(offset))
+		offsets = append(offsets, offset)
 		cookieToFunctionInfo[cookie] = FunctionInfo{
 			Name:   symbol.Name,
-			Offset: uint64(offset),
+			Offset: offset,
 		}
 	}
 
 	bpfModule, err := bpf.NewModuleFromFile(bpfProgramObject)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
-	if err = resizeMap(bpfModule, "events", 8192); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+	if err = common.ResizeMap(bpfModule, "events", 8192); err != nil {
+		common.Error(err)
 	}
 
 	log.Println("getting program")
 	prog, err := bpfModule.GetProgram(bpfProgramName)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	log.Println("setting expected attach type uprobe multi before loading")
 	if err = prog.SetExpectedAttachType(bpf.BPFAttachTypeTraceUprobeMulti); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	log.Println("loading object")
 	err = bpfModule.BPFLoadObject()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	log.Println("attaching multi uprobes")
@@ -120,8 +114,7 @@ func main() {
 
 		_, err = prog.AttachUprobeMulti(-1, binaryPath, offsets[i:end], cookies[i:end])
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(-1)
+			common.Error(err)
 		}
 	}
 
@@ -129,8 +122,7 @@ func main() {
 	eventsChannel := make(chan []byte)
 	rb, err := bpfModule.InitRingBuf("events", eventsChannel)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	rb.Poll(300)
@@ -163,8 +155,7 @@ func main() {
 	// Verify that all uprobes have been executed.
 	for _, symbolName := range expectedSymbolNames {
 		if _, ok := got[symbolName]; !ok {
-			fmt.Fprintf(os.Stderr, "function %s has not been traced\n", symbolName)
-			os.Exit(1)
+			common.Error(fmt.Errorf("function %s has not been traced", symbolName))
 		}
 	}
 	log.Println("all functions have been traced")
@@ -191,8 +182,8 @@ func getFunSyms(name string) ([]elf.Symbol, error) {
 		return nil, err
 	}
 	log.Printf("found %d symbols in %s\n", len(syms), name)
-	log.Printf("showing first %d symbols\n", min(10, len(syms)))
-	for i := 0; i < min(10, len(syms)); i++ {
+	log.Printf("showing first %d symbols\n", common.Min(10, len(syms)))
+	for i := 0; i < common.Min(10, len(syms)); i++ {
 		log.Printf("symbol %d: %v\n", i, syms[i])
 	}
 	for _, sym := range syms {
@@ -223,32 +214,4 @@ func hash(s string) uint64 {
 	h.Write([]byte(s))
 
 	return h.Sum64()
-}
-
-func resizeMap(module *bpf.Module, name string, size uint32) error {
-	m, err := module.GetMap(name)
-	if err != nil {
-		return err
-	}
-
-	if err = m.SetMaxEntries(size); err != nil {
-		return err
-	}
-
-	if actual := m.MaxEntries(); actual != size {
-		return fmt.Errorf("map resize failed, expected %v, actual %v", size, actual)
-	}
-
-	return nil
-}
-
-func min[T interface {
-	~int | ~int8 | ~int16 | ~int32 | ~int64 |
-		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 |
-		~float32 | ~float64 | ~string
-}](a, b T) T {
-	if a < b {
-		return a
-	}
-	return b
 }

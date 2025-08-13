@@ -3,15 +3,17 @@ package main
 import "C"
 
 import (
-	"log"
+	"errors"
+	"fmt"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
@@ -19,70 +21,70 @@ func main() {
 
 	testerMap, err := bpfModule.GetMap("tester")
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	// Get info about the "tester" map
 	infoTester, err := bpf.GetMapInfoByFD(testerMap.FileDescriptor())
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	// Get a new FD pointing to the "tester" map
 	newFD, err := bpf.GetMapFDByID(infoTester.ID)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 	if newFD == testerMap.FileDescriptor() {
-		log.Fatal("New FD should be different from the old one")
+		common.Error(errors.New("new FD should be different from the old one"))
 	}
 
 	// Get info about the "tester" map again, this time using the new FD
 	infoNewFD, err := bpf.GetMapInfoByFD(newFD)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	if infoTester.Type != infoNewFD.Type {
-		log.Fatal("Types do not match")
+		common.Error(fmt.Errorf("types do not match: %s != %s", infoTester.Type, infoNewFD.Type))
 	}
 	if infoTester.ID != infoNewFD.ID {
-		log.Fatal("IDs do not match")
+		common.Error(fmt.Errorf("IDs do not match: %d != %d", infoTester.ID, infoNewFD.ID))
 	}
 	if infoTester.KeySize != infoNewFD.KeySize {
-		log.Fatal("Key sizes do not match")
+		common.Error(fmt.Errorf("key sizes do not match: %d != %d", infoTester.KeySize, infoNewFD.KeySize))
 	}
 	if infoTester.ValueSize != infoNewFD.ValueSize {
-		log.Fatal("Value sizes do not match")
+		common.Error(fmt.Errorf("value sizes do not match: %d != %d", infoTester.ValueSize, infoNewFD.ValueSize))
 	}
 	if infoTester.MaxEntries != infoNewFD.MaxEntries {
-		log.Fatal("Max entries do not match")
+		common.Error(fmt.Errorf("max entries do not match: %d != %d", infoTester.MaxEntries, infoNewFD.MaxEntries))
 	}
 	if infoTester.MapFlags != infoNewFD.MapFlags {
-		log.Fatal("Map flags do not match")
+		common.Error(fmt.Errorf("map flags do not match: %d != %d", infoTester.MapFlags, infoNewFD.MapFlags))
 	}
 	if infoTester.Name != infoNewFD.Name {
-		log.Fatal("Names do not match")
+		common.Error(fmt.Errorf("names do not match: %s != %s", infoTester.Name, infoNewFD.Name))
 	}
 	if infoTester.IfIndex != infoNewFD.IfIndex {
-		log.Fatal("Ifindexes do not match")
+		common.Error(fmt.Errorf("ifindexes do not match: %d != %d", infoTester.IfIndex, infoNewFD.IfIndex))
 	}
 	if infoTester.NetnsDev != infoNewFD.NetnsDev {
-		log.Fatal("Netns do not match")
+		common.Error(fmt.Errorf("netns dev do not match: %d != %d", infoTester.NetnsDev, infoNewFD.NetnsDev))
 	}
 	if infoTester.NetnsIno != infoNewFD.NetnsIno {
-		log.Fatal("Netns inodes do not match")
+		common.Error(fmt.Errorf("netns inodes do not match: %d != %d", infoTester.NetnsIno, infoNewFD.NetnsIno))
 	}
 	if infoTester.BTFID != infoNewFD.BTFID {
-		log.Fatal("BTF IDs do not match")
+		common.Error(fmt.Errorf("BTF IDs do not match: %d != %d", infoTester.BTFID, infoNewFD.BTFID))
 	}
 	if infoTester.BTFKeyTypeID != infoNewFD.BTFKeyTypeID {
-		log.Fatal("BTF key type IDs do not match")
+		common.Error(fmt.Errorf("BTF key type IDs do not match: %d != %d", infoTester.BTFKeyTypeID, infoNewFD.BTFKeyTypeID))
 	}
 	if infoTester.BTFValueTypeID != infoNewFD.BTFValueTypeID {
-		log.Fatal("BTF value type IDs do not match")
+		common.Error(fmt.Errorf("BTF value type IDs do not match: %d != %d", infoTester.BTFValueTypeID, infoNewFD.BTFValueTypeID))
 	}
 	if infoTester.MapExtra != infoNewFD.MapExtra {
-		log.Fatal("Map extras do not match")
+		common.Error(fmt.Errorf("map extras do not match: %v != %v", infoTester.MapExtra, infoNewFD.MapExtra))
 	}
 }

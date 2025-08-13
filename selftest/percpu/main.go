@@ -4,43 +4,40 @@ import "C"
 
 import (
 	"encoding/binary"
-	"fmt"
-	"os"
+	"errors"
+	"log"
 	"runtime"
 	"syscall"
 	"time"
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
 	err = bpfModule.BPFLoadObject()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	prog, err := bpfModule.GetProgram("mmap_fentry")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	link, err := prog.AttachGeneric()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	if link.GetFd() == 0 {
-		os.Exit(-1)
+		common.Error(errors.New("link fd is 0"))
 	}
 
 	go func() {
@@ -52,8 +49,7 @@ func main() {
 
 	lostEventCounterMap, err := bpfModule.GetMap("percpu_hash")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	time.Sleep(time.Second * 2)
@@ -61,13 +57,12 @@ func main() {
 	values := make([]byte, 8*runtime.NumCPU())
 	err = lostEventCounterMap.GetValueReadInto(unsafe.Pointer(&key), &values)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	last := 0
 	for i := 0; i < runtime.NumCPU(); i++ {
-		fmt.Printf("CPU %d: %d\n", i, binary.LittleEndian.Uint32(values[last:last+8]))
+		log.Printf("CPU %d: %d\n", i, binary.LittleEndian.Uint32(values[last:last+8]))
 		last += 8
 	}
 }

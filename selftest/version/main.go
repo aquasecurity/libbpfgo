@@ -1,11 +1,12 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"os/exec"
 	"strings"
 
 	"github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 func main() {
@@ -14,12 +15,12 @@ func main() {
 
 	b, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal(string(b), err)
+		common.Error(err)
 	}
 
 	// libbpf doesn't put the patch version in exported version
 	// symbols, so use just prefix to exclude it
 	if strings.HasPrefix(libbpfgo.LibbpfVersionString(), string(b)) {
-		log.Fatalf("Error reading exported symbols for libbpf major and minor version: %s is not %s", libbpfgo.LibbpfVersionString(), b)
+		common.Error(fmt.Errorf("libbpf version %s does not match expected version %s", libbpfgo.LibbpfVersionString(), b))
 	}
 }

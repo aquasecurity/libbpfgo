@@ -3,25 +3,23 @@ package main
 import "C"
 
 import (
-	"os"
-
+	"errors"
 	"fmt"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
 	err = bpfModule.BPFLoadObject()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	iterator := bpfModule.Iterator()
@@ -40,13 +38,11 @@ func main() {
 	}
 
 	if len(expectedProgramNames) != 3 {
-		fmt.Fprintln(os.Stderr, "did not iterate over expected programs")
-		os.Exit(-1)
+		common.Error(errors.New("did not iterate over expected programs"))
 	}
 	for k, v := range expectedProgramNames {
 		if !v {
-			fmt.Fprintf(os.Stderr, "did not iterate over expected program: %s", k)
-			os.Exit(-1)
+			common.Error(fmt.Errorf("did not iterate over expected program: %s", k))
 		}
 	}
 
@@ -63,13 +59,11 @@ func main() {
 	}
 
 	if len(expectedMapNames) != 2 {
-		fmt.Fprintln(os.Stderr, "did not iterate over expected maps")
-		os.Exit(-1)
+		common.Error(errors.New("did not iterate over expected maps"))
 	}
 	for k, v := range expectedMapNames {
 		if !v {
-			fmt.Fprintf(os.Stderr, "did not iterate over expected map: %s", k)
-			os.Exit(-1)
+			common.Error(fmt.Errorf("did not iterate over expected map: %s", k))
 		}
 	}
 }

@@ -3,37 +3,31 @@ package main
 import "C"
 
 import (
-	"fmt"
-	"os"
-
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
 	err = bpfModule.BPFLoadObject()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	// Should be supported from 5.8 onwards
 	isSupported, err := bpf.BPFMapTypeIsSupported(bpf.MapTypeRingbuf)
 	if err != nil || !isSupported {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	eventsChannel1 := make(chan []byte)
 	_, err = bpfModule.InitRingBuf("events1", eventsChannel1)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 }

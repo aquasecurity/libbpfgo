@@ -4,52 +4,47 @@ import "C"
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"os/exec"
-	"regexp"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
-
-var reCgroup2Mount = regexp.MustCompile(`(?m)^cgroup2\s(/\S+)\scgroup2\s`)
 
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
 	err = bpfModule.BPFLoadObject()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	prog, err := bpfModule.GetProgram("cgroup__sock")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
-	cgroupRootDir := getCgroupV2RootDir()
+	cgroupRootDir, err := common.GetCgroupV2RootDir()
+	if err != nil {
+		common.Error(err)
+	}
 	link, err := prog.AttachCgroup(cgroupRootDir)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	if link.GetFd() == 0 {
-		os.Exit(-1)
+		common.Error(errors.New("failed to attach cgroup"))
 	}
 
 	eventsChannel := make(chan []byte)
 	rb, err := bpfModule.InitRingBuf("events", eventsChannel)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	rb.Poll(300)
@@ -58,8 +53,7 @@ func main() {
 		for i := 0; i < 10; i++ {
 			_, err := exec.Command("ping", "localhost", "-c 1", "-w 1").Output()
 			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(-1)
+				common.Error(err)
 			}
 		}
 	}()
@@ -68,8 +62,7 @@ recvLoop:
 	for {
 		b := <-eventsChannel
 		if binary.LittleEndian.Uint32(b) != 2021 {
-			fmt.Fprintf(os.Stderr, "invalid data retrieved\n")
-			os.Exit(-1)
+			common.Error(fmt.Errorf("invalid data retrieved: %s", b))
 		}
 		numberOfEventsReceived++
 		if numberOfEventsReceived > 5 {
@@ -79,18 +72,4 @@ recvLoop:
 
 	rb.Stop()
 	rb.Close()
-}
-
-func getCgroupV2RootDir() string {
-	data, err := ioutil.ReadFile("/proc/mounts")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "read /proc/mounts failed: %+v\n", err)
-		os.Exit(-1)
-	}
-	items := reCgroup2Mount.FindStringSubmatch(string(data))
-	if len(items) < 2 {
-		fmt.Fprintln(os.Stderr, "cgroupv2 is not mounted")
-		os.Exit(-1)
-	}
-	return items[1]
 }

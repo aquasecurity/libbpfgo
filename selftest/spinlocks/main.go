@@ -3,7 +3,8 @@ package main
 import "C"
 
 import (
-	"os"
+	"errors"
+	"log"
 	"syscall"
 	"time"
 	"unsafe"
@@ -12,72 +13,49 @@ import (
 	"fmt"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
-
-func resizeMap(module *bpf.Module, name string, size uint32) error {
-	m, err := module.GetMap("events")
-	if err != nil {
-		return err
-	}
-
-	if err = m.Resize(size); err != nil {
-		return err
-	}
-
-	if actual := m.GetMaxEntries(); actual != size {
-		return fmt.Errorf("map resize failed, expected %v, actual %v", size, actual)
-	}
-
-	return nil
-}
 
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
-	if err = resizeMap(bpfModule, "events", 8192); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+	if err = common.ResizeMap(bpfModule, "events", 8192); err != nil {
+		common.Error(err)
 	}
 
 	err = bpfModule.BPFLoadObject()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	// bpfModule.ListProgramNames()
 
 	prog, err := bpfModule.GetProgram("mmap_fentry")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	link, err := prog.AttachGeneric()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	if link.GetFd() == 0 {
-		os.Exit(-1)
+		common.Error(errors.New("failed to attach program"))
 	}
 
 	eventsChannel := make(chan []byte)
 	rb, err := bpfModule.InitRingBuf("events", eventsChannel)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	lostEventCounterMap, err := bpfModule.GetMap("counter_hash_map")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	var lostEventCounterKey uint32 = 1
@@ -97,8 +75,7 @@ recvLoop:
 	for {
 		b := <-eventsChannel
 		if binary.LittleEndian.Uint32(b) != 2021 {
-			fmt.Fprintf(os.Stderr, "invalid data retrieved\n")
-			os.Exit(-1)
+			common.Error(fmt.Errorf("invalid data retrieved: %v", b))
 		}
 		numberOfEventsReceived++
 		if numberOfEventsReceived > 5 {
@@ -111,9 +88,8 @@ recvLoop:
 
 	val, err := lostEventCounterMap.GetValue(unsafe.Pointer(&lostEventCounterKey))
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
-	fmt.Println("lost events = ", val)
+	log.Printf("lost events = %d", binary.LittleEndian.Uint32(val))
 }

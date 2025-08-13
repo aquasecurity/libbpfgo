@@ -3,12 +3,11 @@ package main
 import "C"
 
 import (
-	"encoding/binary"
 	"fmt"
-	"os"
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 const (
@@ -22,16 +21,14 @@ var one = 1
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 	bpfModule.BPFLoadObject()
 
 	numbers, err := bpfModule.GetMap("numbers")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	testMap := map[uint32]uint32{}
@@ -42,49 +39,32 @@ func main() {
 		value := unsafe.Pointer(&one)
 		err = numbers.Update(index, value)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(-1)
+			common.Error(err)
 		}
 	}
 
 	iterator := numbers.Iterator()
 	for iterator.Next() {
 		keyBytes := iterator.Key()
-		key := determineHostByteOrder().Uint32(keyBytes)
+		key := common.ByteOrder().Uint32(keyBytes)
 
 		val, ok := testMap[key]
 		if !ok {
-			fmt.Fprintln(os.Stderr, "Unknown key was found: %d", val)
-			os.Exit(-1)
+			common.Error(fmt.Errorf("unknown key was found: %d", key))
 		}
 		if val != 1 {
-			fmt.Fprintln(os.Stderr, "Corrupted value: %d", val)
-			os.Exit(-1)
+			common.Error(fmt.Errorf("corrupted value: %d", val))
 		}
 		testMap[key] = checked
 	}
 	if iterator.Err() != nil {
-		fmt.Fprintf(os.Stderr, "iterator error: %v\n", iterator.Err())
-		os.Exit(-1)
+		common.Error(fmt.Errorf("iterator error: %v", iterator.Err()))
 	}
 
 	// make sure it got everything
 	for k, v := range testMap {
 		if v != 2 {
-			fmt.Fprintln(os.Stderr, "Key was not found: ", k)
-			os.Exit(-1)
+			common.Error(fmt.Errorf("key was not found: %d", k))
 		}
 	}
-}
-
-func determineHostByteOrder() binary.ByteOrder {
-	var i int32 = 0x01020304
-	u := unsafe.Pointer(&i)
-	pb := (*byte)(u)
-	b := *pb
-	if b == 0x04 {
-		return binary.LittleEndian
-	}
-
-	return binary.BigEndian
 }

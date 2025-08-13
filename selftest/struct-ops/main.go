@@ -9,23 +9,11 @@ import (
 	"syscall"
 	"time"
 
-	"encoding/binary"
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
-
-func endian() binary.ByteOrder {
-	var i int32 = 0x01020304
-	u := unsafe.Pointer(&i)
-	pb := (*byte)(u)
-	b := *pb
-	if b == 0x04 {
-		return binary.LittleEndian
-	}
-
-	return binary.BigEndian
-}
 
 func main() {
 	bpfModule, err := bpf.NewModuleFromFileArgs(bpf.NewModuleArgs{
@@ -33,12 +21,12 @@ func main() {
 		KernelLogLevel: 0,
 	})
 	if err != nil {
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
 	if err := bpfModule.BPFLoadObject(); err != nil {
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	m := bpfModule
@@ -54,13 +42,11 @@ func main() {
 		if m.Type().String() == "BPF_MAP_TYPE_STRUCT_OPS" {
 			var link *bpf.BPFLink
 			if link, err = m.AttachStructOps(); err != nil {
-				log.Printf("error: %v", err)
-				os.Exit(-1)
+				common.Error(err)
 			}
 			afterFunc = func() {
 				if err := link.Destroy(); err != nil {
-					log.Printf("error: %v", err)
-					os.Exit(-1)
+					common.Error(err)
 				}
 			}
 		}
@@ -68,8 +54,7 @@ func main() {
 
 	var statsMap *bpf.BPFMap
 	if statsMap, err = bpfModule.GetMap("stats"); err != nil {
-		log.Printf("error: %v", err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	var wg sync.WaitGroup
 	ctx, cancel := context.WithCancel(context.Background())
@@ -94,13 +79,12 @@ func main() {
 	wg.Wait()
 	afterFunc()
 	log.Println("scheduler exit")
-	os.Exit(0)
 }
 
 func getStat(m *bpf.BPFMap) []uint64 {
 	cpuNum, err := bpf.NumPossibleCPUs()
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 	cnts := make([][]uint64, 2)
 	cnts[0] = make([]uint64, cpuNum)
@@ -109,11 +93,11 @@ func getStat(m *bpf.BPFMap) []uint64 {
 	for i := 0; i < 2; i++ {
 		v, err := m.GetValue(unsafe.Pointer(&i))
 		if err != nil {
-			log.Fatal(err)
+			common.Error(err)
 		}
 		for cpu := 0; cpu < cpuNum; cpu++ {
 			n := v[cpu*8 : cpu*8+8]
-			cnts[i][cpu] = endian().Uint64(n)
+			cnts[i][cpu] = common.ByteOrder().Uint64(n)
 			stats[i] += cnts[i][cpu]
 		}
 	}

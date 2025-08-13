@@ -3,11 +3,12 @@ package main
 import "C"
 
 import (
-	"log"
+	"fmt"
 	"syscall"
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 const (
@@ -24,7 +25,7 @@ const (
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
@@ -33,25 +34,25 @@ func main() {
 	startId := uint32(0)
 	notFoundMapsIDs, err := bpf.GetMapsIDsByName(BPFMapNameToNotFind, &startId)
 	if len(notFoundMapsIDs) != 0 {
-		log.Fatalf("the %s map should not be found, but it was found with ids: %v", BPFMapNameToNotFind, notFoundMapsIDs)
+		common.Error(fmt.Errorf("the %s map should not be found, but it was found with ids: %v", BPFMapNameToNotFind, notFoundMapsIDs))
 	}
 
 	startId = 0
 	bpfHashMapsIDs, err := bpf.GetMapsIDsByName(BPFHashMapNameToFind, &startId)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 	if len(bpfHashMapsIDs) == 0 {
-		log.Fatalf("the %s map should be found", BPFHashMapNameToFind)
+		common.Error(fmt.Errorf("the %s map should be found", BPFHashMapNameToFind))
 	}
 
 	startId = 0
 	mapsIDs, err := bpf.GetMapsIDsByName(BPFMapNameToFind, &startId)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 	if len(mapsIDs) == 0 {
-		log.Fatalf("the %s map was not found", BPFMapNameToFind)
+		common.Error(fmt.Errorf("the %s map was not found", BPFMapNameToFind))
 	}
 
 	// try to identify the map by its properties
@@ -59,7 +60,7 @@ func main() {
 	for _, id := range mapsIDs {
 		bpfMap, err := bpf.GetMapByID(id)
 		if err != nil {
-			log.Fatalf("the %s map with %d id was not found: %v", BPFMapNameToFind, id, err)
+			common.Error(fmt.Errorf("the %s map with %d id was not found: %v", BPFMapNameToFind, id, err))
 		}
 
 		if bpfMap.Type() == BPFMapTypeToFind &&
@@ -70,13 +71,13 @@ func main() {
 			similarMaps = append(similarMaps, bpfMap)
 		} else {
 			if err := syscall.Close(bpfMap.FileDescriptor()); err != nil {
-				log.Fatalf("failed to close the file descriptor of the %s map with %d id: %v", BPFMapNameToFind, id, err)
+				common.Error(fmt.Errorf("failed to close the file descriptor of the %s map with %d id: %v", BPFMapNameToFind, id, err))
 			}
 		}
 	}
 
 	if len(similarMaps) == 0 {
-		log.Fatalf("no %s maps with the same properties found", BPFMapNameToFind)
+		common.Error(fmt.Errorf("no %s maps with the same properties found", BPFMapNameToFind))
 	}
 	if len(similarMaps) > 1 {
 		// This is a conundrum for the user, as they cannot decide which map to use
@@ -91,6 +92,6 @@ func main() {
 	key1 := uint32(0)
 	value1 := uint32(55)
 	if err := bpfMap.Update(unsafe.Pointer(&key1), unsafe.Pointer(&value1)); err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 }

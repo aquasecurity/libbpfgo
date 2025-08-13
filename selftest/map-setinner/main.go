@@ -3,27 +3,28 @@ package main
 import "C"
 
 import (
-	"log"
+	"errors"
 	"syscall"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
 	outerHash, err := bpfModule.GetMap("outer_hash")
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	templateInnerMap, err := bpf.CreateMap(bpf.MapTypeHash, "template_inner_map", 4, 4, 420, nil)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	// As the "outer_hash" map does not have an inner map prototype pre-allocated,
@@ -32,12 +33,12 @@ func main() {
 	// fail to load. The template map can be removed after the object is loaded.
 	err = outerHash.SetInnerMap(templateInnerMap.FileDescriptor())
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	err = bpfModule.BPFLoadObject()
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	//
@@ -47,13 +48,13 @@ func main() {
 	// Attempting to set inner map after the object is loaded will fail.
 	err = outerHash.SetInnerMap(templateInnerMap.FileDescriptor())
 	if err == nil {
-		log.Fatal("should fail after object is loaded")
+		common.Error(errors.New("should fail after object is loaded"))
 	}
 
 	// If not needed anymore, remove the "template_inner_map",
 	// freeing up resources.
 	err = syscall.Close(templateInnerMap.FileDescriptor())
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 }

@@ -1,19 +1,19 @@
 package main
 
 import (
-	"fmt"
-	"os"
+	"errors"
+	"log"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 func main() {
 	// Should not be supported before 5.8
 	isSupported, err := bpf.BPFMapTypeIsSupported(bpf.MapTypeRingbuf)
 	if err == nil || isSupported {
-		fmt.Fprintln(os.Stderr, "Ringbuf is supported unexpectedly or no error")
-		os.Exit(-1)
+		common.Error(errors.New("ringbuf is supported unexpectedly or no error"))
 	}
 
-	fmt.Fprintln(os.Stdout, "Ringbuf is not supported as expected")
+	log.Println("Ringbuf is not supported as expected")
 }

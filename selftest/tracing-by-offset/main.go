@@ -3,8 +3,6 @@ package main
 import "C"
 
 import (
-	"os"
-	"runtime"
 	"time"
 
 	"fmt"
@@ -12,41 +10,37 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 func main() {
-	funcName := fmt.Sprintf("__%s_sys_mmap", ksymArch())
+	funcName := fmt.Sprintf("__%s_sys_mmap", common.KSymArch())
 
 	kst, err := helpers.NewKernelSymbolTable()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "NewKernelSymbolTable() failed: %v", err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	funcSymbol, err := kst.GetSymbolByName(funcName)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Expected to find symbol %s, but it was not found", funcSymbol)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
 	bpfModule.BPFLoadObject()
 	prog, err := bpfModule.GetProgram("kprobe__sys_mmap")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	_, err = prog.AttachKprobeOffset(funcSymbol[0].Address)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	go func() {
@@ -56,15 +50,4 @@ func main() {
 	}()
 
 	time.Sleep(time.Second * 2)
-}
-
-func ksymArch() string {
-	switch runtime.GOARCH {
-	case "amd64":
-		return "x64"
-	case "arm64":
-		return "arm64"
-	default:
-		panic("unsupported architecture")
-	}
 }

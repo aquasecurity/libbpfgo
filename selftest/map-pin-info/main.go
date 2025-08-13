@@ -4,9 +4,9 @@ import "C"
 
 import (
 	"fmt"
-	"os"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 func getSupposedPinPath(m *bpf.BPFMap) string {
@@ -16,8 +16,7 @@ func getSupposedPinPath(m *bpf.BPFMap) string {
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
@@ -25,8 +24,7 @@ func main() {
 
 	pinnedMap, err := bpfModule.GetMap("pinned_map")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	var supposedPinPath = getSupposedPinPath(pinnedMap)
 	var actualPinPath string
@@ -34,31 +32,22 @@ func main() {
 	defer pinnedMap.Unpin(supposedPinPath)
 
 	if !pinnedMap.IsPinned() {
-		fmt.Fprintf(os.Stderr,
-			"IsPinned() returned 'false' when map %s should be pinned\n",
-			pinnedMap.GetName())
-		os.Exit(-1)
+		common.Error(fmt.Errorf("IsPinned() returned 'false' when map %s should be pinned", pinnedMap.Name()))
 	}
 
-	actualPinPath = pinnedMap.GetPinPath()
+	actualPinPath = pinnedMap.PinPath()
 	if actualPinPath != supposedPinPath {
-		fmt.Fprintf(os.Stderr,
-			"GetPinPath() returned %s when should be %s\n",
-			actualPinPath, supposedPinPath)
-		os.Exit(-1)
+		common.Error(fmt.Errorf("PinPath() returned %s when should be %s",
+			actualPinPath, supposedPinPath))
 	}
 
 	notPinnedMap, err := bpfModule.GetMap("not_pinned_map")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	if notPinnedMap.IsPinned() {
-		fmt.Fprintf(os.Stderr,
-			"IsPinned() returned 'true' when map %s should not be pinned\n",
-			pinnedMap.GetName())
-		os.Exit(-1)
+		common.Error(fmt.Errorf("IsPinned() returned 'true' when map %s should not be pinned", notPinnedMap.Name()))
 	}
 
 	supposedPinPath = getSupposedPinPath(notPinnedMap)
@@ -66,11 +55,9 @@ func main() {
 	notPinnedMap.Pin(supposedPinPath)
 	defer notPinnedMap.Unpin(supposedPinPath)
 
-	actualPinPath = notPinnedMap.GetPinPath()
+	actualPinPath = notPinnedMap.PinPath()
 	if actualPinPath != supposedPinPath {
-		fmt.Fprintf(os.Stderr,
-			"GetPinPath() returned %s when should be %s\n",
-			actualPinPath, supposedPinPath)
-		os.Exit(-1)
+		common.Error(fmt.Errorf("PinPath() returned %s when should be %s",
+			actualPinPath, supposedPinPath))
 	}
 }
