@@ -3,8 +3,6 @@ package main
 import "C"
 
 import (
-	"os"
-	"runtime"
 	"time"
 
 	"encoding/binary"
@@ -12,58 +10,37 @@ import (
 	"syscall"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
-
-func resizeMap(module *bpf.Module, name string, size uint32) error {
-	m, err := module.GetMap("events")
-	if err != nil {
-		return err
-	}
-
-	if err = m.Resize(size); err != nil {
-		return err
-	}
-
-	if actual := m.GetMaxEntries(); actual != size {
-		return fmt.Errorf("map resize failed, expected %v, actual %v", size, actual)
-	}
-
-	return nil
-}
 
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
-	if err = resizeMap(bpfModule, "events", 8192); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+	if err = common.ResizeMap(bpfModule, "events", 8192); err != nil {
+		common.Error(err)
 	}
 
 	bpfModule.BPFLoadObject()
 	prog, err := bpfModule.GetProgram("kprobe__sys_mmap")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
-	funcName := fmt.Sprintf("__%s_sys_mmap", ksymArch())
+	funcName := fmt.Sprintf("__%s_sys_mmap", common.KSymArch())
 	_, err = prog.AttachKprobe(funcName)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	eventsChannel := make(chan []byte)
 	lostChannel := make(chan uint64)
 	pb, err := bpfModule.InitPerfBuf("events", eventsChannel, lostChannel, 1)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	pb.Poll(300)
@@ -77,8 +54,7 @@ func main() {
 				return
 			case b := <-eventsChannel:
 				if binary.LittleEndian.Uint32(b) != 2021 {
-					fmt.Fprintf(os.Stderr, "invalid data retrieved\n")
-					os.Exit(-1)
+					common.Error(fmt.Errorf("invalid data retrieved: %v", b))
 				}
 			}
 		}
@@ -100,15 +76,4 @@ func main() {
 	pb.Close()
 	pb.Close()
 	pb.Stop()
-}
-
-func ksymArch() string {
-	switch runtime.GOARCH {
-	case "amd64":
-		return "x64"
-	case "arm64":
-		return "arm64"
-	default:
-		panic("unsupported architecture")
-	}
 }

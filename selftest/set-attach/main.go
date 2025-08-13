@@ -4,75 +4,66 @@ import "C"
 
 import (
 	"encoding/binary"
-	"os"
-	"runtime"
+	"errors"
 	"syscall"
 	"time"
 
 	"fmt"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
 	prog, err := bpfModule.GetProgram("foobar")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	// eBPF program type should only be set if it differs from the desired one
 	// commit d6e6286a12e7 ("libbpf: disassociate section handler on explicit bpf_program__set_type() call")
 	// err = prog.SetType(bpf.BPFProgTypeTracing)
 	// if err != nil {
-	//	 fmt.Fprintln(os.Stderr, err)
-	//	 os.Exit(-1)
+	//	 common.Error(err)
 	// }
 	err = prog.SetExpectedAttachType(bpf.BPFAttachTypeTraceFentry)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
-	funcName := fmt.Sprintf("__%s_sys_mmap", ksymArch())
+	funcName := fmt.Sprintf("__%s_sys_mmap", common.KSymArch())
 	err = prog.SetAttachTarget(0, funcName)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	// Test auto attach
 	autoAttachOrig := prog.Autoattach()
 	prog.SetAutoattach(!autoAttachOrig)
 	if prog.Autoattach() == autoAttachOrig {
-		fmt.Fprintln(os.Stderr, "set auto attach failed")
-		os.Exit(-1)
+		common.Error(errors.New("set auto attach failed"))
 	}
 	prog.SetAutoattach(autoAttachOrig)
 
 	err = bpfModule.BPFLoadObject()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	_, err = prog.AttachGeneric()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	eventsChannel := make(chan []byte)
 	rb, err := bpfModule.InitRingBuf("events", eventsChannel)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	rb.Poll(300)
@@ -87,8 +78,7 @@ recvLoop:
 	for {
 		b := <-eventsChannel
 		if binary.LittleEndian.Uint32(b) != 2021 {
-			fmt.Fprintf(os.Stderr, "invalid data retrieved\n")
-			os.Exit(-1)
+			common.Error(fmt.Errorf("invalid data retrieved: %v", b))
 		}
 		numberOfEventsReceived++
 		if numberOfEventsReceived > 5 {
@@ -97,15 +87,4 @@ recvLoop:
 	}
 	rb.Stop()
 	rb.Close()
-}
-
-func ksymArch() string {
-	switch runtime.GOARCH {
-	case "amd64":
-		return "x64"
-	case "arm64":
-		return "arm64"
-	default:
-		panic("unsupported architecture")
-	}
 }

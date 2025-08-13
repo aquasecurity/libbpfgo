@@ -3,44 +3,38 @@ package main
 import "C"
 
 import (
-	"fmt"
-	"log"
-	"os"
+	"errors"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
 	kprobeProg, err := bpfModule.GetProgram("kprobe__sys_mmap")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	err = kprobeProg.SetAutoload(false)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	isSupported, err := bpf.BPFProgramTypeIsSupported(bpf.BPFProgTypeKprobe)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	if isSupported {
 		err = kprobeProg.SetAutoload(true)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(-1)
+			common.Error(err)
 		}
 	}
 
@@ -48,27 +42,24 @@ func main() {
 	autoLoadOrig := kprobeProg.Autoload()
 	kprobeProg.SetAutoload((!autoLoadOrig))
 	if kprobeProg.Autoload() == autoLoadOrig {
-		fmt.Println(os.Stderr, "auto load result wrong")
-		os.Exit(-1)
+		common.Error(errors.New("auto load result not changed"))
 	}
 	kprobeProg.SetAutoload((autoLoadOrig))
 
 	err = bpfModule.BPFLoadObject()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	isSupported, err = bpf.BPFMapTypeIsSupported(bpf.MapTypeHash)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	if isSupported {
 		_, err = bpf.CreateMap(bpf.MapTypeHash, "foobar", 4, 4, 420, nil)
 		if err != nil {
-			log.Fatal(err)
+			common.Error(err)
 		}
 	}
 }

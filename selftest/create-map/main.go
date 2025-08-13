@@ -3,12 +3,10 @@ package main
 import "C"
 
 import (
-	"fmt"
-	"log"
-	"os"
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 // CreateMap uses `bpf_map_create()`, a 'low-level' API in libbpf
@@ -31,8 +29,7 @@ import (
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
@@ -40,7 +37,7 @@ func main() {
 
 	m, err := bpf.CreateMap(bpf.MapTypeHash, "foobar", 4, 4, 420, nil)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	key1 := uint32(1)
@@ -49,6 +46,6 @@ func main() {
 	value1Unsafe := unsafe.Pointer(&value1)
 	err = m.Update(key1Unsafe, value1Unsafe)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 }

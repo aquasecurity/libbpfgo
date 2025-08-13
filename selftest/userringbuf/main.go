@@ -5,12 +5,12 @@ import "C"
 import (
 	"bytes"
 	"encoding/binary"
-	"os"
 	"time"
 
 	"fmt"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 type test_arg struct {
@@ -20,8 +20,7 @@ type test_arg struct {
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
@@ -30,15 +29,14 @@ func main() {
 	ch := make(chan []byte, 3) // We will send 3 messages
 	urb, err := bpfModule.InitUserRingBuf("dispatched", ch)
 	if err != nil {
-		os.Exit(-1)
+		common.Error(err)
 	}
 	urb.Start()
 
 	evtChan := make(chan []byte)
 	rb, err := bpfModule.InitRingBuf("errEvt", evtChan)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	rb.Poll(300)
 
@@ -53,8 +51,7 @@ func main() {
 
 	prog, err := bpfModule.GetProgram("test_user_ring_buff")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	arg := &test_arg{
 		id: 0,
@@ -70,7 +67,6 @@ func main() {
 	// Run the program and check if 3 messages were drained by the program
 	prog.Run(&opt)
 	if opt.RetVal != 3 {
-		fmt.Fprintln(os.Stderr, "error: expected 3, got", opt.RetVal)
-		os.Exit(-1)
+		common.Error(fmt.Errorf("expected 3, got %d", opt.RetVal))
 	}
 }

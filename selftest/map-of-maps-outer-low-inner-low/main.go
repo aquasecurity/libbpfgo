@@ -3,28 +3,27 @@ package main
 import "C"
 
 import (
-	"encoding/binary"
-	"log"
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
 	err = bpfModule.BPFLoadObject()
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	innerArray, err := bpf.CreateMap(bpf.MapTypeArray, "inner_array", 4, 4, 1, nil)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	// Create the "outer_hash" map, using the "inner_array" map as a prototype.
@@ -33,7 +32,7 @@ func main() {
 	}
 	outerHash, err := bpf.CreateMap(bpf.MapTypeHash, "outer_hash", 4, 4, 1, &opts)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	// Save the inner map in the "outer_hash" map, using the hash key 1917.
@@ -45,7 +44,7 @@ func main() {
 	value1Unsafe := unsafe.Pointer(&value1)
 	err = outerHash.Update(key1Unsafe, value1Unsafe)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	// Save an element in the "inner_array" map.
@@ -54,18 +53,6 @@ func main() {
 	value1Unsafe = unsafe.Pointer(&value1)
 	err = innerArray.Update(key1Unsafe, value1Unsafe)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
-}
-
-func endian() binary.ByteOrder {
-	var i int32 = 0x01020304
-	u := unsafe.Pointer(&i)
-	pb := (*byte)(u)
-	b := *pb
-	if b == 0x04 {
-		return binary.LittleEndian
-	}
-
-	return binary.BigEndian
 }

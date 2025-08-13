@@ -4,47 +4,43 @@ import "C"
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"net"
-	"os"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
 	err = bpfModule.BPFLoadObject()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	prog, err := bpfModule.GetProgram("sk_lookup__lookup")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	link, err := prog.AttachNetns("/proc/self/ns/net")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	if link.GetFd() == 0 {
-		os.Exit(-1)
+		common.Error(errors.New("fd is 0"))
 	}
 
 	eventsChannel := make(chan []byte)
 	rb, err := bpfModule.InitRingBuf("events", eventsChannel)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	rb.Poll(300)
@@ -52,8 +48,7 @@ func main() {
 	go func() {
 		l, err := net.Listen("tcp", "127.0.0.1:")
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(-1)
+			common.Error(err)
 		}
 		go func() {
 			for {
@@ -63,8 +58,7 @@ func main() {
 		for i := 0; i < 10; i++ {
 			c, err := net.Dial("tcp", l.Addr().String())
 			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(-1)
+				common.Error(err)
 			}
 			c.Write([]byte{0})
 			c.Close()
@@ -75,8 +69,7 @@ recvLoop:
 	for {
 		b := <-eventsChannel
 		if binary.LittleEndian.Uint32(b) != 2021 {
-			fmt.Fprintf(os.Stderr, "invalid data retrieved\n")
-			os.Exit(-1)
+			common.Error(fmt.Errorf("invalid event data: %v", b))
 		}
 		numberOfEventsReceived++
 		if numberOfEventsReceived > 5 {

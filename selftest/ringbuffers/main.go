@@ -3,8 +3,6 @@ package main
 import "C"
 
 import (
-	"os"
-	"runtime"
 	"syscall"
 	"time"
 
@@ -12,64 +10,42 @@ import (
 	"fmt"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
-
-func resizeMap(module *bpf.Module, name string, size uint32) error {
-	m, err := module.GetMap(name)
-	if err != nil {
-		return err
-	}
-
-	if err = m.Resize(size); err != nil {
-		return err
-	}
-
-	if actual := m.GetMaxEntries(); actual != size {
-		return fmt.Errorf("map resize failed, expected %v, actual %v", size, actual)
-	}
-
-	return nil
-}
 
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
-	if err = resizeMap(bpfModule, "events1", 8192); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+	if err = common.ResizeMap(bpfModule, "events1", 8192); err != nil {
+		common.Error(err)
 	}
 
 	bpfModule.BPFLoadObject()
 	prog, err := bpfModule.GetProgram("kprobe__sys_mmap")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
-	funcName := fmt.Sprintf("__%s_sys_mmap", ksymArch())
+	funcName := fmt.Sprintf("__%s_sys_mmap", common.KSymArch())
 	_, err = prog.AttachKprobe(funcName)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	eventsChannel1 := make(chan []byte)
 	rb, err := bpfModule.InitRingBuf("events1", eventsChannel1)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	eventsChannel2 := make(chan []byte)
 	ret, err := bpfModule.AddRingBuf(rb, "events2", eventsChannel2)
 	if !ret {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	rb.Poll(300)
@@ -88,8 +64,7 @@ recvLoop:
 		select {
 		case b := <-eventsChannel1:
 			if binary.LittleEndian.Uint32(b) != 2021 {
-				fmt.Fprintf(os.Stderr, "invalid data retrieved\n")
-				os.Exit(-1)
+				common.Error(fmt.Errorf("invalid data retrieved: %v", b))
 			}
 			numberOfEvent1Received++
 			if numberOfEvent1Received > 5 && numberOfEvent2Received > 5 {
@@ -97,8 +72,7 @@ recvLoop:
 			}
 		case b := <-eventsChannel2:
 			if binary.LittleEndian.Uint32(b) != 2024 {
-				fmt.Fprintf(os.Stderr, "invalid data retrieved\n")
-				os.Exit(-1)
+				common.Error(fmt.Errorf("invalid data retrieved: %v", b))
 			}
 			numberOfEvent2Received++
 			if numberOfEvent1Received > 5 && numberOfEvent2Received > 5 {
@@ -113,15 +87,4 @@ recvLoop:
 	rb.Close()
 	rb.Close()
 	rb.Stop()
-}
-
-func ksymArch() string {
-	switch runtime.GOARCH {
-	case "amd64":
-		return "x64"
-	case "arm64":
-		return "arm64"
-	default:
-		panic("unsupported architecture")
-	}
 }

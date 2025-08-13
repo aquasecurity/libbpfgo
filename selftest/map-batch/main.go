@@ -4,19 +4,19 @@ import "C"
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"syscall"
 	"unsafe"
 
-	"encoding/binary"
-
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		log.Fatalf("Failed to load BPF module: %v", err)
+		common.Error(fmt.Errorf("failed to load BPF module: %v", err))
 	}
 	defer bpfModule.Close()
 
@@ -24,7 +24,7 @@ func main() {
 
 	testerMap, err := bpfModule.GetMap("tester")
 	if err != nil {
-		log.Fatalf("Failed to get map: %v", err)
+		common.Error(fmt.Errorf("failed to get map: %v", err))
 	}
 
 	//
@@ -41,18 +41,18 @@ func main() {
 		uint32(len(keys)),
 	)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 	if count != uint32(len(keys)) {
-		log.Fatalf("Failed to batch update all elements: %d/%d", count, len(keys))
+		common.Error(fmt.Errorf("failed to batch update all elements: %d/%d", count, len(keys)))
 	}
 
 	val, err := testerMap.GetValue(unsafe.Pointer(&keys[0]))
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
-	if endian().Uint32(val) != values[0] {
-		log.Fatalf("testerMap.GetValue returned %v, expected %v", val, values[0])
+	if common.ByteOrder().Uint32(val) != values[0] {
+		common.Error(fmt.Errorf("testerMap.GetValue returned %v, expected %v", val, values[0]))
 	}
 
 	// Test batch update.
@@ -66,10 +66,10 @@ func main() {
 		uint32(len(keysGreater)),
 	)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 	if count == uint32(len(keysGreater)) {
-		log.Fatalf("count %d should be less than len(keysGreater) %d", count, len(keysGreater))
+		common.Error(fmt.Errorf("count %d should be less than len(keysGreater) %d", count, len(keysGreater)))
 	}
 
 	//
@@ -89,16 +89,16 @@ func main() {
 			uint32(stepSize),
 		)
 		if err != nil {
-			log.Fatalf("Failed to batch lookup: %v", err)
+			common.Error(fmt.Errorf("failed to batch lookup: %v", err))
 		}
 
 		startKeyPtr = unsafe.Pointer(&nextKey)
 
 		for i, val := range vals {
-			actual := endian().Uint32(val)
+			actual := common.ByteOrder().Uint32(val)
 			expected := batchKeys[i] + 1
 			if actual != expected {
-				log.Fatalf("testerMap.GetValueBatch returned %v, expected %v", actual, expected)
+				common.Error(fmt.Errorf("testerMap.GetValueBatch returned %v, expected %v", actual, expected))
 			}
 		}
 	}
@@ -115,10 +115,10 @@ func main() {
 		uint32(len(notAllAvailableKeys)),
 	)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 	if count != expectedCount {
-		log.Fatalf("Failed to partial batch lookup elements: %d/%d", count, len(keys))
+		common.Error(fmt.Errorf("failed to partial batch lookup elements: %d/%d", count, expectedCount))
 	}
 
 	// Test batch lookup passing a count that is greater than the number of
@@ -133,7 +133,7 @@ func main() {
 		uint32(greaterCount),
 	)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	//
@@ -169,16 +169,16 @@ func main() {
 				step++
 				continue
 			}
-			log.Fatal(err)
+			common.Error(err)
 		}
 		log.Printf("testerMap.GetValueAndDeleteBatch deleted element(s): %d", count)
 		totalKeysToDelete -= count
 
 		for i, val := range vals {
-			actual := endian().Uint32(val)
+			actual := common.ByteOrder().Uint32(val)
 			expected := deleteKeys[i] + 1
 			if actual != expected {
-				log.Fatalf("testerMap.GetValueAndDeleteBatch returned %v, expected %v", actual, expected)
+				common.Error(fmt.Errorf("testerMap.GetValueAndDeleteBatch returned %v, expected %v", actual, expected))
 			}
 		}
 	}
@@ -198,7 +198,7 @@ func main() {
 		uint32(len(keys)),
 	)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	// map is full again.
@@ -210,16 +210,16 @@ func main() {
 		uint32(len(keys)+10),
 	)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 	if count != uint32(len(keys)) {
-		log.Fatalf("testerMap.DeleteKeyBatch failed: count=%d", count)
+		common.Error(fmt.Errorf("testerMap.DeleteKeyBatch failed: count=%d", count))
 	}
 
 	// Ensure value is no longer there.
 	v, _ := testerMap.GetValue(unsafe.Pointer(&keys[0]))
 	if len(v) != 0 {
-		log.Fatalf("testerMap.GetValue was expected to fail, but succeeded")
+		common.Error(errors.New("testerMap.GetValue was expected to fail, but succeeded"))
 	}
 
 	// map is empty again.
@@ -231,7 +231,7 @@ func main() {
 		uint32(len(keys)),
 	)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	// Test batch delete.
@@ -242,10 +242,10 @@ func main() {
 		uint32(fewer),
 	)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 	if count != uint32(fewer) {
-		log.Fatalf("testerMap.DeleteKeyBatch failed: count=%d", count)
+		common.Error(fmt.Errorf("testerMap.DeleteKeyBatch failed: count=%d", count))
 	}
 
 	// map contains only 1 key-value pair.
@@ -257,7 +257,7 @@ func main() {
 		uint32(len(keys)),
 	)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	//
@@ -271,7 +271,7 @@ func main() {
 		uint32(len(keys)),
 	)
 	if err != nil {
-		log.Fatal(err)
+		common.Error(err)
 	}
 
 	// Test GetNextKey.
@@ -282,14 +282,14 @@ func main() {
 		err := testerMap.GetNextKey(keyPtr, keyPtr)
 		if err != nil {
 			if !errors.Is(err, syscall.ENOENT) {
-				log.Fatalf("testerMap.GetNextKey failed: err=%v", err)
+				common.Error(fmt.Errorf("testerMap.GetNextKey failed: err=%v", err))
 			}
 			break
 		}
 		keyCnt++
 	}
 	if keyCnt != len(keys) {
-		log.Fatalf("testerMap.GetNextKey failed: count=%d", keyCnt)
+		common.Error(fmt.Errorf("testerMap.GetNextKey failed: count=%d", keyCnt))
 	}
 
 	//
@@ -300,11 +300,11 @@ func main() {
 	for i, key := range keys {
 		val, err := testerMap.GetValueAndDeleteKey(unsafe.Pointer(&key))
 		if err != nil {
-			log.Fatalf("testerMap.GetValueAndDelete failed: err=%v", err)
+			common.Error(fmt.Errorf("testerMap.GetValueAndDelete failed: err=%v", err))
 		}
 
-		if endian().Uint32(val) != values[i] {
-			log.Fatalf("testerMpa.GetValueAndDetele failed: val=%d", endian().Uint32(val))
+		if common.ByteOrder().Uint32(val) != values[i] {
+			common.Error(fmt.Errorf("testerMap.GetValueAndDelete failed: val=%d", common.ByteOrder().Uint32(val)))
 		}
 	}
 
@@ -312,18 +312,6 @@ func main() {
 	key = 0
 	err = testerMap.GetNextKey(keyPtr, keyPtr)
 	if !errors.Is(err, syscall.ENOENT) {
-		log.Fatalf("testerMap.GetValueAndDeleteKey failed: err=%v", err)
+		common.Error(fmt.Errorf("testerMap.GetValueAndDeleteKey failed: err=%v", err))
 	}
-}
-
-func endian() binary.ByteOrder {
-	var i int32 = 0x01020304
-	u := unsafe.Pointer(&i)
-	pb := (*byte)(u)
-	b := *pb
-	if b == 0x04 {
-		return binary.LittleEndian
-	}
-
-	return binary.BigEndian
 }

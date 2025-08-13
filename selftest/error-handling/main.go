@@ -4,19 +4,18 @@ import "C"
 
 import (
 	"errors"
-	"os"
 	"syscall"
 
 	"fmt"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
@@ -25,34 +24,28 @@ func main() {
 	// non-existant program
 	_, err = bpfModule.GetProgram("NewYorkYankeesRule")
 	if err == nil {
-		fmt.Fprintln(os.Stderr, "undetected error, non-existant program")
-		os.Exit(-1)
+		common.Error(errors.New("undetected error, non-existant program"))
 	}
 	if !errors.Is(err, syscall.ENOENT) {
-		fmt.Fprintf(os.Stderr, "unexpected wrapped error received, expected ENOENT\n")
-		os.Exit(-1)
+		common.Error(fmt.Errorf("unexpected wrapped error received, expected ENOENT: %w", err))
 	}
 
 	// non-existant map
 	_, err = bpfModule.GetMap("Ih8BostonRedSox")
 	if err == nil {
-		fmt.Fprintln(os.Stderr, "undetected error, non-existant map")
-		os.Exit(-1)
+		common.Error(errors.New("undetected error, non-existant map"))
 	}
 	if !errors.Is(err, syscall.ENOENT) {
-		fmt.Fprintf(os.Stderr, "unexpected wrapped error received, expected ENOENT\n")
-		os.Exit(-1)
+		common.Error(fmt.Errorf("unexpected wrapped error received, expected ENOENT: %w", err))
 	}
 
 	// invalid tc hook
 	tchook := bpfModule.TcHookInit()
 	err = tchook.Create()
 	if err == nil {
-		fmt.Fprintln(os.Stderr, "undetected error, invalid tchook create arguments")
-		os.Exit(-1)
+		common.Error(errors.New("undetected error, invalid tchook create arguments"))
 	}
 	if !errors.Is(err, syscall.EINVAL) {
-		fmt.Fprintf(os.Stderr, "unexpected wrapped error received, expected EINVAL\n")
-		os.Exit(-1)
+		common.Error(fmt.Errorf("unexpected wrapped error received, expected EINVAL: %w", err))
 	}
 }

@@ -3,12 +3,12 @@ package main
 import "C"
 
 import (
-	"os"
 	"strings"
 
 	"fmt"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 var logOutput []string
@@ -34,15 +34,12 @@ func main() {
 
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	bpfModule.Close()
 
 	if len(logOutput) != 1 {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("Log output should contain only one output matching the string: %s", filterMatch))
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("Log output: %v", logOutput))
-		os.Exit(-1)
+		common.Error(fmt.Errorf("log output should contain only one output matching the string %s: %v", filterMatch, logOutput))
 	}
 
 	// clean logOutput
@@ -62,14 +59,11 @@ func main() {
 
 	bpfModule, err = bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	bpfModule.Close()
 
 	if len(logOutput) != 0 {
-		fmt.Fprintln(os.Stderr, "Log output should be empty")
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("Log output: %v", logOutput))
-		os.Exit(-1)
+		common.Error(fmt.Errorf("log output should be empty: %v", logOutput))
 	}
 }

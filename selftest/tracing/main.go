@@ -4,8 +4,7 @@ import "C"
 
 import (
 	"encoding/binary"
-	"os"
-	"runtime"
+	"errors"
 	"syscall"
 	"time"
 
@@ -13,59 +12,52 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 func main() {
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	defer bpfModule.Close()
 
 	err = bpfModule.BPFLoadObject()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	m, err := helpers.NewKernelSymbolTable()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
-	funcName := fmt.Sprintf("__%s_sys_mmap", ksymArch())
+	funcName := fmt.Sprintf("__%s_sys_mmap", common.KSymArch())
 	sym, err := m.GetSymbolByName(funcName)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	if sym[0].Address == 0 && sym[0].Name == "" {
-		fmt.Fprintln(os.Stderr, "could not find symbol to attach to")
-		os.Exit(-1)
+		common.Error(errors.New("could not find symbol to attach to"))
 	}
 
 	prog, err := bpfModule.GetProgram("mmap_fentry")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	link, err := prog.AttachGeneric()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 	if link.GetFd() == 0 {
-		os.Exit(-1)
+		common.Error(errors.New("failed to attach program"))
 	}
 
 	eventsChannel := make(chan []byte)
 	rb, err := bpfModule.InitRingBuf("events", eventsChannel)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		common.Error(err)
 	}
 
 	rb.Poll(300)
@@ -80,8 +72,7 @@ recvLoop:
 	for {
 		b := <-eventsChannel
 		if binary.LittleEndian.Uint32(b) != 2021 {
-			fmt.Fprintf(os.Stderr, "invalid data retrieved\n")
-			os.Exit(-1)
+			common.Error(fmt.Errorf("invalid data retrieved: %v", b))
 		}
 		numberOfEventsReceived++
 		if numberOfEventsReceived > 5 {
@@ -91,15 +82,4 @@ recvLoop:
 
 	rb.Stop()
 	rb.Close()
-}
-
-func ksymArch() string {
-	switch runtime.GOARCH {
-	case "amd64":
-		return "x64"
-	case "arm64":
-		return "arm64"
-	default:
-		panic("unsupported architecture")
-	}
 }
