@@ -38,25 +38,34 @@ func main() {
 		common.Error(err)
 	}
 
-	reader, err := link.Reader()
-	if err != nil {
-		common.Error(err)
-	}
-	defer reader.Close()
-
 	totalExecs := 10
 	thisPid := syscall.Getpid()
 	pids := make(map[int]*os.Process, 0)
+
+	// Start processes with predictable running time to ensure they're captured
 	for i := 0; i < totalExecs; i++ {
-		cmd := exec.Command("ping", "-c1", "-w1", "0.0.0.0")
+		cmd := exec.Command("sleep", "10")
 		err := cmd.Start()
 		if err != nil {
 			common.Error(err)
 		}
 		pids[cmd.Process.Pid] = cmd.Process
 	}
+	defer func() {
+		// Clean up any remaining processes
+		for _, proc := range pids {
+			_ = proc.Kill()
+		}
+	}()
 
-	time.Sleep(5 * time.Second)
+	// Give processes time to start and be registered
+	time.Sleep(2 * time.Second)
+
+	reader, err := link.Reader()
+	if err != nil {
+		common.Error(err)
+	}
+	defer reader.Close()
 
 	numberOfMatches := 0
 	scanner := bufio.NewScanner(reader)
@@ -65,7 +74,7 @@ func main() {
 		if len(fields) != 3 {
 			common.Error(fmt.Errorf("invalid data retrieved: %s", scanner.Text()))
 		}
-		if fields[2] == "ping" {
+		if fields[2] == "sleep" {
 			ppid, err := strconv.Atoi(fields[0])
 			if err != nil {
 				common.Error(err)
@@ -77,7 +86,7 @@ func main() {
 			if proc, found := pids[pid]; found {
 				if ppid == thisPid {
 					numberOfMatches++
-					proc.Kill()
+					_ = proc.Kill() // Kill the sleep process
 				}
 			}
 		}
@@ -85,6 +94,7 @@ func main() {
 			break
 		}
 	}
+
 	if numberOfMatches != totalExecs {
 		err := fmt.Errorf("expect numberOfMatches == %d but got %d", totalExecs, numberOfMatches)
 		common.Error(err)
