@@ -5,7 +5,7 @@ go 1.24
 toolchain go1.24.2
 
 require (
-	github.com/aquasecurity/libbpfgo v0.0.0
+	github.com/aquasecurity/libbpfgo v0.9.0-libbpf-1.5.1.0.20250716183222-3474da5de8f6
 	github.com/aquasecurity/libbpfgo/selftest/common v0.0.0-00010101000000-000000000000
 	github.com/aquasecurity/tracee v0.23.1-0.20250812173613-0a9ab353c692
 )
