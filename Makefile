@@ -123,17 +123,32 @@ endif
 
 # selftests
 
+# To set a minimum Go version requirement for a specific selftest:
+# 1. Create a .go-version file in the selftest directory (e.g., selftest/my-test/.go-version)
+# 2. Add the minimum version in major.minor format (e.g., "1.21" for Go 1.21.0 or higher)
+# 3. The selftest will be automatically skipped if the current Go version is lower
+# Example: echo "1.21" > selftest/my-advanced-test/.go-version
+
+# current Go version (major.minor format)
+GO_VERSION := $(shell $(GO) version | sed -n 's/.*go\([0-9]*\.[0-9]*\).*/\1/p')
 SELFTESTS = $(shell find $(SELFTEST) -mindepth 1 -maxdepth 1 -type d ! -name 'common' ! -name 'build')
 
 define FOREACH
-	SELFTESTERR=0; \
-	for DIR in $(SELFTESTS); do \
-	      echo "INFO: entering $$DIR..."; \
-		$(MAKE) -j1 -C $$DIR $(1) || SELFTESTERR=1; \
-	done; \
-	if [ $$SELFTESTERR -eq 1 ]; then \
-		exit 1; \
-	fi
+    SELFTESTERR=0; \
+    for DIR in $(SELFTESTS); do \
+        echo "INFO: entering $$DIR..."; \
+        if [ -f "$$DIR/.go-version" ]; then \
+            REQUIRED_VERSION=$$(cat "$$DIR/.go-version"); \
+            if ! printf '%s\n%s\n' "$$REQUIRED_VERSION" "$(GO_VERSION)" | sort -V -C; then \
+                echo "INFO: skipping $$DIR (requires Go $$REQUIRED_VERSION, current: $(GO_VERSION))"; \
+                continue; \
+            fi; \
+        fi; \
+        $(MAKE) -j1 -C $$DIR $(1) || SELFTESTERR=1; \
+    done; \
+    if [ $$SELFTESTERR -eq 1 ]; then \
+        exit 1; \
+    fi
 endef
 
 .PHONY: selftest
