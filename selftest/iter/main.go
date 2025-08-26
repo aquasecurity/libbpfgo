@@ -5,6 +5,7 @@ import "C"
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"strconv"
@@ -38,11 +39,16 @@ func main() {
 		common.Error(err)
 	}
 
+	// Give the iterator a moment to be fully set up before starting processes
+	log.Printf("Sleeping 1 second to ensure iterator is ready...")
+	time.Sleep(1 * time.Second)
+
 	totalExecs := 10
 	thisPid := syscall.Getpid()
 	pids := make(map[int]*os.Process, 0)
 
 	// Start processes with predictable running time to ensure they're captured
+	log.Printf("Starting %d sleep processes...", totalExecs)
 	for i := 0; i < totalExecs; i++ {
 		cmd := exec.Command("sleep", "10")
 		err := cmd.Start()
@@ -50,6 +56,7 @@ func main() {
 			common.Error(err)
 		}
 		pids[cmd.Process.Pid] = cmd.Process
+		log.Printf("Started sleep process with PID %d, parent PID %d", cmd.Process.Pid, thisPid)
 	}
 	defer func() {
 		// Clean up any remaining processes
@@ -59,7 +66,8 @@ func main() {
 	}()
 
 	// Give processes time to start and be registered
-	time.Sleep(2 * time.Second)
+	log.Printf("Sleeping for 5 seconds to allow processes to register...")
+	time.Sleep(5 * time.Second)
 
 	reader, err := link.Reader()
 	if err != nil {
@@ -69,11 +77,15 @@ func main() {
 
 	numberOfMatches := 0
 	scanner := bufio.NewScanner(reader)
+	log.Println("Reading iterator output:")
 	for scanner.Scan() {
-		fields := strings.Split(scanner.Text(), "\t")
+		line := scanner.Text()
+		fields := strings.Split(line, "\t")
 		if len(fields) != 3 {
-			common.Error(fmt.Errorf("invalid data retrieved: %s", scanner.Text()))
+			common.Error(fmt.Errorf("invalid data retrieved: %s", line))
 		}
+
+		log.Printf("[iter] %s", line)
 		if fields[2] == "sleep" {
 			ppid, err := strconv.Atoi(fields[0])
 			if err != nil {
@@ -86,6 +98,7 @@ func main() {
 			if proc, found := pids[pid]; found {
 				if ppid == thisPid {
 					numberOfMatches++
+					log.Printf("Matched sleep process: pid=%d, ppid=%d", pid, ppid)
 					_ = proc.Kill() // Kill the sleep process
 				}
 			}
@@ -98,5 +111,7 @@ func main() {
 	if numberOfMatches != totalExecs {
 		err := fmt.Errorf("expect numberOfMatches == %d but got %d", totalExecs, numberOfMatches)
 		common.Error(err)
+	} else {
+		log.Printf("All %d sleep processes matched successfully", totalExecs)
 	}
 }
