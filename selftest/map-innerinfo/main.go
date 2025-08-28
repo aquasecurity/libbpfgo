@@ -53,6 +53,22 @@ func main() {
 		common.Error(fmt.Errorf("inner prototype map extra should be 0: %d", innerInfo.MapExtra))
 	}
 
+	// Test that calling InnerMapInfo() on a regular map (not map-of-maps) returns ErrNoInnerMap
+	protoMap1, err := bpfModule.GetMap("proto_map1")
+	if err != nil {
+		common.Error(err)
+	}
+	_, err = protoMap1.InnerMapInfo()
+	if !errors.Is(err, bpf.ErrNoInnerMap) {
+		common.Error(fmt.Errorf("expected ErrNoInnerMap for regular map, got: %v", err))
+	}
+
+	// Test calling InnerMapInfo() from a map-of-maps
+	_, err = outerHash.InnerMapInfo()
+	if err != nil {
+		common.Error(fmt.Errorf("expected no error for map-of-maps, got: %v", err))
+	}
+
 	err = bpfModule.BPFLoadObject()
 	if err != nil {
 		common.Error(err)
