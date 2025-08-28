@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	bpf "github.com/aquasecurity/libbpfgo"
@@ -44,7 +43,6 @@ func main() {
 	time.Sleep(1 * time.Second)
 
 	totalExecs := 10
-	thisPid := syscall.Getpid()
 	pids := make(map[int]*os.Process, 0)
 
 	// Start processes with predictable running time to ensure they're captured
@@ -56,7 +54,7 @@ func main() {
 			common.Error(err)
 		}
 		pids[cmd.Process.Pid] = cmd.Process
-		log.Printf("Started sleep process with PID %d, parent PID %d", cmd.Process.Pid, thisPid)
+		log.Printf("Started sleep process with PID %d", cmd.Process.Pid)
 	}
 	defer func() {
 		// Clean up any remaining processes
@@ -81,26 +79,20 @@ func main() {
 	for scanner.Scan() {
 		line := scanner.Text()
 		fields := strings.Split(line, "\t")
-		if len(fields) != 3 {
+		if len(fields) != 2 {
 			common.Error(fmt.Errorf("invalid data retrieved: %s", line))
 		}
 
 		log.Printf("[iter] %s", line)
-		if fields[2] == "sleep" {
-			ppid, err := strconv.Atoi(fields[0])
-			if err != nil {
-				common.Error(err)
-			}
-			pid, err := strconv.Atoi(fields[1])
+		if fields[1] == "sleep" {
+			pid, err := strconv.Atoi(fields[0])
 			if err != nil {
 				common.Error(err)
 			}
 			if proc, found := pids[pid]; found {
-				if ppid == thisPid {
-					numberOfMatches++
-					log.Printf("Matched sleep process: pid=%d, ppid=%d", pid, ppid)
-					_ = proc.Kill() // Kill the sleep process
-				}
+				numberOfMatches++
+				log.Printf("Matched sleep process: pid=%d", pid)
+				_ = proc.Kill() // Kill the sleep process
 			}
 		}
 		if numberOfMatches == totalExecs {

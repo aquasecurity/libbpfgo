@@ -21,7 +21,7 @@ int iter__task(struct bpf_iter__task *ctx)
             return 0;
     }
 
-    BPF_SEQ_PRINTF(seq, "%d\t%d\t%s\n", task->parent->pid, task->pid, task->comm);
+    BPF_SEQ_PRINTF(seq, "%d\t%s\n", task->pid, task->comm);
     return 0;
 }
 
