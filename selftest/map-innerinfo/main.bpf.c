@@ -11,7 +11,7 @@ struct inner_map {
     __uint(max_entries, 1);
     __type(key, __u32);
     __type(value, __u32);
-} inner_map1 SEC(".maps"), inner_map2 SEC(".maps");
+} proto_map1 SEC(".maps"), proto_map2 SEC(".maps");
 
 struct outer_hash {
     __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
@@ -21,8 +21,8 @@ struct outer_hash {
 } outer_hash SEC(".maps") = {
     .values =
         {
-            [0] = &inner_map2,
-            [4] = &inner_map1,
+            [0] = &proto_map2,
+            [4] = &proto_map1,
         },
 };
 
