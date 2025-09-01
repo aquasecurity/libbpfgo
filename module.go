@@ -211,7 +211,7 @@ func (m *Module) BPFLoadObject() error {
 	return nil
 }
 
-func (m *Module) BPFReplaceExistedObject(obj unsafe.Pointer) error {
+func (m *Module) BPFReplaceExistingObject(obj unsafe.Pointer) error {
 	m.obj = (*C.struct_bpf_object)(obj)
 	return nil
 }
