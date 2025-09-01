@@ -211,6 +211,11 @@ func (m *Module) BPFLoadObject() error {
 	return nil
 }
 
+func (m *Module) BPFReplaceExistedObject(obj unsafe.Pointer) error {
+	m.obj = (*C.struct_bpf_object)(obj)
+	return nil
+}
+
 // InitGlobalVariable sets global variables (defined in .data or .rodata)
 // in bpf code. It must be called before the BPF object is loaded.
 func (m *Module) InitGlobalVariable(name string, value interface{}) error {
