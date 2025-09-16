@@ -11,4 +11,5 @@ check_build
 test_exec
 test_finish
 
-exit 0
+# Don't override the exit code from test_finish
+exit $?
