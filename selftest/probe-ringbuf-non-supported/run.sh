@@ -7,7 +7,7 @@ KERNEL_VERSION=v5.7    # kernel version
 # SETTINGS
 COMMON="$(dirname $0)/../common/common.sh"
 
-vng -v -r $KERNEL_VERSION --rodir="$(realpath ..)" --  "export TEST=$TEST COMMON=$COMMON TIMEOUT=$TIMEOUT; ./run-vm.sh"
+vng -v -r $KERNEL_VERSION --rodir="$(realpath ..)" --append "psi=0" --  "export TEST=$TEST COMMON=$COMMON TIMEOUT=$TIMEOUT; ./run-vm.sh"
 
 # Don't override the exit code from the VM
 exit $?
