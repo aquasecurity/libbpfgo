@@ -9,4 +9,5 @@ COMMON="$(dirname $0)/../common/common.sh"
 
 vng -v -r $KERNEL_VERSION --rodir="$(realpath ..)" --  "export TEST=$TEST COMMON=$COMMON TIMEOUT=$TIMEOUT; ./run-vm.sh"
 
-exit 0
+# Don't override the exit code from the VM
+exit $?
