@@ -4,12 +4,18 @@ import "C"
 
 import (
 	"errors"
+	"log"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/selftest/common"
 )
 
 func main() {
+	kernelVersion := common.GetKernelVersion()
+	kernelRelease := common.GetKernelRelease()
+	log.Printf("Running on kernel: %s", kernelVersion)
+	log.Printf("Kernel release: %s", kernelRelease)
+
 	bpfModule, err := bpf.NewModuleFromFile("main.bpf.o")
 	if err != nil {
 		common.Error(err)
@@ -27,6 +33,7 @@ func main() {
 	}
 
 	isSupported, err := bpf.BPFProgramTypeIsSupported(bpf.BPFProgTypeKprobe)
+	log.Printf("BPFProgramTypeIsSupported(BPFProgTypeKprobe) returned: isSupported=%v, err=%v", isSupported, err)
 	if err != nil {
 		common.Error(err)
 	}
@@ -52,6 +59,7 @@ func main() {
 	}
 
 	isSupported, err = bpf.BPFMapTypeIsSupported(bpf.MapTypeHash)
+	log.Printf("BPFMapTypeIsSupported(MapTypeHash) returned: isSupported=%v, err=%v", isSupported, err)
 	if err != nil {
 		common.Error(err)
 	}

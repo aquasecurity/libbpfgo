@@ -60,6 +60,35 @@ func ByteOrder() binary.ByteOrder {
 	return binary.BigEndian
 }
 
+// GetKernelVersion returns the kernel version string from /proc/version.
+// It returns the full version string or "unknown" if it cannot be read.
+func GetKernelVersion() string {
+	data, err := os.ReadFile("/proc/version")
+	if err != nil {
+		return "unknown"
+	}
+
+	return strings.TrimSpace(string(data))
+}
+
+// GetKernelRelease returns the kernel release string from /proc/version.
+// It extracts just the version number (e.g., "5.7.0-050700-generic") from the full version string.
+// Returns "unknown" if the version cannot be parsed.
+func GetKernelRelease() string {
+	version := GetKernelVersion()
+	if version == "unknown" {
+		return "unknown"
+	}
+
+	// Parse "Linux version X.Y.Z-..." from the version string
+	parts := strings.Fields(version)
+	if len(parts) >= 3 && parts[0] == "Linux" && parts[1] == "version" {
+		return parts[2]
+	}
+
+	return "unknown"
+}
+
 var reCgroup2Mount = regexp.MustCompile(`(?m)^cgroup2\s(/\S+)\scgroup2\s`)
 
 // GetCgroupV2RootDir returns the root directory of the cgroupv2 filesystem.
