@@ -214,6 +214,16 @@ func (m *Module) BPFLoadObject() error {
 	return nil
 }
 
+// Replace existing BPF object
+// It helps to inject the eBPF skeleton file for replacing the loaded obj
+func (m *Module) BPFReplaceExistingObject(obj unsafe.Pointer) error {
+	m.obj = (*C.struct_bpf_object)(obj)
+	if m.obj == nil {
+		return fmt.Errorf("BPFReplaceExistingObject failed")
+	}
+	return nil
+}
+
 // InitGlobalVariable sets global variables (defined in .data or .rodata)
 // in bpf code. It must be called before the BPF object is loaded.
 func (m *Module) InitGlobalVariable(name string, value interface{}) error {
