@@ -4,63 +4,94 @@ on:
   pull_request:
     branches:
       - main
+
   workflow_call:
+
+permissions: {}
+
 jobs:
   analyze-code:
     name: Analyze Code
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-2404-2core
+    permissions:
+      contents: read
     steps:
       - name: Checkout Code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          submodules: true
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
       - name: Lint
         run: |
           if test -z "$(gofmt -l .)"; then
-            echo "Congrats! There is nothing to fix."
+              echo "Congrats! There is nothing to fix."
           else
-            echo "The following lines should be fixed."
-            gofmt -s -d .
-            exit 1
+              echo "The following lines should be fixed."
+              gofmt -s -d .
+              exit 1
           fi
         shell: bash
-      # - name: Install staticchecker
-      #   run: |
-      #     go install honnef.co/go/tools/cmd/staticcheck@latest
-      #     cp $HOME/go/bin/staticcheck /usr/bin/
-      #   shell: bash
+
+      - name: Install staticcheck
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@ff63afafc529279f454e02f1d060210bd4263951 # 2026.1 (v0.7.0)
+          sudo cp ${HOME}/go/bin/staticcheck /usr/bin/
+        shell: bash
+
       - name: Install revive
         run: |
-          go install github.com/mgechev/revive@e33fb87
-          sudo cp $HOME/go/bin/revive /usr/bin/
+          go install github.com/mgechev/revive@815ffde4de8dcb31a2de91efd6c6795d75e24380 # v1.15.0
+          sudo cp ${HOME}/go/bin/revive /usr/bin/
         shell: bash
-      # - name: Install goimports-reviser
-      #   run: |
-      #     go go install github.com/incu6us/goimports-reviser/v3@latest
-      #     sudo cp $HOME/go/bin/goimports-reviser /usr/bin/
-      #   shell: bash
-      # - name: Install errcheck
-      #   run: |
-      #     go install github.com/kisielk/errcheck@latest
-      #     sudo cp $HOME/go/bin/errcheck /usr/bin/
-      #   shell: bash
+
+      - name: Install goimports-reviser
+        run: |
+          go install github.com/incu6us/goimports-reviser/v3@fa5587e51ba33c58734984cb41370a5b2582d5b7 # v3.12.6
+          sudo cp ${HOME}/go/bin/goimports-reviser /usr/bin/
+        shell: bash
+
+      - name: Install errcheck
+        run: |
+          go install github.com/kisielk/errcheck@4d54a96416c48063572cc1c24ae072fff58a63b4 # v1.20.0
+          sudo cp ${HOME}/go/bin/errcheck /usr/bin/
+        shell: bash
+
       - name: Check Code Style
         run: |
           make fmt-check
         shell: bash
+
       - name: Lint (Revive)
         run: |
           make lint-check
         shell: bash
+
   libbpfgo-unit-tests:
     name: libbpfgo Unit Tests
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-2404-2core
+    permissions:
+      contents: read
     strategy:
+      fail-fast: false
       matrix:
-        go-version: [ '1.18', '1.19', '1.20', '1.21', '1.22', '1.23', '1.24', 'stable' ]
+        go-version:
+          [
+            "1.18",
+            "1.19",
+            "1.20",
+            "1.21",
+            "1.22",
+            "1.23",
+            "1.24",
+            "1.25",
+            "stable",
+          ]
     steps:
       - name: Checkout Code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          submodules: true
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
         with:
@@ -68,15 +99,32 @@ jobs:
       - name: Test libbpfgo
         run: |
           make libbpfgo-static-test
+
   self-tests:
     name: Selftests
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-2404-4core
+    permissions:
+      contents: read
     strategy:
+      fail-fast: false
       matrix:
-        go-version: [ '1.18', '1.19', '1.20', '1.21', '1.22', '1.23', '1.24', 'stable' ]
+        go-version:
+          [
+            "1.18",
+            "1.19",
+            "1.20",
+            "1.21",
+            "1.22",
+            "1.23",
+            "1.24",
+            "1.25",
+            "stable",
+          ]
     steps:
       - name: Checkout Code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          submodules: true
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
         with:

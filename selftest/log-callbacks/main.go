@@ -3,9 +3,8 @@ package main
 import "C"
 
 import (
-	"strings"
-
 	"fmt"
+	"strings"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/selftest/common"

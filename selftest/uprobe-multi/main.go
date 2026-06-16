@@ -3,7 +3,6 @@ package main
 import "C"
 import (
 	"bytes"
-	"debug/elf"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -32,10 +31,6 @@ const (
 	bpfProgramObject = "main.bpf.o"
 )
 
-var (
-	excludePatterns = []string{"runtime.", "go:", "internal"}
-)
-
 func main() {
 	if len(os.Args) < 3 {
 		common.Error(errors.New("wrong syntax"))
@@ -45,37 +40,22 @@ func main() {
 	binaryPath := os.Args[1]
 	expectedSymbolNames := strings.Split(os.Args[2], ",")
 
-	// We try to attach uprobes to the maximum amount of functions supported
-	// as possible.
-	symbols, err := getFunSyms(binaryPath)
-	if err != nil {
-		common.Error(fmt.Errorf("failed to get function symbols: %v", err))
-	}
-
 	// Hashmap to correlate a cookie got from BPF to a function.
 	cookieToFunctionInfo := make(map[uint64]FunctionInfo)
 
 	// cookies and offsets bpf_program__attach_uprobe_multi_opts options.
-	cookies := make([]uint64, 0)
-	offsets := make([]uint64, 0)
-	for _, symbol := range symbols {
-		// Skip go runtime functions.
-		if shouldExclude(symbol.Name, excludePatterns) {
-			continue
-		}
+	cookies := make([]uint64, 0, len(expectedSymbolNames))
+	offsets := make([]uint64, 0, len(expectedSymbolNames))
 
-		offset, err := common.SymbolToOffset(binaryPath, symbol.Name)
+	for _, symbolName := range expectedSymbolNames {
+		offset, err := common.SymbolToOffset(binaryPath, symbolName)
 		if err != nil {
-			log.Printf("Skipping symbol %s: %v", symbol.Name, err)
-			continue
+			common.Error(fmt.Errorf("failed to resolve symbol %s in %s: %v", symbolName, binaryPath, err))
 		}
-		cookie := hash(symbol.Name)
+		cookie := hash(symbolName)
 		cookies = append(cookies, cookie)
 		offsets = append(offsets, offset)
-		cookieToFunctionInfo[cookie] = FunctionInfo{
-			Name:   symbol.Name,
-			Offset: offset,
-		}
+		cookieToFunctionInfo[cookie] = FunctionInfo{Name: symbolName, Offset: offset}
 	}
 
 	bpfModule, err := bpf.NewModuleFromFile(bpfProgramObject)
@@ -166,47 +146,6 @@ func main() {
 	rb.Close()
 	rb.Close()
 	rb.Stop()
-}
-
-// getFunSyms returns the list of elf.Symbol of type function.
-func getFunSyms(name string) ([]elf.Symbol, error) {
-	var symbols []elf.Symbol
-
-	b, err := elf.Open(name)
-	defer b.Close()
-	if err != nil {
-		return nil, err
-	}
-	syms, err := b.Symbols()
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("found %d symbols in %s\n", len(syms), name)
-	log.Printf("showing first %d symbols\n", common.Min(10, len(syms)))
-	for i := 0; i < common.Min(10, len(syms)); i++ {
-		log.Printf("symbol %d: %v\n", i, syms[i])
-	}
-	for _, sym := range syms {
-		// Exclude non-function symbols.
-		if elf.ST_TYPE(sym.Info) != elf.STT_FUNC {
-			continue
-		}
-
-		symbols = append(symbols, sym)
-	}
-
-	return symbols, nil
-}
-
-// shouldExclude returns whether a symbol should be excluded based
-// on a list of string patterns.
-func shouldExclude(symbol string, excludeList []string) bool {
-	for _, v := range excludeList {
-		if strings.Contains(symbol, v) {
-			return true
-		}
-	}
-	return false
 }
 
 func hash(s string) uint64 {

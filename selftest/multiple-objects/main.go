@@ -5,7 +5,6 @@ import "C"
 import (
 	"encoding/binary"
 	"errors"
-
 	"fmt"
 
 	bpf "github.com/aquasecurity/libbpfgo"

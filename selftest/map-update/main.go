@@ -3,13 +3,12 @@ package main
 import "C"
 
 import (
-	"errors"
-	"time"
-	"unsafe"
-
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"syscall"
+	"time"
+	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/selftest/common"

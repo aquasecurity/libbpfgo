@@ -27,8 +27,8 @@ func main() {
 
 	// We expect isSupported = false with no error
 	if isSupported {
-		log.Printf("WARNING: ringbuf is unexpectedly supported on this kernel")
-		log.Printf("This may indicate a libbpf probing issue or kernel backport")
+		log.Print("WARNING: ringbuf is unexpectedly supported on this kernel")
+		log.Print("This may indicate a libbpf probing issue or kernel backport")
 		common.Error(errors.New("ringbuf is unexpectedly supported on this kernel (expected not supported before 5.8)"))
 	}
 

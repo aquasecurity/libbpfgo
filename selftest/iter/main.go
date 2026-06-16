@@ -39,7 +39,7 @@ func main() {
 	}
 
 	// Give the iterator a moment to be fully set up before starting processes
-	log.Printf("Sleeping 1 second to ensure iterator is ready...")
+	log.Print("Sleeping 1 second to ensure iterator is ready...")
 	time.Sleep(1 * time.Second)
 
 	totalExecs := 10
@@ -64,7 +64,7 @@ func main() {
 	}()
 
 	// Give processes time to start and be registered
-	log.Printf("Sleeping for 5 seconds to allow processes to register...")
+	log.Print("Sleeping for 5 seconds to allow processes to register...")
 	time.Sleep(5 * time.Second)
 
 	reader, err := link.Reader()

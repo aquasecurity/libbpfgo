@@ -1,3 +1,4 @@
+//revive:disable-next-line:package-naming // Keep package name `common` for stable selftest imports.
 package common
 
 import (

@@ -31,10 +31,10 @@ func main() {
 	// UpdateBatch
 	//
 
-	log.Printf("[TEST] Starting UpdateBatch tests")
+	log.Print("[TEST] Starting UpdateBatch tests")
 
 	// Test batch update.
-	log.Printf("[TEST] UpdateBatch: Testing basic batch update")
+	log.Print("[TEST] UpdateBatch: Testing basic batch update")
 	keys := []uint32{1, 2, 3, 4}
 	values := []uint32{2, 3, 4, 5}
 
@@ -60,7 +60,7 @@ func main() {
 
 	// Test batch update.
 	// Trying to update more entries than max_entries.
-	log.Printf("[TEST] UpdateBatch: Testing overflow (more entries than max_entries)")
+	log.Print("[TEST] UpdateBatch: Testing overflow (more entries than max_entries)")
 	keysGreater := []uint32{1, 2, 3, 4, 100} // 100 won't be added, since max_entries is 4.
 	valuesGreater := []uint32{2, 3, 4, 5, 100}
 
@@ -80,10 +80,10 @@ func main() {
 	// GetValueBatch
 	//
 
-	log.Printf("[TEST] Starting GetValueBatch tests")
+	log.Print("[TEST] Starting GetValueBatch tests")
 
 	// Test batch lookup in steps.
-	log.Printf("[TEST] GetValueBatch: Testing iterative batch lookup")
+	log.Print("[TEST] GetValueBatch: Testing iterative batch lookup")
 	batchKeys := make([]uint32, 3)
 	startKeyPtr := unsafe.Pointer(nil)
 	nextKey := uint64(0)
@@ -117,7 +117,7 @@ func main() {
 
 	// Test batch lookup with larger batch size than map content
 	// This should return all elements in the map
-	log.Printf("[TEST] GetValueBatch: Testing with large batch size")
+	log.Print("[TEST] GetValueBatch: Testing with large batch size")
 	largeBatchKeys := make([]uint32, 10) // Larger than map size (4)
 	startKeyPtr = unsafe.Pointer(nil)
 	nextKey = uint64(0)
@@ -140,7 +140,7 @@ func main() {
 
 	// Test batch lookup starting from a non-existent key
 	// This tests iteration behavior when startKey doesn't exist in the map
-	log.Printf("[TEST] GetValueBatch: Testing iteration starting from non-existent key")
+	log.Print("[TEST] GetValueBatch: Testing iteration starting from non-existent key")
 	nonExistentKey := uint32(100) // This key is not in the map
 	iterationKeys := make([]uint32, 4)
 	startKeyPtr = unsafe.Pointer(&nonExistentKey)
@@ -161,7 +161,7 @@ func main() {
 	log.Printf("[TEST] GetValueBatch: Non-existent key iteration returned %d elements", iterationCount)
 
 	// Test batch lookup with count greater than available elements.
-	log.Printf("[TEST] GetValueBatch: Testing with count greater than available elements")
+	log.Print("[TEST] GetValueBatch: Testing with count greater than available elements")
 	greaterCount := len(batchKeys) + 10
 	startKeyPtr = unsafe.Pointer(nil)
 	nextKey = uint64(0)
@@ -184,7 +184,7 @@ func main() {
 	// GetValueAndDeleteBatch
 	//
 
-	log.Printf("[TEST] Starting GetValueAndDeleteBatch tests")
+	log.Print("[TEST] Starting GetValueAndDeleteBatch tests")
 
 	// Test batch lookup and delete in steps.
 	// We should have 4 keys in the map at this point: [1, 2, 3, 4]
@@ -242,10 +242,10 @@ func main() {
 	// DeleteKeyBatch
 	//
 
-	log.Printf("[TEST] Starting DeleteKeyBatch tests")
+	log.Print("[TEST] Starting DeleteKeyBatch tests")
 
 	// Re-add deleted entries.
-	log.Printf("[TEST] DeleteKeyBatch: Re-adding entries for testing")
+	log.Print("[TEST] DeleteKeyBatch: Re-adding entries for testing")
 	_, err = testerMap.UpdateBatch(
 		unsafe.Pointer(&keys[0]),
 		unsafe.Pointer(&values[0]),
@@ -259,7 +259,7 @@ func main() {
 
 	// Test batch delete.
 	// Trying to delete more keys than we have.
-	log.Printf("[TEST] DeleteKeyBatch: Testing delete more keys than available")
+	log.Print("[TEST] DeleteKeyBatch: Testing delete more keys than available")
 	count, err = testerMap.DeleteKeyBatch(
 		unsafe.Pointer(&keys[0]),
 		uint32(len(keys)+10),
@@ -291,7 +291,7 @@ func main() {
 
 	// Test batch delete.
 	// Trying to delete fewer or equal keys than we have.
-	log.Printf("[TEST] DeleteKeyBatch: Testing delete fewer keys than available")
+	log.Print("[TEST] DeleteKeyBatch: Testing delete fewer keys than available")
 	fewer := 3
 	count, err = testerMap.DeleteKeyBatch(
 		unsafe.Pointer(&keys[0]),
@@ -307,7 +307,7 @@ func main() {
 	// map contains only 1 key-value pair.
 
 	// Re-add deleted entries.
-	log.Printf("[TEST] DeleteKeyBatch: Re-adding entries for GetNextKey test")
+	log.Print("[TEST] DeleteKeyBatch: Re-adding entries for GetNextKey test")
 	_, err = testerMap.UpdateBatch(
 		unsafe.Pointer(&keys[0]),
 		unsafe.Pointer(&values[0]),
@@ -321,10 +321,10 @@ func main() {
 	// GetNextKey
 	//
 
-	log.Printf("[TEST] Starting GetNextKey tests")
+	log.Print("[TEST] Starting GetNextKey tests")
 
 	// Populate the map again.
-	log.Printf("[TEST] GetNextKey: Populating map for iteration test")
+	log.Print("[TEST] GetNextKey: Populating map for iteration test")
 	_, err = testerMap.UpdateBatch(
 		unsafe.Pointer(&keys[0]),
 		unsafe.Pointer(&values[0]),
@@ -335,7 +335,7 @@ func main() {
 	}
 
 	// Test GetNextKey.
-	log.Printf("[TEST] GetNextKey: Testing key iteration")
+	log.Print("[TEST] GetNextKey: Testing key iteration")
 	key := uint32(0)
 	keyPtr := unsafe.Pointer(&key)
 	keyCnt := 0
@@ -357,10 +357,10 @@ func main() {
 	// GetValueAndDeleteKey
 	//
 
-	log.Printf("[TEST] Starting GetValueAndDeleteKey tests")
+	log.Print("[TEST] Starting GetValueAndDeleteKey tests")
 
 	// Test GetValueAndDeleteKey.
-	log.Printf("[TEST] GetValueAndDeleteKey: Testing individual key deletion")
+	log.Print("[TEST] GetValueAndDeleteKey: Testing individual key deletion")
 	for i, key := range keys {
 		val, err := testerMap.GetValueAndDeleteKey(unsafe.Pointer(&key))
 		if err != nil {
@@ -373,12 +373,12 @@ func main() {
 	}
 
 	// Check if all keys are deleted.
-	log.Printf("[TEST] GetValueAndDeleteKey: Verifying all keys are deleted")
+	log.Print("[TEST] GetValueAndDeleteKey: Verifying all keys are deleted")
 	key = 0
 	err = testerMap.GetNextKey(keyPtr, keyPtr)
 	if !errors.Is(err, syscall.ENOENT) {
 		common.Error(fmt.Errorf("testerMap.GetValueAndDeleteKey failed: err=%v", err))
 	}
 
-	log.Printf("[TEST] All map-batch tests completed successfully!")
+	log.Print("[TEST] All map-batch tests completed successfully!")
 }

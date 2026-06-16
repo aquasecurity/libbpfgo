@@ -13,7 +13,7 @@ func TestRWArrayWrite(t *testing.T) {
 	for i := 0; i < 1000; i++ {
 		slot1 := a.put(&i)
 		if slot1 < 0 {
-			t.Errorf("failed to put")
+			t.Error("failed to put")
 		}
 
 		if last != slot1 {
@@ -22,7 +22,7 @@ func TestRWArrayWrite(t *testing.T) {
 
 		slot2 := a.put(&i)
 		if slot2 < 0 {
-			t.Fatalf("failed to put")
+			t.Fatal("failed to put")
 		}
 
 		if slot1 >= slot2 {

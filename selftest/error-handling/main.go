@@ -4,9 +4,8 @@ import "C"
 
 import (
 	"errors"
-	"syscall"
-
 	"fmt"
+	"syscall"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/selftest/common"

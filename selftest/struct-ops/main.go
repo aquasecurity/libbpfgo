@@ -8,7 +8,6 @@ import (
 	"sync"
 	"syscall"
 	"time"
-
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
@@ -16,6 +15,15 @@ import (
 )
 
 func main() {
+	supported, err := bpf.BPFMapTypeIsSupported(bpf.MapTypeStructOps)
+	if err != nil {
+		common.Error(err)
+	}
+	if !supported {
+		log.Println("BPF_MAP_TYPE_STRUCT_OPS not supported, skipping test")
+		return
+	}
+
 	bpfModule, err := bpf.NewModuleFromFileArgs(bpf.NewModuleArgs{
 		BPFObjPath:     "main.bpf.o",
 		KernelLogLevel: 0,

@@ -5,9 +5,8 @@ import "C"
 import (
 	"bytes"
 	"encoding/binary"
-	"time"
-
 	"fmt"
+	"time"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/selftest/common"

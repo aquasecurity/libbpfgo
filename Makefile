@@ -14,6 +14,13 @@ VAGRANT := vagrant
 CLANG_FMT := clang-format-14
 GIT := $(shell which git || /bin/false)
 REVIVE := revive
+STATICCHECK := staticcheck
+GOIMPORTS_REVISER := goimports-reviser
+ERRCHECK := errcheck
+GOIMPORTS_COMPANY_PREFIXES := "github.com/aquasecurity"
+GOIMPORTS_PROJECT := "github.com/aquasecurity/libbpfgo"
+GOIMPORTS_EXCLUDES := ".git/,libbpf/,output/"
+REVIVE_EXCLUDES := "libbpf/...,output/..."
 PKGCONFIG := pkg-config
 
 HOSTOS = $(shell uname)
@@ -36,6 +43,7 @@ LDFLAGS =
 CGO_CFLAGS_STATIC = "-I$(abspath $(OUTPUT)) -I$(LIBBPF_INCLUDE_UAPI)"
 CGO_LDFLAGS_STATIC = "$(shell PKG_CONFIG_PATH=$(LIBBPF_OBJDIR) $(PKGCONFIG) --static --libs libbpf)"
 CGO_EXTLDFLAGS_STATIC = '-w -extldflags "-static"'
+GO_LINT_ENV = CC=$(CLANG) CGO_CFLAGS=$(CGO_CFLAGS_STATIC) CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC)
 
 CGO_CFLAGS_DYN = "-I. -I/usr/include/"
 CGO_LDFLAGS_DYN = "$(shell $(PKGCONFIG) --shared --libs libbpf)"
@@ -134,21 +142,23 @@ GO_VERSION := $(shell $(GO) version | sed -n 's/.*go\([0-9]*\.[0-9]*\).*/\1/p')
 SELFTESTS = $(shell find $(SELFTEST) -mindepth 1 -maxdepth 1 -type d ! -name 'common' ! -name 'build')
 
 define FOREACH
-    SELFTESTERR=0; \
-    for DIR in $(SELFTESTS); do \
-        echo "INFO: entering $$DIR..."; \
-        if [ -f "$$DIR/.go-version" ]; then \
-            REQUIRED_VERSION=$$(cat "$$DIR/.go-version"); \
-            if ! printf '%s\n%s\n' "$$REQUIRED_VERSION" "$(GO_VERSION)" | sort -V -C; then \
-                echo "INFO: skipping $$DIR (requires Go $$REQUIRED_VERSION, current: $(GO_VERSION))"; \
-                continue; \
-            fi; \
-        fi; \
-        $(MAKE) -j1 -C $$DIR $(1) || SELFTESTERR=1; \
-    done; \
-    if [ $$SELFTESTERR -eq 1 ]; then \
-        exit 1; \
-    fi
+	SELFTESTERR=0; \
+	FAILED_TESTS=""; \
+	for DIR in $(SELFTESTS); do \
+		echo "INFO: entering $$DIR..."; \
+		if [ -f "$$DIR/.go-version" ]; then \
+			REQUIRED_VERSION=$$(cat "$$DIR/.go-version"); \
+			if ! printf '%s\n%s\n' "$$REQUIRED_VERSION" "$(GO_VERSION)" | sort -V -C; then \
+				echo "INFO: skipping $$DIR (requires Go $$REQUIRED_VERSION, current: $(GO_VERSION))"; \
+				continue; \
+			fi; \
+		fi; \
+		$(MAKE) -j1 -C $$DIR $(1) || { SELFTESTERR=1; FAILED_TESTS="$$FAILED_TESTS $$DIR"; }; \
+	done; \
+	if [ $$SELFTESTERR -eq 1 ]; then \
+		echo "ERROR: The following selftests failed:$$FAILED_TESTS"; \
+		exit 1; \
+	fi
 endef
 
 .PHONY: selftest
@@ -232,11 +242,42 @@ fmt-fix:
 # lint-check
 
 .PHONY: lint-check
-lint-check:
+lint-check: libbpf-static
 #
 	@errors=0
 	echo "Linting golang code..."
-	$(REVIVE) -config .revive.toml ./...
+	echo "Running revive..."
+	if ! $(GO_LINT_ENV) $(REVIVE) -config .revive.toml -exclude $(REVIVE_EXCLUDES) ./...; then
+		echo "FAIL: revive"
+		errors=1
+	fi
+	echo "Running staticcheck..."
+	if ! $(GO_LINT_ENV) $(STATICCHECK) ./...; then
+		echo "FAIL: staticcheck"
+		errors=1
+	fi
+	echo "Running goimports-reviser..."
+	if ! $(GO_LINT_ENV) $(GOIMPORTS_REVISER) \
+		-output stdout \
+		-list-diff \
+		-set-exit-status \
+		-company-prefixes $(GOIMPORTS_COMPANY_PREFIXES) \
+		-project-name $(GOIMPORTS_PROJECT) \
+		-excludes $(GOIMPORTS_EXCLUDES) \
+		./...; then
+		echo "FAIL: goimports-reviser"
+		errors=1
+	fi
+	echo "Running errcheck..."
+	if ! $(GO_LINT_ENV) $(ERRCHECK) ./...; then
+		echo "FAIL: errcheck"
+		errors=1
+	fi
+	if [[ $$errors -ne 0 ]]; then
+		echo
+		echo "Please fix lint errors above!"
+		exit 1
+	fi
 
 # output
 

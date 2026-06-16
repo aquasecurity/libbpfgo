@@ -206,7 +206,9 @@ func (p *BPFProg) AttachCgroup(cgroupV2DirPath string) (*BPFLink, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer syscall.Close(cgroupDirFD)
+	defer func() {
+		_ = syscall.Close(cgroupDirFD)
+	}()
 
 	linkC, errno := C.bpf_program__attach_cgroup(p.prog, C.int(cgroupDirFD))
 	if linkC == nil {
@@ -251,7 +253,9 @@ func (p *BPFProg) AttachCgroupLegacy(cgroupV2DirPath string, attachType BPFAttac
 	if err != nil {
 		return nil, err
 	}
-	defer syscall.Close(cgroupDirFD)
+	defer func() {
+		_ = syscall.Close(cgroupDirFD)
+	}()
 
 	retC, errno := C.cgo_bpf_prog_attach_cgroup_legacy(
 		C.int(p.FileDescriptor()),
@@ -291,7 +295,9 @@ func (p *BPFProg) DetachCgroupLegacy(cgroupV2DirPath string, attachType BPFAttac
 	if err != nil {
 		return err
 	}
-	defer syscall.Close(cgroupDirFD)
+	defer func() {
+		_ = syscall.Close(cgroupDirFD)
+	}()
 
 	retC, errno := C.cgo_bpf_prog_detach_cgroup_legacy(
 		C.int(p.FileDescriptor()),

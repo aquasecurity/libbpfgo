@@ -5,11 +5,10 @@ import "C"
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"log"
 	"syscall"
 	"time"
-
-	"fmt"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/selftest/common"

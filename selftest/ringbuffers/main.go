@@ -3,11 +3,10 @@ package main
 import "C"
 
 import (
-	"syscall"
-	"time"
-
 	"encoding/binary"
 	"fmt"
+	"syscall"
+	"time"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/selftest/common"

@@ -4,14 +4,16 @@ description: |
 inputs:
   go-version:
     description: go version
-    default: "1.21"
+    default: "1.26"
+
 runs:
   using: composite
   steps:
     - name: Setup Go
-      uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
+      uses: actions/setup-go@8f19afcc704763637be6b1718da0af52ca05785d # v6.4.0
       with:
         go-version: "${{ inputs.go-version }}"
+
     - name: Install Compilers & Formatters
       run: |
         sudo apt-get update
@@ -25,7 +27,7 @@ runs:
         sudo apt-get install --yes systemtap-sdt-dev
         for tool in "clang" "clang-format" "llc" "llvm-strip"
         do
-          sudo rm -f /usr/bin/$tool
-          sudo ln -s /usr/bin/$tool-14 /usr/bin/$tool
+            sudo rm -f /usr/bin/${tool}
+            sudo ln -s /usr/bin/${tool}-14 /usr/bin/${tool}
         done
       shell: bash
