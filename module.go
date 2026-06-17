@@ -216,6 +216,20 @@ func (m *Module) BPFLoadObject() error {
 	return nil
 }
 
+// BTFFD returns the BTF file descriptor associated with this loaded BPF object.
+func (m *Module) BTFFD() (int, error) {
+	if m == nil || m.obj == nil {
+		return -1, errors.New("module is not initialized")
+	}
+
+	fdC := C.bpf_object__btf_fd(m.obj)
+	if fdC < 0 {
+		return int(fdC), fmt.Errorf("failed to get BTF fd from BPF object: %w", syscall.Errno(-fdC))
+	}
+
+	return int(fdC), nil
+}
+
 // InitGlobalVariable sets global variables (defined in .data or .rodata)
 // in bpf code. It must be called before the BPF object is loaded.
 func (m *Module) InitGlobalVariable(name string, value interface{}) error {
