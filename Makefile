@@ -186,6 +186,49 @@ selftest-dynamic-run:
 selftest-clean:
 	$(call FOREACH, clean)
 
+# go module maintenance
+
+GO_MODULES = $(shell find . -name "go.mod" -type f -not -path "./go.mod" | sort)
+
+define FOREACH_MODULE
+	GOERR=0; FAILED=""; \
+	echo "Running in root module..."; \
+	$(1) || { GOERR=1; FAILED="$$FAILED ."; }; \
+	for MOD_FILE in $(GO_MODULES); do \
+		MOD_DIR=$$(dirname "$$MOD_FILE"); \
+		echo "Running in $$MOD_DIR..."; \
+		(cd "$$MOD_DIR" && $(1)) || { GOERR=1; FAILED="$$FAILED $$MOD_DIR"; }; \
+	done; \
+	if [ $$GOERR -eq 1 ]; then \
+		echo "ERROR: failed in:$$FAILED"; \
+		exit 1; \
+	fi
+endef
+
+.PHONY: go-tidy
+.PHONY: go-get
+
+go-tidy:
+	$(call FOREACH_MODULE, $(GO) mod tidy)
+
+# Usage: make go-get <package>[@version] ...
+# Prevent make from treating package arguments as targets.
+ifneq ($(filter go-get,$(MAKECMDGOALS)),)
+go-get-args := $(filter-out go-get,$(MAKECMDGOALS))
+ifneq ($(strip $(go-get-args)),)
+$(go-get-args):
+	@:
+endif
+endif
+
+go-get:
+	@args="$(filter-out go-get,$(MAKECMDGOALS))"; \
+	if [ -z "$$args" ]; then \
+		echo "Usage: make go-get <package>[@version]..."; \
+		exit 1; \
+	fi
+	$(call FOREACH_MODULE, $(GO) get $(filter-out go-get,$(MAKECMDGOALS)))
+
 # vagrant
 
 VAGRANT_DIR = $(abspath ./builder)
