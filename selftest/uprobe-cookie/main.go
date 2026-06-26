@@ -18,6 +18,7 @@ import (
 
 type Event struct {
 	Cookie uint64
+	IsRet  uint64
 }
 
 type FunctionInfo struct {
@@ -26,8 +27,9 @@ type FunctionInfo struct {
 }
 
 const (
-	bpfProgramName   = "uprobe__test_functions"
-	bpfProgramObject = "main.bpf.o"
+	bpfProgramName    = "uprobe__test_functions"
+	bpfRetProgramName = "uretprobe__test_functions"
+	bpfProgramObject  = "main.bpf.o"
 )
 
 func main() {
@@ -82,12 +84,26 @@ func main() {
 		common.Error(err)
 	}
 
+	retProg, err := bpfModule.GetProgram(bpfRetProgramName)
+	if err != nil {
+		common.Error(err)
+	}
+
 	// Attach individual uprobes with per-attachment cookies.
 	log.Println("attaching uprobes with cookies")
 	for _, t := range targets {
 		_, err = prog.AttachUprobeWithOpts(-1, binaryPath, t.offset, t.cookie)
 		if err != nil {
 			common.Error(fmt.Errorf("failed to attach uprobe at offset %d with cookie %d: %v", t.offset, t.cookie, err))
+		}
+	}
+
+	// Attach individual uretprobes with per-attachment cookies.
+	log.Println("attaching uretprobes with cookies")
+	for _, t := range targets {
+		_, err = retProg.AttachURetprobeWithOpts(-1, binaryPath, t.offset, t.cookie)
+		if err != nil {
+			common.Error(fmt.Errorf("failed to attach uretprobe at offset %d with cookie %d: %v", t.offset, t.cookie, err))
 		}
 	}
 
@@ -102,7 +118,8 @@ func main() {
 
 	// We get back from BPF and keep track of the function having traced via cookies.
 	log.Println("consuming events")
-	got := make(map[string]struct{})
+	gotEntry := make(map[string]struct{})
+	gotRet := make(map[string]struct{})
 	go func() {
 		for {
 			b := <-eventsChannel
@@ -116,7 +133,11 @@ func main() {
 			if !ok {
 				continue
 			}
-			got[info.Name] = struct{}{}
+			if event.IsRet == 0 {
+				gotEntry[info.Name] = struct{}{}
+			} else {
+				gotRet[info.Name] = struct{}{}
+			}
 		}
 	}()
 	// Just wait for a minimum amount of time for the tested tracee to call
@@ -125,11 +146,19 @@ func main() {
 
 	// Verify that all uprobes have been executed.
 	for _, symbolName := range expectedSymbolNames {
-		if _, ok := got[symbolName]; !ok {
+		if _, ok := gotEntry[symbolName]; !ok {
 			common.Error(fmt.Errorf("function %s has not been traced", symbolName))
 		}
 	}
 	log.Println("all functions have been traced with correct cookies")
+
+	// Verify that all uretprobes have been executed.
+	for _, symbolName := range expectedSymbolNames {
+		if _, ok := gotRet[symbolName]; !ok {
+			common.Error(fmt.Errorf("function %s has not been traced on return", symbolName))
+		}
+	}
+	log.Println("all functions have been traced on return with correct cookies")
 
 	// Test that it won't cause a panic or block if Stop or Close called multiple times
 	rb.Stop()

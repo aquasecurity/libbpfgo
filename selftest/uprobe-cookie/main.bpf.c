@@ -7,6 +7,7 @@
 
 struct event_t {
     __u64 cookie;
+    __u64 is_ret;
 };
 
 struct {
@@ -33,6 +34,29 @@ int uprobe__test_functions(struct pt_regs *ctx)
 
     // Send back to userspace the function name
     event->cookie = cookie;
+    event->is_ret = 0;
+    bpf_ringbuf_submit(event, ringbuffer_flags);
+    return 0;
+}
+
+SEC("uretprobe/test_functions")
+int uretprobe__test_functions(struct pt_regs *ctx)
+{
+    __u64 cookie = bpf_get_attach_cookie(ctx);
+
+    bpf_printk("handle user function return with cookie %llu\n", cookie);
+
+    // Reserve space on the ringbuffer for the sample
+    struct event_t *event = bpf_ringbuf_reserve(&events, sizeof(struct event_t), ringbuffer_flags);
+    if (!event) {
+        bpf_printk("error submitting event to ring buffer for user function return with cookie %llu\n",
+                   cookie);
+        return 0;
+    }
+
+    // Send back to userspace the function name
+    event->cookie = cookie;
+    event->is_ret = 1;
     bpf_ringbuf_submit(event, ringbuffer_flags);
     return 0;
 }
