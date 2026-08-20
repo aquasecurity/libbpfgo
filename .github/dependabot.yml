@@ -3,8 +3,17 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: daily
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
-      interval: daily
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    groups:
+      gomod:
+        patterns:
+          - "*"
