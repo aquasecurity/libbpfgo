@@ -36,6 +36,8 @@ const (
 	Iter
 	StructOps
 	USDT
+	// TCX (traffic control express) requires Linux 6.6 or newer.
+	TCX
 )
 
 //
