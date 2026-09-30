@@ -371,6 +371,38 @@ func (p *BPFProg) DetachXDPLegacy(deviceName string, flag XDPFlags) error {
 	return nil
 }
 
+// AttachTCX attaches the BPFProg to the network device given by deviceName
+// using the tcx (traffic control express) hook. The attachment direction is
+// taken from the program's expected attach type, so the program must have been
+// declared with a "tcx/ingress", "tcx/egress", "tc/ingress" or "tc/egress"
+// section. Unlike the legacy tc hook (Module.TcHookInit), no clsact qdisc
+// has to be created beforehand.
+//
+// Requires Linux 6.6 or newer.
+func (p *BPFProg) AttachTCX(deviceName string) (*BPFLink, error) {
+	iface, err := net.InterfaceByName(deviceName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find device by name %s: %w", deviceName, err)
+	}
+
+	// A nil opts leaves flags, relative_fd, relative_id and expected_revision
+	// zeroed, which appends the program to the device's tcx chain.
+	linkC, errno := C.bpf_program__attach_tcx(p.prog, C.int(iface.Index), nil)
+	if linkC == nil {
+		return nil, fmt.Errorf("failed to attach tcx on device %s to program %s: %w", deviceName, p.Name(), errno)
+	}
+
+	bpfLink := &BPFLink{
+		link:      linkC,
+		prog:      p,
+		linkType:  TCX,
+		eventName: fmt.Sprintf("tcx-%s-%s", p.Name(), deviceName),
+	}
+	p.module.links = append(p.module.links, bpfLink)
+
+	return bpfLink, nil
+}
+
 func (p *BPFProg) AttachTracepoint(category, name string) (*BPFLink, error) {
 	tpCategoryC := C.CString(category)
 	defer C.free(unsafe.Pointer(tpCategoryC))
